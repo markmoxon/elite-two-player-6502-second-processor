@@ -37038,45 +37038,46 @@ ENDMACRO
 
  LOAD_G% = LOAD% + P% - CODE%
 
-IF _MATCH_ORIGINAL_BINARIES
+                        \ --- Mod: Code removed for Dogfight: ----------------->
 
- IF _SNG45
-
-  EQUB &A5, &19, &8D, &FC, &08, &A5, &1A, &8D   \ These bytes appear to be
-  EQUB &FD, &08, &60, &A6, &83, &20, &68, &4B   \ unused and just contain random
-  EQUB &A6, &83, &4C, &D6, &12, &20, &C6, &4C   \ workspace noise left over from
-  EQUB &20, &76, &43, &8D, &53, &08, &8D, &69   \ the BBC Micro assembly process
-  EQUB &08, &20, &82, &45, &A9, &06, &85, &4A
-  EQUB &A9, &81, &4C, &C1, &44, &A2, &FF, &E8
-  EQUB &BD, &52, &08, &F0, &CB, &C9, &01, &D0
-  EQUB &F6, &8A, &0A, &A8, &B9, &76, &1A, &85
-  EQUB &05, &B9, &77, &1A, &85, &06, &A0, &20
-  EQUB &B1, &05, &10, &E3, &29, &7F, &4A, &C5
-  EQUB &97, &90, &DC, &F0, &09, &E9, &01, &0A
-  EQUB &09, &80, &91, &05, &D0, &D1, &A9, &00
-  EQUB &91, &05, &F0, &CB, &86, &97, &A5, &44
-  EQUB &C5, &97, &D0, &0A, &A0, &0C, &20, &62
-  EQUB &45, &A9, &C8, &20, &C7, &57, &A4, &97
-  EQUB &BE, &52, &08, &E0, &02, &F0, &96, &E0
-  EQUB &1F, &D0, &08, &AD, &A4, &08, &09
-
- ELIF _EXECUTIVE
-
-  EQUB &A5, &19, &8D, &FC, &08, &A5, &1A, &8D   \ These bytes appear to be
-  EQUB &FD, &08, &60, &A6, &83, &20, &8D, &4B   \ unused and just contain random
-  EQUB &A6, &83, &4C, &D8, &12, &20, &EB, &4C   \ workspace noise left over from
-  EQUB &20, &9B, &43, &8D, &53, &08, &8D, &69   \ the BBC Micro assembly process
-  EQUB &08, &20, &A7, &45, &A9, &06, &85, &4A
-  EQUB &A9, &81, &4C, &E6, &44, &A2, &FF, &E8
-  EQUB &BD, &52, &08, &F0, &CB, &C9, &01, &D0
-  EQUB &F6, &8A, &0A, &A8, &B9, &86, &1A, &85
-  EQUB &05, &B9, &87, &1A, &85, &06, &A0, &20
-  EQUB &B1, &05, &10, &E3, &29, &7F, &4A, &C5
-  EQUB &97, &90
-
- ELIF _SOURCE_DISC
-                        \ --- Mod: Code removed for red enemy lasers: --------->
-
+\IF _MATCH_ORIGINAL_BINARIES
+\
+\IF _SNG45
+\
+\ EQUB &A5, &19, &8D, &FC, &08, &A5, &1A, &8D   \ These bytes appear to be
+\ EQUB &FD, &08, &60, &A6, &83, &20, &68, &4B   \ unused and just contain random
+\ EQUB &A6, &83, &4C, &D6, &12, &20, &C6, &4C   \ workspace noise left over from
+\ EQUB &20, &76, &43, &8D, &53, &08, &8D, &69   \ the BBC Micro assembly process
+\ EQUB &08, &20, &82, &45, &A9, &06, &85, &4A
+\ EQUB &A9, &81, &4C, &C1, &44, &A2, &FF, &E8
+\ EQUB &BD, &52, &08, &F0, &CB, &C9, &01, &D0
+\ EQUB &F6, &8A, &0A, &A8, &B9, &76, &1A, &85
+\ EQUB &05, &B9, &77, &1A, &85, &06, &A0, &20
+\ EQUB &B1, &05, &10, &E3, &29, &7F, &4A, &C5
+\ EQUB &97, &90, &DC, &F0, &09, &E9, &01, &0A
+\ EQUB &09, &80, &91, &05, &D0, &D1, &A9, &00
+\ EQUB &91, &05, &F0, &CB, &86, &97, &A5, &44
+\ EQUB &C5, &97, &D0, &0A, &A0, &0C, &20, &62
+\ EQUB &45, &A9, &C8, &20, &C7, &57, &A4, &97
+\ EQUB &BE, &52, &08, &E0, &02, &F0, &96, &E0
+\ EQUB &1F, &D0, &08, &AD, &A4, &08, &09
+\
+\ELIF _EXECUTIVE
+\
+\ EQUB &A5, &19, &8D, &FC, &08, &A5, &1A, &8D   \ These bytes appear to be
+\ EQUB &FD, &08, &60, &A6, &83, &20, &8D, &4B   \ unused and just contain random
+\ EQUB &A6, &83, &4C, &D8, &12, &20, &EB, &4C   \ workspace noise left over from
+\ EQUB &20, &9B, &43, &8D, &53, &08, &8D, &69   \ the BBC Micro assembly process
+\ EQUB &08, &20, &A7, &45, &A9, &06, &85, &4A
+\ EQUB &A9, &81, &4C, &E6, &44, &A2, &FF, &E8
+\ EQUB &BD, &52, &08, &F0, &CB, &C9, &01, &D0
+\ EQUB &F6, &8A, &0A, &A8, &B9, &86, &1A, &85
+\ EQUB &05, &B9, &87, &1A, &85, &06, &A0, &20
+\ EQUB &B1, &05, &10, &E3, &29, &7F, &4A, &C5
+\ EQUB &97, &90
+\
+\ELIF _SOURCE_DISC
+\
 \ EQUB &A5, &19, &8D, &FC, &08, &A5, &1A, &8D   \ These bytes appear to be
 \ EQUB &FD, &08, &60, &A6, &83, &20, &62, &4B   \ unused and just contain random
 \ EQUB &A6, &83, &4C, &D6, &12, &20, &C0, &4C   \ workspace noise left over from
@@ -37095,20 +37096,16 @@ IF _MATCH_ORIGINAL_BINARIES
 \ EQUB &BE, &52, &08, &E0, &02, &F0, &96, &E0
 \ EQUB &1F, &D0, &08, &AD, &A4, &08, &09, &02
 \ EQUB &8D, &A4, &08, &E0, &0F, &F0, &08, &E0
+\
+\ENDIF
+\
+\ELSE
+\
+\ALIGN 256              \ Align the log tables so they start on page boundaries
+\
+\ENDIF
 
-                        \ --- And replaced by: -------------------------------->
-
-  ALIGN 256             \ Align the log tables so they start on page boundaries
-
-                        \ --- End of replacement ------------------------------>
-
- ENDIF
-
-ELSE
-
- ALIGN 256              \ Align the log tables so they start on page boundaries
-
-ENDIF
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -41373,7 +41370,74 @@ ENDIF
 \
 \ ******************************************************************************
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.playerScreen
+
+ EQUB %10000000         \ Bit 7 enable split screen (set)
+                        \ Bit 6 draw player 1 (clear) or 2 (set)
+
+                        \ --- End of added code ------------------------------->
+
 .LL145
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ BIT playerScreen       \ Skip if split screen disabled
+ BPL LL145a
+
+ LDA XX15+2             \ Subtract #Y/2 from y1
+ SEC
+ SBC #Y/2
+ STA XX15+2
+ LDA XX15+3
+ SBC #0
+ STA XX15+3
+
+ ASL XX15+2             \ Double y1
+ ROL XX15+3
+
+ LDA XX12               \ Subtract #Y/2 from y2
+ SEC
+ SBC #Y/2
+ STA XX12
+ LDA XX12+1
+ SBC #0
+ STA XX12+1
+
+ ASL XX12               \ Double y2
+ ROL XX12+1
+
+ JSR LL145a             \ Clip
+
+ PHP                    \ Store C flag
+
+ LSR Y1                 \ Halve y1
+
+ LSR Y2                 \ Halve y2
+
+ BIT playerScreen       \ If player 2, move down to bottom half
+ BVC clip1
+
+ LDA Y1                 \ Move y1 down
+ CLC
+ ADC #Y
+ STA Y1
+
+ LDA Y2                 \ Move y1 down
+ CLC
+ ADC #Y
+ STA Y2
+
+.clip1
+
+ PLP                    \ Retrieve C flag
+
+ RTS                    \ Return from the subroutine
+
+.LL145a
+
+                        \ --- End of added code ------------------------------->
 
  LDA #0                 \ Set SWAP = 0
  STA SWAP
@@ -43529,9 +43593,29 @@ ENDIF
  LDA #128               \ Set QQ19 to the x-coordinate of the centre of the
  STA QQ19               \ screen
 
- LDA #Y-24              \ Set QQ19+1 to the y-coordinate of the centre of the
- STA QQ19+1             \ screen, minus 24 (because TT15 will add 24 to the
-                        \ coordinate when it draws the crosshairs)
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDA #Y-24              \ Set QQ19+1 to the y-coordinate of the centre of the
+\STA QQ19+1             \ screen, minus 24 (because TT15 will add 24 to the
+\                       \ coordinate when it draws the crosshairs)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #(Y/2)-24          \ Set A to the y-coordinate of the centre of the screen,
+                        \ minus 24 (because TT15 will add 24 to the coordinate
+                        \ when it draws the crosshairs)
+
+ BIT playerScreen       \ If this is player 1, skip the following
+ BVC site1
+
+ CLC                    \ This is player 2, so move down
+ ADC #Y
+
+.site1
+
+ STA QQ19+1             \ Set QQ19+1 to the y-coordinate
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #20                \ Set QQ19+2 to size 20 for the crosshairs size
  STA QQ19+2
