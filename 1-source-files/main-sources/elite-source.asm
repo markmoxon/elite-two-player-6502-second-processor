@@ -50629,6 +50629,18 @@ ENDIF
                         \ And then we copy the &22 pages of ship blueprints from
                         \ F% + &0400 to D%
 
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+                        \ And then we copy the &22 pages of ship blueprints from
+                        \ F% + &0400 to D%
+
+                        \ --- And replaced by: -------------------------------->
+
+                        \ And then we copy the &28 pages of ship blueprints from
+                        \ F% + &0400 to D%
+
+                        \ --- End of replacement ------------------------------>
+
  LDA #LO(F%)            \ Set V(1 0) = F% + &0400
  STA V
  LDA #HI(F%)+4
@@ -50639,7 +50651,16 @@ ENDIF
  LDA #HI(D%)
  STA SC+1
 
- LDX #&22               \ Set X = &22 to act as a counter for copying &22 pages
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDX #&22               \ Set X = &22 to act as a counter for copying &22 pages
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #&28               \ Set X = &28 to act as a counter for copying &28 pages
+
+                        \ --- End of replacement ------------------------------>
+
 
                         \ Fall through into mvblock to copy the ship blueprints
 
