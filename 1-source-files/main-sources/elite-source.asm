@@ -88,8 +88,18 @@ ENDIF
  NOST = 18              \ The number of stardust particles in normal space (this
                         \ goes down to 3 in witchspace)
 
- NOSH = 20              \ The maximum number of ships in our local bubble of
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\NOSH = 20              \ The maximum number of ships in our local bubble of
+\                       \ universe
+
+
+                        \ --- And replaced by: -------------------------------->
+
+ NOSH = 10              \ The maximum number of ships in our local bubble of
                         \ universe
+
+                        \ --- End of replacement ------------------------------>
 
  NTY = 34               \ The number of different ship types
 
@@ -3581,6 +3591,25 @@ ENDIF
                         \ the scroll text lines onto the Star Wars perspective
                         \ view and then onto the screen
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.splitScreen
+
+ SKIP 1                 \ Controls the split-screen effect
+                        \
+                        \   * Bit 7 set = draw into split-screen
+                        \
+                        \   * Bit 7 clear = full screen
+.playerScreen
+
+ SKIP 1                 \ Determines which player to update in the split screen
+                        \
+                        \   * Bit 7 clear = player 1 (top)
+                        \
+                        \   * Bit 7 set = enable split-screen
+
+                        \ --- End of added code ------------------------------->
+
  PRINT "WP workspace from ", ~WP, "to ", ~P%-1, "inclusive"
 
 \ ******************************************************************************
@@ -3617,6 +3646,15 @@ ENDIF
 .K%
 
  SKIP NOSH * NI%        \ Ship data blocks and ship line heap
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.K2%
+
+ SKIP NOSH * NI%        \ Ship data blocks and ship line heap for player 2's
+                        \ frame of reference
+
+                        \ --- End of added code ------------------------------->
 
  PRINT "K% workspace from ", ~K%, "to ", ~P%-1, "inclusive"
 
@@ -5640,7 +5678,19 @@ ENDIF
 
 .MA8
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ STZ playerScreen       \ Draw ship for player 1
+
+                        \ --- End of added code ------------------------------->
+
  JSR LL9                \ Call LL9 to draw the ship we're processing on-screen
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ JSR DrawShipPlayer2    \ draw the same ship from the perspective of player 2
+
+                        \ --- End of added code ------------------------------->
 
 .MA15
 
@@ -7822,6 +7872,16 @@ ENDIF
   EQUW K% + I% * NI%    \ Address of block no. I%, of size NI%, in workspace K%
 
  NEXT
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ FOR I%, NOSH+1, NOSH*2
+
+  EQUW K% + I% * NI%    \ Address of block no. I%, of size NI%, in workspace K%
+
+ NEXT
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -30758,6 +30818,12 @@ ENDIF
  JSR ZERO               \ Reset the ship slots for the local bubble of universe,
                         \ and various flight and ship status variables
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ STZ splitScreen        \ Turn off split-screen drawing
+
+                        \ --- End of added code ------------------------------->
+
  LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
 
 .SAL3
@@ -40519,9 +40585,19 @@ ENDIF
  LDA XX3+1,X            \ Fetch the x_hi coordinate of the edge's end vertex
  STA XX15+5             \ from the XX3 heap into XX15+5
 
- JSR LL147              \ Call LL147 to see if the new line segment needs to be
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\JSR LL147              \ Call LL147 to see if the new line segment needs to be
+\                       \ clipped to fit on-screen, returning the clipped line's
+\                       \ end-points in (X1, Y1) and (X2, Y2)
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR LL145              \ Call LL145 to see if the new line segment needs to be
                         \ clipped to fit on-screen, returning the clipped line's
                         \ end-points in (X1, Y1) and (X2, Y2)
+
+                        \ --- End of replacement ------------------------------>
 
  BCS LL78               \ If the C flag is set then the line is not visible on
                         \ screen, so jump to LL78 so we don't store this line
@@ -41510,20 +41586,11 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
-
-.playerScreen
-
- EQUB %10000000         \ Bit 7 enable split screen (set)
-                        \ Bit 6 draw player 1 (clear) or 2 (set)
-
-                        \ --- End of added code ------------------------------->
-
 .LL145
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
- BIT playerScreen       \ Skip if split screen disabled
+ BIT splitScreen        \ Skip if split screen disabled
  BPL LL145a
 
  LDA XX15+2             \ Subtract #Y/2 from y1
@@ -41556,8 +41623,10 @@ ENDIF
 
  LSR Y2                 \ Halve y2
 
- BIT playerScreen       \ If player 2, move down to bottom half
- BVC clip1
+ BIT playerScreen       \ If player 1, skip the following
+ BPL clip1
+
+                        \ This is player 2, so move down to bottom half
 
  LDA Y1                 \ Move y1 down
  CLC
@@ -43755,7 +43824,7 @@ ENDIF
                         \ when it draws the crosshairs)
 
  BIT playerScreen       \ If this is player 1, skip the following
- BVC site1
+ BPL site1
 
  CLC                    \ This is player 2, so move down
  ADC #Y
@@ -43864,6 +43933,22 @@ ENDIF
  STZ de                 \ Clear de, the flag that appends " DESTROYED" to the
                         \ end of the next text token, so that it doesn't
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ LDA QQ11               \ If this is a space view, enable split-screen
+ BNE clsc1
+ SEC
+ ROR splitScreen
+ BNE clsc2
+
+.clsc1
+
+ STZ splitScreen        \ And don't if it isn't
+
+.clsc2
+
+                        \ --- End of added code ------------------------------->
+
  LDA #11                \ Send control code 11 to OSWRCH, to instruct the I/O
  JSR OSWRCH             \ processor to clear the top part of the screen
 
@@ -43908,6 +43993,16 @@ ENDIF
 
  LDA #175               \ Print recursive token 15 ("VIEW ")
  JSR TT27
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ BIT splitScreen        \ Skip the following if this is not a split screen space
+ BPL tt66               \ view
+
+ LDA #Y                 \ Draw a screen-wide horizontal line at pixel row #Y
+ JSR NLIN2              \ for the line between the views
+
+                        \ --- End of added code ------------------------------->
 
 .tt66
 
@@ -54565,6 +54660,43 @@ ENDMACRO
 .nlin3
 
  RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawShipPlayer2
+\       Type: Subroutine
+\   Category: Dogfight
+\    Summary: Draw a ship in player 2's frame of reference
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.DrawShipPlayer2
+
+ LDA XSAV               \ Calculate slot number for player 2 copy of ship
+ CLC
+ ADC #NOSH
+ TAX
+
+ JSR GINF               \ Call GINF to fetch the address of the ship data block
+                        \ for the ship in slot 0 (the logo) and store it in INF
+
+ INC INWK+7             \ Move player2 ship far away
+
+ JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+
+ SEC                    \ Draw ship for player 2
+ ROR playerScreen
+
+ JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
+
+ LDX XSAV               \ Fetch the original ship back again
+ JSR GINF
+
+ RTS
 
                         \ --- End of added code ------------------------------->
 
