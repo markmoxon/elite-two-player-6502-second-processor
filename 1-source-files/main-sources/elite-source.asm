@@ -23378,6 +23378,14 @@ ENDIF
                         \ and set up data blocks and slots for the planet and
                         \ sun
 
+ JSR ZINF               \ Call ZINF to reset the INWK ship workspace
+
+ LDA #4                 \ Set z_hi = 4 (in front)
+ STA INWK+7
+
+ LDA #CYL               \ Spawn a Cobra for player 2 in slot 2
+ JSR NWSHP
+
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
                         \ --- End of added code ------------------------------->
@@ -31381,11 +31389,15 @@ ENDIF
 
  DEC MCNT               \ Decrement the main loop counter in MCNT
 
- BEQ P%+5               \ If the counter has reached zero, which it will do
-                        \ every 256 main loops, skip the next JMP instruction
-                        \ (or to put it another way, if the counter hasn't
-                        \ reached zero, jump down to MLOOP, skipping all the
-                        \ following checks)
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\BEQ P%+5               \ If the counter has reached zero, which it will do
+\                       \ every 256 main loops, skip the next JMP instruction
+\                       \ (or to put it another way, if the counter hasn't
+\                       \ reached zero, jump down to MLOOP, skipping all the
+\                       \ following checks)
+
+                        \ --- End of removed code ----------------------------->
 
 .ytq
 
