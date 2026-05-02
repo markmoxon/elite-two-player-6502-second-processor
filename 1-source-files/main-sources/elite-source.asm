@@ -5688,7 +5688,7 @@ ENDIF
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
- JSR DrawShipPlayer2    \ draw the same ship from the perspective of player 2
+ JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
 
                         \ --- End of added code ------------------------------->
 
@@ -54771,29 +54771,144 @@ ENDMACRO
 
 .DrawShipPlayer2
 
- LDA XSAV               \ Calculate slot number for player 2 copy of ship
+ LDA XSAV               \ If this isn't player 2's ship, skip to the next check
+ CMP #2
+ BNE dshp2
+
+ JSR SaveShipData       \ Save current INWK state
+
+ LDY #NI%-1             \ There are NI% bytes in each ship data block (and in
+
+\LDY #26                \ Copy (x, y, z) and orientation vector from player 2
+                        \ Cobra in ship slot #2 to player 1 Cobra in ship slot
+                        \ #12
+
+.dshp1
+
+ LDA K%+NI%*2,Y         \ Copy Y-th entry from slot #2 to slot #12
+ STA K%+NI%*12,Y
+
+ DEY                    \ Decrement the loop counter
+
+ BPL dshp1              \ Loop back for the next byte, until we have copied all
+                        \ nine
+
+ LDA K%+NI%*12+2        \ Negate x_sign
+ EOR #%10000000
+\ STA K%+NI%*12+2
+
+ LDA K%+NI%*12+5        \ Negate y_sign
+ EOR #%10000000
+\ STA K%+NI%*12+5
+
+ LDA K%+NI%*12+8        \ Negate z_sign
+ EOR #%10000000
+\ STA K%+NI%*12+8
+
+ LDA K%+NI%*12+6        \ TEST: Hack coords z_lo, x_lo
  CLC
- ADC #NOSH
- TAX
+ ADC #100
+ STA K%+NI%*12+6
+ LDA K%+NI%*12+0        \ TEST: Hack coords x_lo
+ CLC
+ ADC #100
+ STA K%+NI%*12+0
 
- JSR GINF               \ Call GINF to fetch the address of the ship data block
-                        \ for the ship in slot 0 (the logo) and store it in INF
+\ Transpose matrix to rotate player 1 correctly for player 2 view
 
- INC INWK+7             \ Move player2 ship far away
+ STZ K%+NI%*12+8        \ Clear exploding state for now
 
- JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+ LDA K%+NI%*2+33        \ Low heap byte
+ STA K%+NI%*12+33
 
- SEC                    \ Draw ship for player 2
+ LDA K%+NI%*2+34        \ High heap byte (&2000 below ship #2)
+ SEC
+ SBC #&20
+ STA K%+NI%*12+34
+
+ STZ K%+NI%*12+36       \ Clear scooped state for now
+
+ LDX #12                \ Get ship data into INWK
+ JSR GetShipDataToINWK
+
+ SEC                    \ Configure drawing for player 2
  ROR playerScreen
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
- LDX XSAV               \ Fetch the original ship back again
+ STZ playerScreen       \ Back to player 1
+
+ JSR LoadShipData       \ Reload INWK state
+
+ LDX #2                 \ Set INF(1 0) for player's 2 ship once again
  JSR GINF
 
- RTS
+.dshp2
+
+ RTS                    \ Return from the subroutine
 
                         \ --- End of added code ------------------------------->
+
+.SaveShipData
+
+ LDY #NI%-1             \ There are NI% bytes in each ship data block (and in
+                        \ the INWK workspace, so we set a counter in Y so we can
+                        \ loop through them
+
+.savs1
+
+ LDA INWK,Y             \ Load the Y-th byte of INWK and store it in the Y-th
+ STA storeINWK,Y        \ byte of storeINWK
+
+ DEY                    \ Decrement the loop counter
+
+ BPL savs1              \ Loop back for the next byte until we have copied the
+                        \ last byte from INF to INWK
+
+ RTS                    \ Return from the subroutine
+
+.LoadShipData
+
+ LDY #NI%-1             \ There are NI% bytes in each ship data block (and in
+                        \ the INWK workspace, so we set a counter in Y so we can
+                        \ loop through them
+
+.lods1
+
+ LDA storeINWK,Y        \ Load the Y-th byte of storeINWK and store it in the
+ STA INWK,Y             \ Y-th byte of INWK
+
+ DEY                    \ Decrement the loop counter
+
+ BPL lods1              \ Loop back for the next byte until we have copied the
+                        \ last byte from INF to INWK
+
+ RTS                    \ Return from the subroutine
+
+.GetShipDataToINWK
+
+ JSR GINF               \ Call GINF to fetch the address of the ship data block
+                        \ for slot X
+
+ LDY #NI%-1             \ There are NI% bytes in each ship data block (and in
+                        \ the INWK workspace, so we set a counter in Y so we can
+                        \ loop through them
+
+.gets1
+
+ LDA (INF),Y            \ Load the Y-th byte of INF and store it in the Y-th
+ STA INWK,Y             \ byte of INWK
+
+ DEY                    \ Decrement the loop counter
+
+ BPL gets1              \ Loop back for the next byte until we have copied the
+                        \ last byte from INF to INWK
+
+ RTS                    \ Return from the subroutine
+
+.storeINWK
+
+ SKIP NI%
 
 \ ******************************************************************************
 \
