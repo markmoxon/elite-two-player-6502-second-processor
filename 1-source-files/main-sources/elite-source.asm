@@ -8827,9 +8827,19 @@ ENDIF
  LDA Y1                 \ Fetch the y-coordinate offset into A and clear the
  AND #%01111111         \ sign bit, so A = |Y1|
 
- CMP #96                \ If |Y1| >= 96 then it's off the screen (as 96 is half
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\CMP #96                \ If |Y1| >= 96 then it's off the screen (as 96 is half
+\BCS PX4                \ the screen height), so return from the subroutine (as
+\                       \ PX4 contains an RTS)
+
+                        \ --- And replaced by: -------------------------------->
+
+ CMP #48                \ If |Y1| >= 48 then it's off the screen (as 96 is half
  BCS PX4                \ the screen height), so return from the subroutine (as
                         \ PX4 contains an RTS)
+
+                        \ --- End of replacement ------------------------------>
 
  LDA Y1                 \ Fetch the y-coordinate offset into A
 
@@ -8841,12 +8851,23 @@ ENDIF
                         \ it to a positive number, i.e. A is now |Y1|
 
 .PX2
+                        \ --- Mod: Code removed for Dogfight: ----------------->
 
- STA T                  \ Set A = #Y + 1 - Y1
- LDA #Y+1               \
+\STA T                  \ Set A = #Y + 1 - Y1
+\LDA #Y+1               \
+\SBC T                  \ So if Y1 is positive we display the point up from the
+\                       \ centre at y-coordinate 97, while a negative Y1 means
+\                       \ down from the centre
+
+                        \ --- And replaced by: -------------------------------->
+
+ STA T                  \ Set A = #Y/2 + 1 - Y1
+ LDA #(Y/2)+1           \
  SBC T                  \ So if Y1 is positive we display the point up from the
-                        \ centre at y-coordinate 97, while a negative Y1 means
+                        \ centre at y-coordinate Y/2, while a negative Y1 means
                         \ down from the centre
+
+                        \ --- End of replacement ------------------------------>
 
                         \ Fall through into PIXEL to draw the stardust at the
                         \ screen coordinates in (X, A)
@@ -9834,9 +9855,19 @@ ENDIF
  STA SY,Y               \ the new x-coordinate is in (y_hi y_lo) and the high
  STA Y1                 \ byte is in Y1
 
- AND #%01111111         \ If |y_hi| >= 120 then jump to KILL1 to recycle this
- CMP #120               \ particle, as it's gone off the top or bottom of the
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\AND #%01111111         \ If |y_hi| >= 120 then jump to KILL1 to recycle this
+\CMP #120               \ particle, as it's gone off the top or bottom of the
+\BCS KILL1              \ screen, and rejoin at STC1 with the new particle
+
+                        \ --- And replaced by: -------------------------------->
+
+ AND #%01111111         \ If |y_hi| >= 60 then jump to KILL1 to recycle this
+ CMP #60                \ particle, as it's gone off the top or bottom of the
  BCS KILL1              \ screen, and rejoin at STC1 with the new particle
+
+                        \ --- End of replacement ------------------------------>
 
  LDA SZ,Y               \ If z_hi < 16 then jump to KILL1 to recycle this
  CMP #16                \ particle, as it's so close that it's effectively gone
@@ -9868,6 +9899,12 @@ ENDIF
                         \ position that isn't too close to the centre point
 
  JSR DORND              \ Set A and X to random numbers
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ LSR A                  \ Halve the vertical range for stardust
+
+                        \ --- End of added code ------------------------------->
 
  ORA #4                 \ Make sure A is at least 4 and store it in Y1 and y_hi,
  STA Y1                 \ so the new particle starts at least 4 pixels above or
@@ -30933,8 +30970,17 @@ ENDIF
 
 .RES2
 
- LDA #NOST              \ Reset NOSTM, the number of stardust particles, to the
- STA NOSTM              \ maximum allowed (18)
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDA #NOST              \ Reset NOSTM, the number of stardust particles, to the
+\STA NOSTM              \ maximum allowed (18)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #NOST/2            \ Reset NOSTM, the number of stardust particles, to the
+ STA NOSTM              \ maximum allowed (9)
+
+                        \ --- End of replacement ------------------------------>
 
  LDX #&FF               \ Reset LSX2 and LSY2, the ball line heaps used by the
  STX LSX2               \ BLINE routine for drawing circles, to &FF, to set the
