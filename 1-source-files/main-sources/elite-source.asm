@@ -23420,7 +23420,7 @@ ENDIF
  LDA #4                 \ Set z_hi = 4 (in front)
  STA INWK+7
 
- LDA #CYL               \ Spawn a Cobra for player 2 in slot 2
+ LDA #COPS              \ Spawn a Viper for player 2 in slot 2
  JSR NWSHP
 
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
@@ -54817,9 +54817,14 @@ ENDMACRO
 
 .DrawShipPlayer2
 
- LDA XSAV               \ If this isn't player 2's ship, skip to the next check
- CMP #2
- BNE dshp2
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 for the
+ CMP #2                 \ next check
+ BEQ dshp1
+ JMP dshp3
+
+.dshp1
+
+                        \ This is player 2's Cobra
 
  JSR SaveShipData       \ Save current INWK state
 
@@ -54829,14 +54834,14 @@ ENDMACRO
                         \ Cobra in ship slot #2 to player 1 Cobra in ship slot
                         \ #12
 
-.dshp1
+.dshp2
 
  LDA K%+NI%*2,Y         \ Copy Y-th entry from slot #2 to slot #12
  STA K%+NI%*12,Y
 
  DEY                    \ Decrement the loop counter
 
- BPL dshp1              \ Loop back for the next byte, until we have copied all
+ BPL dshp2              \ Loop back for the next byte, until we have copied all
                         \ nine
 
  LDA K%+NI%*12+2        \ Negate x_sign
@@ -54880,16 +54885,32 @@ ENDMACRO
  SEC                    \ Configure drawing for player 2
  ROR playerScreen
 
+ LDA XX21-2+2*CYL       \ Set XX0(1 0) to point to the ship blueprint for a
+ STA XX0                \ Cobra Mk III
+ LDA XX21-1+2*CYL
+ STA XX0+1
+
+ LDA #CYL               \ We're drawing player 1, so switch to the Cobra
+ STA TYPE
+
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
  STZ playerScreen       \ Back to player 1
 
  JSR LoadShipData       \ Reload INWK state
 
+ LDA #COPS              \ Switch back to the Viper for player 2
+ STA TYPE
+
+ LDA XX21-2+2*COPS      \ Set XX0(1 0) to point to the ship blueprint for a
+ STA XX0                \ Viper
+ LDA XX21-1+2*COPS
+ STA XX0+1
+
  LDX #2                 \ Set INF(1 0) for player's 2 ship once again
  JSR GINF
 
-.dshp2
+.dshp3
 
  RTS                    \ Return from the subroutine
 
