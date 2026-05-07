@@ -4797,7 +4797,16 @@ ENDIF
  DEC DELTA              \ The "slow down" key is being pressed, so we decrement
                         \ the current ship speed in DELTA
 
- BNE MA4                \ If the speed is still greater than zero, jump to MA4
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\BNE MA4                \ If the speed is still greater than zero, jump to MA4
+
+                        \ --- And replaced by: -------------------------------->
+
+ BPL MA4                \ If the speed is positive, jump to MA4, so this allows
+                        \ for zero speed
+
+                        \ --- End of replacement ------------------------------>
 
  INC DELTA              \ Otherwise we just braked a little too hard, so bump
                         \ the speed back up to the minimum value of 1
@@ -23417,7 +23426,7 @@ ENDIF
 
  JSR ZINF               \ Call ZINF to reset the INWK ship workspace
 
- LDA #4                 \ Set z_hi = 4 (in front)
+ LDA #7                 \ Set z_lo = 7 (in front)
  STA INWK+7
 
  LDA #COPS              \ Spawn a Viper for player 2 in slot 2
@@ -33044,7 +33053,7 @@ ENDIF
 
  CMP CHK                \ Test the calculated checksum against CHK
 
-IF _REMOVE_CHECKSUMS
+IF _REMOVE_CHECKSUMS OR TRUE
 
  NOP                    \ If we have disabled checksums, then ignore the result
  NOP                    \ of the comparison and fall through into the next part
@@ -38243,9 +38252,7 @@ ENDIF
 \ When called from part 6 of LL9, XX12 contains the vector [x y z] of the vertex
 \ we're analysing, and XX16 contains the transposed orientation vectors with
 \ each of them containing the x, y and z elements of the original vectors, so it
-\ ------------------------------------------------------------------------------
-\
-\ Returns:
+\ returns:
 \
 \   [ x ]   [ sidev_x ]         [ x ]   [ sidev_y ]         [ x ]   [ sidev_z ]
 \   [ y ] . [ roofv_x ]         [ y ] . [ roofv_y ]         [ y ] . [ roofv_z ]
@@ -43658,7 +43665,7 @@ ENDIF
  CMP S%-1               \ Compare the calculated checksum in A with the checksum
                         \ stored in S%-1
 
-IF _REMOVE_CHECKSUMS
+IF _REMOVE_CHECKSUMS OR TRUE
 
  NOP                    \ If we have disabled checksums, then ignore the result
  NOP                    \ of the comparison and return from the subroutine
@@ -54844,30 +54851,373 @@ ENDMACRO
  BPL dshp2              \ Loop back for the next byte, until we have copied all
                         \ nine
 
+\ For ship in slot #12, calculate:
+\ Orientation vector = transpose of player 2 orientation vector
+\ Coords = -(x, y, z) * transpose of player 2 orientation vector
+
+\ TAS3 = orient_v in INWK * vector in XX15
+\ TAS4 = same but for sun/station
+\ Make our own copy of TAS4 for ship #12
+
+\ Transpose orientation vector in 
+
+\LDA K%+NI%*12+6        \ TEST: Hack coords z_lo, x_lo
+\CLC
+\ADC #100
+\STA K%+NI%*12+6
+\LDA K%+NI%*12+0        \ TEST: Hack coords x_lo
+\CLC
+\ADC #100
+\STA K%+NI%*12+0
+
+\ Attempt 1 - spins around sidev vector (pitches) when player 1 rolls
+\ should spin around nosev to roll instead
+
+\ nosev_x nosev_y nosev_z      9/10     11/12     13/14
+\ roofv_x roofv_y roofv_z  =  15/16     17/18     19/20
+\ sidev_x sidev_y sidev_z     21/22     23/24     25/26
+\
+\ nosev_x nosev_y nosev_z      nosev_x roofv_x sidev_x
+\ roofv_x roofv_y roofv_z  ->  nosev_y roofv_y sidev_y
+\ sidev_x sidev_y sidev_z      nosev_z roofv_z sidev_z
+\
+\ Swap nosev_y and roofv_x
+\ Swap nosev_z and sidev_x
+\ Swap roofv_z and sidev_y
+
+IF FALSE
+
+ LDA K%+NI%*12+11       \ nosev_y_lo
+ LDX K%+NI%*12+15       \ roofv_x_lo
+ STA K%+NI%*12+15
+ STX K%+NI%*12+11
+
+ LDA K%+NI%*12+12       \ nosev_y_hi
+ LDX K%+NI%*12+16       \ roofv_x_hi
+ STA K%+NI%*12+16
+ STX K%+NI%*12+12
+
+ LDA K%+NI%*12+13       \ nosev_z_lo
+ LDX K%+NI%*12+21       \ sidev_x_lo
+ STA K%+NI%*12+21
+ STX K%+NI%*12+13
+
+ LDA K%+NI%*12+14       \ nosev_z_hi
+ LDX K%+NI%*12+22       \ sidev_x_hi
+ STA K%+NI%*12+22
+ STX K%+NI%*12+14
+
+ LDA K%+NI%*12+23       \ roofv_z_lo
+ LDX K%+NI%*12+19       \ sidev_y_lo
+ STA K%+NI%*12+19
+ STX K%+NI%*12+23
+
+ LDA K%+NI%*12+24       \ roofv_z_hi
+ LDX K%+NI%*12+20       \ sidev_y_hi
+ STA K%+NI%*12+20
+ STX K%+NI%*12+24
+
+ENDIF
+
+\ Attempt 2
+\
+\ Transpose matrix to rotate player 1 correctly for player 2 view
+\ Matrix is in ship #12, in K%+NI%*12 +9 through +26
+\
+\ Stored as lo/hi
+\
+\ sidev_x sidev_y sidev_z     21/22     23/24     25/26
+\ roofv_x roofv_y roofv_z  =  15/16     17/18     19/20
+\ nosev_x nosev_y nosev_z      9/10     11/12     13/14
+\
+\ sidev_x sidev_y sidev_z      sidev_x roofv_x nosev_x
+\ roofv_x roofv_y roofv_z  ->  sidev_y roofv_y nosev_y
+\ nosev_x nosev_y nosev_z      sidev_z roofv_z nosev_z
+\
+\ Swap nosev_x and sidev_z  ->   9/10 and 25/26
+\ Swap nosev_y and roofv_z  ->  11/12 and 19/20
+\ Swap roofv_x and sidev_y  ->  15/16 and 23/24
+
+IF FALSE
+
+ LDA K%+NI%*12+9        \ nosev_x_lo
+ LDX K%+NI%*12+25       \ sidev_z_lo
+ STA K%+NI%*12+25
+ STX K%+NI%*12+9
+
+ LDA K%+NI%*12+10       \ nosev_x_hi
+ LDX K%+NI%*12+26       \ sidev_x_hi
+ STA K%+NI%*12+26
+ STX K%+NI%*12+10
+
+ LDA K%+NI%*12+11       \ nosev_y_lo
+ LDX K%+NI%*12+19       \ roofv_z_lo
+ STA K%+NI%*12+19
+ STX K%+NI%*12+11
+
+ LDA K%+NI%*12+12       \ nosev_y_hi
+ LDX K%+NI%*12+20       \ roofv_z_hi
+ STA K%+NI%*12+20
+ STX K%+NI%*12+12
+
+ LDA K%+NI%*12+15       \ roofv_x_lo
+ LDX K%+NI%*12+19       \ sidev_y_lo
+ STA K%+NI%*12+19
+ STX K%+NI%*12+15
+
+ LDA K%+NI%*12+16       \ roofv_x_hi
+ LDX K%+NI%*12+20       \ sidev_y_hi
+ STA K%+NI%*12+20
+ STX K%+NI%*12+16
+
+ENDIF
+
+\ Try switching nose and side from attempt 1, leave roof alone
+
+IF FALSE
+
+ LDA K%+NI%*12+23       \ sidev_y_lo
+ LDX K%+NI%*12+15       \ roofv_x_lo
+ STA K%+NI%*12+15
+ STX K%+NI%*12+23
+
+ LDA K%+NI%*12+24       \ sidev_y_hi
+ LDX K%+NI%*12+16       \ roofv_x_hi
+ STA K%+NI%*12+16
+ STX K%+NI%*12+24
+
+ LDA K%+NI%*12+25       \ sidev_z_lo
+ LDX K%+NI%*12+9        \ nosev_x_lo
+ STA K%+NI%*12+8
+ STX K%+NI%*12+25
+
+ LDA K%+NI%*12+26       \ sidev_z_hi
+ LDX K%+NI%*12+10       \ nosev_x_hi
+ STA K%+NI%*12+10
+ STX K%+NI%*12+26
+
+ LDA K%+NI%*12+19       \ roofv_z_lo
+ LDX K%+NI%*12+11       \ nosev_y_lo
+ STA K%+NI%*12+11
+ STX K%+NI%*12+19
+
+ LDA K%+NI%*12+20       \ roofv_z_hi
+ LDX K%+NI%*12+12       \ nosev_y_hi
+ STA K%+NI%*12+12
+ STX K%+NI%*12+20
+
+ENDIF
+
+
+
+\ Prepare orientation vectors for TAS4
+
+.calculation
+
+ LDA K%+NI%*2+1         \ x_hi with -x_sign
+ ORA K%+NI%*2+2
+ EOR #%10000000
+ STA XX15
+
+ LDA K%+NI%*2+4         \ y_hi with -y_sign
+ ORA K%+NI%*2+5
+ EOR #%10000000
+ STA XX15+1
+
+ LDA K%+NI%*2+7         \ z_hi with -z_sign
+ ORA K%+NI%*2+8
+ EOR #%10000000
+ STA XX15+2
+
+                        \ ********** X
+
+ LDY #22                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = sidev . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+\STX K%+NI%*12+0        \ Store x_lo
+
+\STA K%+NI%*12+1        \ Store x_hi
+
+ STA K%+NI%*12+1        \ Store x_hi
+
+ LDA T
+ STA K%+NI%*12+0        \ Store x_lo
+
+\ASL A                  \ Store x_sign
+\LDA #0
+\ROR A
+\STA K%+NI%*12+2
+
+ PLP
+ LDA #0
+ ROR A
+ STA K%+NI%*12+2
+
+\LDA K%+NI%*12+1        \ Clear sign from x_hi
+\AND #%01111111
+\STA K%+NI%*12+1
+
+\LDA K%+NI%*12+0        \ Clear sign from x_lo
+\AND #%01111111
+\STA K%+NI%*12+0
+
+                        \ ********** Y
+
+ LDY #16                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = roofv . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+\STX K%+NI%*12+3        \ Store y_lo
+
+\STA K%+NI%*12+4        \ Store y_hi
+
+ STA K%+NI%*12+4        \ Store y_hi
+
+ LDA T
+ STA K%+NI%*12+3        \ Store y_lo
+
+\ASL A                  \ Store y_sign
+\LDA #0
+\ROR A
+\STA K%+NI%*12+5
+
+ PLP
+ LDA #0
+ ROR A
+ STA K%+NI%*12+5
+
+\LDA K%+NI%*12+4        \ Clear sign from y_hi
+\AND #%01111111
+\STA K%+NI%*12+4
+
+\LDA K%+NI%*12+3        \ Clear sign from y_lo
+\AND #%01111111
+\STA K%+NI%*12+3
+
+                        \ ********** Z
+
+ LDY #10                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = nosev . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+\STX K%+NI%*12+6        \ Store z_lo
+
+\STA K%+NI%*12+7        \ Store z_hi
+
+ STA K%+NI%*12+7        \ Store z_hi
+
+ LDA T
+ STA K%+NI%*12+6        \ Store z_lo
+
+\ASL A                  \ Store z_sign
+\LDA #0
+\ROR A
+\STA K%+NI%*12+8
+
+ PLP
+ LDA #0
+ ROR A
+ STA K%+NI%*12+8
+
+\LDA K%+NI%*12+7        \ Clear sign from z_hi
+\AND #%01111111
+\STA K%+NI%*12+7
+
+\LDA K%+NI%*12+6        \ Clear sign from z_lo
+\AND #%01111111
+\STA K%+NI%*12+6
+
+
+IF FALSE
+
+\ Prepare (x, y, z) coordinate for LL51
+
  LDA K%+NI%*12+2        \ Negate x_sign
  EOR #%10000000
-\ STA K%+NI%*12+2
+ STA XX15+1
+
+ LDA K%+NI%*12+0        \ Copy x_lo
+ STA XX15
 
  LDA K%+NI%*12+5        \ Negate y_sign
  EOR #%10000000
-\ STA K%+NI%*12+5
+ STA XX15+3
+
+ LDA K%+NI%*12+3        \ Copy y_lo
+ STA XX15+2
 
  LDA K%+NI%*12+8        \ Negate z_sign
  EOR #%10000000
-\ STA K%+NI%*12+8
+ STA XX15+5
 
- LDA K%+NI%*12+6        \ TEST: Hack coords z_lo, x_lo
- CLC
- ADC #100
- STA K%+NI%*12+6
- LDA K%+NI%*12+0        \ TEST: Hack coords x_lo
- CLC
- ADC #100
- STA K%+NI%*12+0
+ LDA K%+NI%*12+6        \ Copy z_lo
+ STA XX15+4
 
-\ Transpose matrix to rotate player 1 correctly for player 2 view
 
- STZ K%+NI%*12+8        \ Clear exploding state for now
+\ Prepare orientation vectors for LL51
+
+ LDA K%+NI%*12+21       \ sidev_x_lo
+ STA XX16
+ LDA K%+NI%*12+22       \ sidev_x_hi
+ STA XX16+1
+
+
+ LDX K%+NI%*12+15       \ roofv_x_lo
+ STA K%+NI%*12+15
+ STX K%+NI%*12+23
+
+
+\ Set XX15 = - (x, y, z)
+
+ LDA K%+NI%*12+2        \ Negate x_sign
+ EOR #%10000000
+\STA K%+NI%*12+2
+
+ LDA K%+NI%*12+5        \ Negate y_sign
+ EOR #%10000000
+\STA K%+NI%*12+5
+
+ LDA K%+NI%*12+8        \ Negate z_sign
+ EOR #%10000000
+\STA K%+NI%*12+8
+
+ENDIF
+
+\ Set heap for player 2's view to be &2000 below player 1's view
 
  LDA K%+NI%*2+33        \ Low heap byte
  STA K%+NI%*12+33
@@ -54877,7 +55227,9 @@ ENDMACRO
  SBC #&20
  STA K%+NI%*12+34
 
- STZ K%+NI%*12+36       \ Clear scooped state for now
+\STZ K%+NI%*12+8        \ Clear exploding state for now
+
+\STZ K%+NI%*12+36       \ Clear scooped state for now
 
  LDX #12                \ Get ship data into INWK
  JSR GetShipDataToINWK
@@ -54914,7 +55266,60 @@ ENDMACRO
 
  RTS                    \ Return from the subroutine
 
+
+.MultiplyByTranspose
+
+
+ RTS                    \ Return from the subroutine
+
+
                         \ --- End of added code ------------------------------->
+
+                        \ XX15 = (x, y, z)
+                        \
+\   Y                   The space station's orientation vector:
+\
+\                         * If Y = 10, calculate nosev . XX15
+\
+\                         * If Y = 16, calculate roofv . XX15
+\
+\                         * If Y = 22, calculate sidev . XX15
+
+.TAS4dog
+
+ LDX K%+NI%*12,Y        \ Set Q = the Y-th byte of K%+NI%, i.e. vect_x from the
+ STX Q                  \ second ship data block at K%
+
+ LDA XX15               \ Set A = XX15
+
+ JSR MULT12             \ Set (S R) = Q * A
+                        \           = vect_x * XX15
+
+ LDX K%+NI%*12+2,Y      \ Set Q = the Y+2-th byte of K%+NI%, i.e. vect_y
+ STX Q
+
+ LDA XX15+1             \ Set A = XX15+1
+
+ JSR MAD                \ Set (A X) = Q * A + (S R)
+                        \           = vect_y * XX15+1 + vect_x * XX15
+
+ STA S                  \ Set (S R) = (A X)
+ STX R
+
+ LDX K%+NI%*12+4,Y      \ Set Q = the Y+4-th byte of K%+NI%, i.e. vect_z
+ STX Q
+
+ LDA XX15+2             \ Set A = XX15+2
+
+ JMP MAD                \ Set:
+                        \
+                        \   (A X) = Q * A + (S R)
+                        \           = vect_z * XX15+2 + vect_y * XX15+1 +
+                        \             vect_x * XX15
+                        \
+                        \ and return from the subroutine using a tail call
+
+
 
 .SaveShipData
 
