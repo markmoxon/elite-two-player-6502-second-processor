@@ -23426,8 +23426,13 @@ ENDIF
 
  JSR ZINF               \ Call ZINF to reset the INWK ship workspace
 
- LDA #7                 \ Set z_lo = 7 (in front)
+ LDA #96                \ Point ship in same direction as us, so rotatiogn work
+ STA INWK+14
+
+ LDA #7                 \ Set z_hi = -7 (behind)
  STA INWK+7
+ LDA #%10000000
+ STA INWK+8
 
  LDA #COPS              \ Spawn a Viper for player 2 in slot 2
  JSR NWSHP
