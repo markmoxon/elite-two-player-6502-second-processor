@@ -54927,9 +54927,18 @@ ENDMACRO
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
-MACRO ROTATE_COORDINATE_24 v1, c1, v2, c2, v3, c3
+MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 
-                        \ Step 2z: calculation for z-coordinate
+                        \ c = [v1 v2 v3] . [ c1 c2 c3 ]
+                        \     v1 * c1 + v2 * c2 + v3 * c3
+                        \
+                        \ Commentary has c = z-coordinate
+                        \                v1 = nosev_x
+                        \                v2 = nosev_y
+                        \                v3 = nosev_z
+                        \                c1 = x
+                        \                c2 = y
+                        \                c3 = z
 
  LDY #v1                \ First do nosev_x * x, so call Multiply32 to calculate:
  LDX #c1                \
@@ -55004,11 +55013,11 @@ MACRO ROTATE_COORDINATE_24 v1, c1, v2, c2, v3, c3
                         \              + (nosev_y * y / 96)
 
  LDA P                  \ Set player 2's z-coordinate to the result
- STA K%+NI%*12+6
+ STA K%+NI%*12+c
  LDA P+1
- STA K%+NI%*12+7
+ STA K%+NI%*12+c+1
  LDA P+2
- STA K%+NI%*12+8
+ STA K%+NI%*12+c+2
 
 ENDMACRO
 
@@ -55129,11 +55138,11 @@ IF FALSE
 
 ELSE
 
- ROTATE_COORDINATE_24 21, 0, 23, 3, 25, 6      \ Step 2: x-coordinate
+ ROTATE_COORDINATE_24 0, 21, 0, 23, 3, 25, 6    \ Step 2: x-coordinate
 
- ROTATE_COORDINATE_24 15, 0, 17, 3, 19, 6      \ Step 2: y-coordinate
+ ROTATE_COORDINATE_24 3, 15, 0, 17, 3, 19, 6    \ Step 2: y-coordinate
 
- ROTATE_COORDINATE_24 9, 0, 11, 3, 13, 6       \ Step 2: z-coordinate
+ ROTATE_COORDINATE_24 6, 9, 0, 11, 3, 13, 6     \ Step 2: z-coordinate
 
 ENDIF
  
