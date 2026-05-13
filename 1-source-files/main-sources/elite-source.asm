@@ -5697,7 +5697,7 @@ ENDIF
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
- JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
+ JSR DrawShipPlayer3    \ Draw the same ship from the perspective of player 2
 
                         \ --- End of added code ------------------------------->
 
@@ -55116,6 +55116,7 @@ ENDMACRO
  
 \ END CALCULATION
 
+.endcalc
 
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
@@ -55612,6 +55613,199 @@ ENDMACRO
  SKIP NI%
 
                         \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawShipPlayer2
+\       Type: Subroutine
+\   Category: Dogfight
+\    Summary: Draw a ship in player 2's frame of reference
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.DrawShipPlayer3
+
+{
+
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 for the
+ CMP #2                 \ next check
+ BEQ dshp1
+ JMP dshp3
+
+.dshp1
+
+                        \ This is player 2's Cobra
+
+ JSR SaveShipData       \ Save current INWK state
+
+\LDY #NI%-1             \ There are NI% bytes in each ship data block
+
+ LDY #26                \ Copy (x, y, z) and orientation vector from player 2
+                        \ Cobra in ship slot #2 to player 1 Cobra in ship slot
+                        \ #12
+
+.dshp2
+
+ LDA K%+NI%*2,Y         \ Copy Y-th entry from slot #2 to slot #12
+ STA K%+NI%*12,Y
+
+ DEY                    \ Decrement the loop counter
+
+ BPL dshp2              \ Loop back for the next byte, until we have copied all
+                        \ nine
+
+}
+
+ LDA K%+NI%*2+1         \ x_hi with -x_sign
+ ORA K%+NI%*2+2
+ EOR #%10000000
+ STA XX15
+
+ LDA K%+NI%*2+4         \ y_hi with -y_sign
+ ORA K%+NI%*2+5
+ EOR #%10000000
+ STA XX15+1
+
+ LDA K%+NI%*2+7         \ z_hi with -z_sign
+ ORA K%+NI%*2+8
+ EOR #%10000000
+ STA XX15+2
+
+                        \ ********** X
+
+ LDY #22                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = sidev . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T                  \ Scale
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+ STA K%+NI%*12+1        \ Store x_hi
+
+ LDA T
+ STA K%+NI%*12+0        \ Store x_lo
+
+ PLP                    \ Store x_sign
+ LDA #0
+ ROR A
+ STA K%+NI%*12+2
+
+                        \ ********** Y
+
+ LDY #16                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = roofv . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T                  \ Scale
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+ STA K%+NI%*12+4        \ Store y_hi
+
+ LDA T
+ STA K%+NI%*12+3        \ Store y_lo
+
+ PLP                    \ Store y_sign
+ LDA #0
+ ROR A
+ STA K%+NI%*12+5
+
+                        \ ********** Z
+
+ LDY #10                \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = nosev . XX15
+
+ ASL A                  \ Extract sign
+ PHP
+ CLC
+ ROR A
+
+ STX T
+ ASL T
+ ROL A
+ ASL T
+ ROL A
+
+ STA K%+NI%*12+7        \ Store z_hi
+
+ LDA T
+ STA K%+NI%*12+6        \ Store z_lo
+
+ PLP                    \ Store z_sign
+ LDA #0
+ ROR A
+ STA K%+NI%*12+8
+
+ JMP endcalc
+
+.TAS4dog
+
+                        \ XX15 = [x y z]
+                        \
+                        \ Y = The space station's orientation vector:
+                        \
+                        \   * If Y = 10, calculate nosev . XX15
+                        \
+                        \   * If Y = 16, calculate roofv . XX15
+                        \
+                        \   * If Y = 22, calculate sidev . XX15
+                        \
+                        \ So we get:
+                        \
+                        \   (A X) = vect_x * y + vect_x * x + vext_z * z
+                        \
+                        \   i.e. [vect_x vect_y vect_z] . [x y z]
+
+ LDX K%+NI%*12,Y        \ Set Q = the Y-th byte of K%+NI%, i.e. vect_x from the
+ STX Q                  \ second ship data block at K%
+
+ LDA XX15               \ Set A = XX15
+
+ JSR MULT12             \ Set (S R) = Q * A
+                        \           = vect_x * XX15
+
+ LDX K%+NI%*12+2,Y      \ Set Q = the Y+2-th byte of K%+NI%, i.e. vect_y
+ STX Q
+
+ LDA XX15+1             \ Set A = XX15+1
+
+ JSR MAD                \ Set (A X) = Q * A + (S R)
+                        \           = vect_y * XX15+1 + vect_x * XX15
+
+ STA S                  \ Set (S R) = (A X)
+ STX R
+
+ LDX K%+NI%*12+4,Y      \ Set Q = the Y+4-th byte of K%+NI%, i.e. vect_z
+ STX Q
+
+ LDA XX15+2             \ Set A = XX15+2
+
+ JMP MAD                \ Set:
+                        \
+                        \   (A X) = Q * A + (S R)
+                        \           = vect_z * XX15+2 + vect_y * XX15+1 +
+                        \             vect_x * XX15
+                        \
+                        \ and return from the subroutine using a tail call
+
 
 \ ******************************************************************************
 \
