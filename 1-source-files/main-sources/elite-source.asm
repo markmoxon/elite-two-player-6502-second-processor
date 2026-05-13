@@ -5706,7 +5706,6 @@ ENDIF
                         \ --- Mod: Code added for Dogfight: ------------------->
 
  JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
-\JSR DrawShipPlayer3    \ Draw the same ship from the perspective of player 2
 
                         \ --- End of added code ------------------------------->
 
