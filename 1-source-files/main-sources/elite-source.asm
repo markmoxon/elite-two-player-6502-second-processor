@@ -151,6 +151,14 @@ ENDIF
 
  DOD = 34               \ Ship type for a Dodecahedron ("Dodo") space station
 
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+ player1Ship = CYL      \ Ship type for player 1
+
+ player2Ship = CYL      \ Ship type for player 2
+
+                        \ --- End of added code ------------------------------->
+
  JL = ESC               \ Junk is defined as starting from the escape pod
 
  JH = SHU+2             \ Junk is defined as ending before the Cobra Mk III
@@ -23435,7 +23443,7 @@ ENDIF
  LDA #%10000000
  STA INWK+8
 
- LDA #COPS              \ Spawn a Viper for player 2 in slot 2
+ LDA #player2Ship       \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
@@ -54886,8 +54894,7 @@ ENDMACRO
 \LDY #NI%-1             \ There are NI% bytes in each ship data block
 
  LDY #26                \ Copy (x, y, z) and orientation vector from player 2
-                        \ Cobra in ship slot #2 to player 1 Cobra in ship slot
-                        \ #12
+                        \ in ship slot #2 to player 1 in ship slot #12
 
 .dshp2
 
@@ -55182,29 +55189,29 @@ ENDMACRO
  SEC                    \ Configure drawing for player 2
  ROR playerScreen
 
- LDA XX21-2+2*CYL       \ Set XX0(1 0) to point to the ship blueprint for a
- STA XX0                \ Cobra Mk III
- LDA XX21-1+2*CYL
+ LDA XX21-2+2*player1Ship   \ Set XX0(1 0) to point to the ship blueprint for
+ STA XX0                    \ player 1, as viewed from player 2
+ LDA XX21-1+2*player1Ship
  STA XX0+1
 
- LDA #CYL               \ We're drawing player 1, so switch to the Cobra
- STA TYPE
+ LDA #player1Ship       \ We're drawing player 1, so switch to the correct ship
+ STA TYPE               \ type
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
  LDA INWK+31            \ Copy "on-screen" state from INWK to player 2 ship
  STA K%+NI%*12+31
 
- STZ playerScreen       \ Back to player 1
+ STZ playerScreen       \ Back to drawing the view for player 1
 
  JSR LoadShipData       \ Reload INWK state
 
- LDA #COPS              \ Switch back to the Viper for player 2
+ LDA #player2Ship       \ Switch back to the ship for player 2
  STA TYPE
 
- LDA XX21-2+2*COPS      \ Set XX0(1 0) to point to the ship blueprint for a
- STA XX0                \ Viper
- LDA XX21-1+2*COPS
+ LDA XX21-2+2*player2Ship   \ Set XX0(1 0) to point to the ship blueprint for
+ STA XX0                    \ player 2, which we were processing from the point
+ LDA XX21-1+2*player2Ship   \ of view of player 1
  STA XX0+1
 
  LDX #2                 \ Set INF(1 0) for player's 2 ship once again
@@ -55866,7 +55873,6 @@ ENDMACRO
                         \             vect_x * XX15
                         \
                         \ and return from the subroutine using a tail call
-
 
 \ ******************************************************************************
 \
