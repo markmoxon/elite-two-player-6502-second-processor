@@ -5697,7 +5697,8 @@ ENDIF
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
- JSR DrawShipPlayer3    \ Draw the same ship from the perspective of player 2
+ JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
+\JSR DrawShipPlayer3    \ Draw the same ship from the perspective of player 2
 
                         \ --- End of added code ------------------------------->
 
@@ -54840,9 +54841,9 @@ ENDMACRO
 
  JSR SaveShipData       \ Save current INWK state
 
- LDY #NI%-1             \ There are NI% bytes in each ship data block
+\LDY #NI%-1             \ There are NI% bytes in each ship data block
 
-\LDY #26                \ Copy (x, y, z) and orientation vector from player 2
+ LDY #26                \ Copy (x, y, z) and orientation vector from player 2
                         \ Cobra in ship slot #2 to player 1 Cobra in ship slot
                         \ #12
 
@@ -55226,7 +55227,9 @@ ENDMACRO
                         \   = sidev_x_hi * (x_sign x_hi x_lo) << 8 +
                         \     sidev_x_lo * (x_sign x_hi x_lo)
 
- STX XSAV               \ Store coordinate index
+ STX cIndex             \ Store coordinate index
+
+ STY vIndex             \ Store orientation vector index
 
  LDA K%+NI%*12,Y        \ Q = sidev_x_lo, shifted right to clear the sign bit
  LSR A                  \ (we discard the lowest bit)
@@ -55252,12 +55255,20 @@ ENDMACRO
  LDA K+3
  STA XX15+3
  
+ LDY vIndex             \ Retrieve orientation vector index
+
  LDA K%+NI%*12+1,Y      \ Q = sidev_x_hi, which includes the sign bit
  STA Q
 
- LDX XSAV               \ Retrieve coordinate index
+ LDX cIndex             \ Retrieve coordinate index
 
- LDA K%+NI%*12+2,X      \ (A P+1 P) = (x_sign x_hi x_lo)
+ LDA K%+NI%*12+0,X      \ (A P+1 P) = (x_sign x_hi x_lo)
+ STA P
+ LDA K%+NI%*12+1,X
+ STA P+1
+ LDA K%+NI%*12+2,X
+
+\LDA K%+NI%*12+2,X      \ (A P+1 P) = (x_sign x_hi x_lo)
 
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
                         \            = (x_sign x_hi x_lo) * sidev_x_hi
@@ -55613,6 +55624,14 @@ ENDMACRO
  SKIP NI%
 
                         \ --- End of added code ------------------------------->
+
+.cIndex
+
+ EQUB 0
+
+.vIndex
+
+ EQUB 0
 
 \ ******************************************************************************
 \
