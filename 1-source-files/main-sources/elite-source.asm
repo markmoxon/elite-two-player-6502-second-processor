@@ -28513,9 +28513,19 @@ ENDIF
                         \ new sun, given that P(2 1) contains the 16-bit maximum
                         \ y-coordinate of the new sun on-screen
 
- LDA #2*Y-1             \ #Y is the y-coordinate of the centre of the space
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDA #2*Y-1             \ #Y is the y-coordinate of the centre of the space
+\                       \ view, so this sets Y to the y-coordinate of the bottom
+\                       \ of the space view
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #Y-1               \ #Y is the y-coordinate of the centre of the space
                         \ view, so this sets Y to the y-coordinate of the bottom
                         \ of the space view
+
+                        \ --- End of replacement ------------------------------>
 
  LDX P+2                \ If P+2 is non-zero, the maximum y-coordinate is off
  BNE PLF2               \ the bottom of the screen, so skip to PLF2 with A set
@@ -28542,10 +28552,21 @@ ENDIF
                         \ and the direction in which we need to draw them, both
                         \ from the centre of the new sun
 
- LDA #2*Y-1             \ Set (A X) = y-coordinate of bottom of screen - K4(1 0)
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDA #2*Y-1             \ Set (A X) = y-coordinate of bottom of screen - K4(1 0)
+\SEC                    \
+\SBC K4                 \ Starting with the low bytes
+\TAX
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #Y-1               \ Set (A X) = y-coordinate of bottom of screen - K4(1 0)
  SEC                    \
  SBC K4                 \ Starting with the low bytes
  TAX
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #0                 \ And then doing the high bytes, so (A X) now contains
  SBC K4+1               \ the number of lines between the centre of the sun and
@@ -28611,9 +28632,19 @@ ENDIF
 \
 \ ******************************************************************************
 
- LDY #2*Y-1             \ Set Y = y-coordinate of the bottom of the screen,
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDY #2*Y-1             \ Set Y = y-coordinate of the bottom of the screen,
+\                       \ which we use as a counter in the following routine to
+\                       \ redraw the old sun
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDY #Y-1               \ Set Y = y-coordinate of the bottom of the screen,
                         \ which we use as a counter in the following routine to
                         \ redraw the old sun
+
+                        \ --- End of replacement ------------------------------>
 
  LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
  STA YY                 \ vertical centre axis of the old sun that's currently
@@ -29446,10 +29477,21 @@ ENDIF
  LDA SUNX+1             \ screen
  STA YY+1
 
- LDY #2*Y-1             \ #Y is the y-coordinate of the centre of the space
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDY #2*Y-1             \ #Y is the y-coordinate of the centre of the space
+\                       \ view, so this sets Y as a counter for the number of
+\                       \ lines in the space view (i.e. 191), which is also the
+\                       \ number of lines in the LSO block
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDY #Y-1               \ #Y is the y-coordinate of the centre of the space
                         \ view, so this sets Y as a counter for the number of
                         \ lines in the space view (i.e. 191), which is also the
                         \ number of lines in the LSO block
+
+                        \ --- End of replacement ------------------------------>
 
 .WPL2
 
