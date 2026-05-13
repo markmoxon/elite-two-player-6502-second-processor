@@ -55148,6 +55148,9 @@ ENDMACRO
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
+ LDA INWK+31            \ Copy "on-screen" state from INWK to player 2 ship
+ STA K%+NI%*12+31
+
  STZ playerScreen       \ Back to player 1
 
  JSR LoadShipData       \ Reload INWK state
