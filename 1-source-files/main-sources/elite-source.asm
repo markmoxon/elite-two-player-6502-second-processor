@@ -42378,8 +42378,8 @@ ENDIF
 
  EOR XSAV               \ Fetch the slot number of the ship we are moving, EOR
  AND #15                \ with the loop counter and apply mod 15 to the result.
- BNE MV3                \ The result will be zero when "counter mod 15" matches
-                        \ the slot number, so this makes sure we call TIDY 12
+\BNE MV3                \ The result will be zero when "counter mod 15" matches
+NOP:NOP                 \ the slot number, so this makes sure we call TIDY 12
                         \ times every 16 main loop iterations, like this:
                         \
                         \   Iteration 0, tidy the ship in slot 0
@@ -54869,6 +54869,154 @@ ENDMACRO
 
 \ ******************************************************************************
 \
+\       Name: ROTATE_COORDINATE_8
+\       Type: Macro
+\   Category: Dogfight
+\    Summary: Rotate a coordinate by an orientation vector (8-bits)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+MACRO ROTATE_COORDINATE_8 v, c
+
+                        \ Comments for v = sidev, c = x
+
+ LDY #v                 \ Call TAS4 to calculate:
+ JSR TAS4dog            \
+                        \   (A X) = sidev . XX15
+
+ ASL A                  \ Extract sign into C flag on stack
+ PHP
+ CLC
+ ROR A
+
+ STX T                  \ Set (A S T) = (0 A X)
+ STA S
+ LDA #0
+
+ ASL T                  \ Scale (A S T) << 2
+ ROL S
+ ROL A
+ ASL T
+ ROL S
+ ROL A
+
+ ROL A                  \ Add sign and store x_sign
+ PLP
+ ROR A
+ STA K%+NI%*12+c+2
+
+ LDA S                  \ Store x_hi
+ STA K%+NI%*12+c+1
+
+ LDA T
+ STA K%+NI%*12+c        \ Store x_lo
+
+ENDMACRO
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: ROTATE_COORDINATE_24
+\       Type: Macro
+\   Category: Dogfight
+\    Summary: Rotate a coordinate by an orientation vector (24-bits)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+MACRO ROTATE_COORDINATE_24 v1, c1, v2, c2, v3, c3
+
+                        \ Step 2z: calculation for z-coordinate
+
+ LDY #v1                \ First do nosev_x * x, so call Multiply32 to calculate:
+ LDX #c1                \
+ JSR Multiply32         \   K(3 2 1 0) = nosev_x * x / 96
+                        \
+                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo) / 96
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
+ STA XX12               \ byte, so:
+ LDA K+2                \
+ STA XX12+1             \   XX12(2 1 0) = nosev_x * x / 96
+ LDA K+3
+ STA XX12+2
+
+ LDY #v2                \ Next do nosev_y * y, so call Multiply32 to calculate:
+ LDX #c2                \
+ JSR Multiply32         \   K(3 2 1 0) = nosev_y * y / 96
+                        \
+                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo) / 96
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(5 4 3), ignoring low
+ STA XX12+3             \ byte, so:
+ LDA K+2                \
+ STA XX12+4             \   XX12(5 4 3) = nosev_y * y / 96
+ LDA K+3
+ STA XX12+5
+
+ LDY #v3                \ Then do nosev_z * z, so call Multiply32 to calculate:
+ LDX #c3                \
+ JSR Multiply32         \   K(3 2 1 0) = nosev_z * z / 96
+                        \
+                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo) / 96
+
+                        \ By this point we have:
+                        \
+                        \   XX12(2 1 0) = nosev_x * x / 96
+                        \   XX12(5 4 3) = nosev_y * y / 96
+                        \   K(3 2 1 0)  = nosev_z * z / 96
+                        \
+                        \ So now we need to add them all together
+
+ LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
+ STA XX15+1             \                 = nosev_x * x / 96
+ LDA XX12+1
+ STA XX15+2
+ LDA XX12+2
+ STA XX15+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * z / 96) + (nosev_x * x / 96)
+
+ LDA XX12+3             \ Set XX15(3 2 1) = XX12(5 4 3)
+ STA XX15+1             \                 = nosev_y * y / 96
+ LDA XX12+4
+ STA XX15+2
+ LDA XX12+5
+ STA XX15+3
+
+ LDA P                  \ Set K(3 2 1) = P(2 1 0)
+ STA K+1                \              = (nosev_z * z / 96) + (nosev_x * x / 96)
+ LDA P+1
+ STA K+2
+ LDA P+2
+ STA K+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * z / 96) + (nosev_x * x / 96)
+                        \              + (nosev_y * y / 96)
+
+ LDA P                  \ Set player 2's z-coordinate to the result
+ STA K%+NI%*12+6
+ LDA P+1
+ STA K%+NI%*12+7
+ LDA P+2
+ STA K%+NI%*12+8
+
+ENDMACRO
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: DrawShipPlayer2
 \       Type: Subroutine
 \   Category: Dogfight
@@ -54960,209 +55108,35 @@ ENDMACRO
  EOR #%10000000
  STA K%+NI%*12+8
 
-                        \ Step 2x: calculation for x-coordinate
+IF FALSE
 
- LDY #21                \ First do sidev_x * x, so call Multiply32 to calculate:
- LDX #0                 \
- JSR Multiply32         \   K(3 2 1 0) = sidev_x * x / 96
-                        \
-                        \ i.e. (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo) / 96
+ LDA K%+NI%*12+1        \ x_hi with -x_sign
+ ORA K%+NI%*12+2
+ STA XX15
 
- LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
- STA XX12               \ byte, so:
- LDA K+2                \
- STA XX12+1             \   XX12(2 1 0) = sidev_x * x / 96
- LDA K+3
- STA XX12+2
+ LDA K%+NI%*12+4        \ y_hi with -y_sign
+ ORA K%+NI%*12+5
+ STA XX15+1
 
- LDY #23                \ Next do sidev_y * y, so call Multiply32 to calculate:
- LDX #3                 \
- JSR Multiply32         \   K(3 2 1 0) = sidev_y * y / 96
-                        \
-                        \ i.e. (sidev_y_hi sidev_y_lo) * (y_sign y_hi y_lo) / 96
+ LDA K%+NI%*12+7        \ z_hi with -z_sign
+ ORA K%+NI%*12+8
+ STA XX15+2
 
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = sidev_x * x / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
+ ROTATE_COORDINATE_8 22, 0      \ Step 2: x-coordinate
 
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (sidev_y * y / 96) + (sidev_x * x / 96)
-                        \            = (sidev_x * x + sidev_y * y) / 96
+ ROTATE_COORDINATE_8 16, 3      \ Step 2: y-coordinate
 
- LDA P                  \ Copy result from P(2 1 0) to XX12(2 1 0), so:
- STA XX12               \
- LDA P+1                \   XX12(2 1 0) = (sidev_x * x + sidev_y * y) / 96
- STA XX12+1
- LDA P+2
- STA XX12+2
+ ROTATE_COORDINATE_8 10, 6      \ Step 2: z-coordinate
 
- LDY #25                \ Then do sidev_z * z, so call Multiply32 to calculate:
- LDX #6                 \
- JSR Multiply32         \   K(3 2 1 0) = sidev_z * z / 96
-                        \
-                        \ i.e. (sidev_z_hi sidev_z_lo) * (z_sign z_hi z_lo) / 96
+ELSE
 
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = (sidev_x * x + sidev_x * y) / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
+ ROTATE_COORDINATE_24 21, 0, 23, 3, 25, 6      \ Step 2: x-coordinate
 
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (sidev_x * z / 96) + XX15(4 3 2)
-                        \            = (sidev_x * x + sidev_x * y + sidev_x * z)
-                        \                                                   / 96
+ ROTATE_COORDINATE_24 15, 0, 17, 3, 19, 6      \ Step 2: y-coordinate
 
- LDA P                  \ Set player 2's x-coordinate to the result
- STA K%+NI%*12+0
- LDA P+1
- STA K%+NI%*12+1
- LDA P+2
- STA K%+NI%*12+2
+ ROTATE_COORDINATE_24 9, 0, 11, 3, 13, 6       \ Step 2: z-coordinate
 
-                        \ Step 2y: calculation for y-coordinate
-
- LDY #15                \ First do roofv_x * x, so call Multiply32 to calculate:
- LDX #0                 \
- JSR Multiply32         \   K(3 2 1 0) = roofv_x * x / 96
-                        \
-                        \ i.e. (roofv_x_hi roofv_x_lo) * (x_sign x_hi x_lo) / 96
-
- LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
- STA XX12               \ byte, so:
- LDA K+2                \
- STA XX12+1             \   XX12(2 1 0) = roofv_x * x / 96
- LDA K+3
- STA XX12+2
-
- LDY #17                \ Next do roofv_y * y, so call Multiply32 to calculate:
- LDX #3                 \
- JSR Multiply32         \   K(3 2 1 0) = roofv_y * y / 96
-                        \
-                        \ i.e. (roofv_y_hi roofv_y_lo) * (y_sign y_hi y_lo) / 96
-
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = roofv_x * x / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (roofv_y * y / 96) + (roofv_x * x / 96)
-                        \            = (roofv_x * x + roofv_y * y) / 96
-
- LDA P                  \ Copy result from P(2 1 0) to XX12(2 1 0), so:
- STA XX12               \
- LDA P+1                \   XX12(2 1 0) = (roofv_x * x + roofv_y * y) / 96
- STA XX12+1
- LDA P+2
- STA XX12+2
-
- LDY #19                \ Then do roofv_z * z, so call Multiply32 to calculate:
- LDX #6                 \
- JSR Multiply32         \   K(3 2 1 0) = roofv_z * z / 96
-                        \
-                        \ i.e. (roofv_z_hi roofv_z_lo) * (z_sign z_hi z_lo) / 96
-
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = (roofv_x * x + roofv_x * y) / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (roofv_x * z / 96) + XX15(4 3 2)
-                        \            = (roofv_x * x + roofv_x * y + roofv_x * z)
-                        \                                                   / 96
-
- LDA P                  \ Set player 2's y-coordinate to the result
- STA K%+NI%*12+3
- LDA P+1
- STA K%+NI%*12+4
- LDA P+2
- STA K%+NI%*12+5
-
-                        \ Step 2z: calculation for z-coordinate
-
- LDY #9                 \ First do nosev_x * x, so call Multiply32 to calculate:
- LDX #0                 \
- JSR Multiply32         \   K(3 2 1 0) = nosev_x * x / 96
-                        \
-                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo) / 96
-
- LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
- STA XX12               \ byte, so:
- LDA K+2                \
- STA XX12+1             \   XX12(2 1 0) = nosev_x * x / 96
- LDA K+3
- STA XX12+2
-
- LDY #11                \ Next do nosev_y * y, so call Multiply32 to calculate:
- LDX #3                 \
- JSR Multiply32         \   K(3 2 1 0) = nosev_y * y / 96
-                        \
-                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo) / 96
-
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = nosev_x * x / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (nosev_y * y / 96) + (nosev_x * x / 96)
-                        \            = (nosev_x * x + nosev_y * y) / 96
-
- LDA P                  \ Copy result from P(2 1 0) to XX12(2 1 0), so:
- STA XX12               \
- LDA P+1                \   XX12(2 1 0) = (nosev_x * x + nosev_y * y) / 96
- STA XX12+1
- LDA P+2
- STA XX12+2
-
- LDY #13                \ Then do nosev_z * z, so call Multiply32 to calculate:
- LDX #6                 \
- JSR Multiply32         \   K(3 2 1 0) = nosev_z * z / 96
-                        \
-                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo) / 96
-
- LDA XX12               \ Set XX15(4 3 2) = XX12(2 1 0)
- STA XX15+2             \                 = (nosev_x * x + nosev_x * y) / 96
- LDA XX12+1
- STA XX15+3
- LDA XX12+2
- STA XX15+4
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(4 3 2)
-                        \            = (nosev_x * z / 96) + XX15(4 3 2)
-                        \            = (nosev_x * x + nosev_x * y + nosev_x * z)
-                        \                                                   / 96
-
- LDA P                  \ Set player 2's z-coordinate to the result
- STA K%+NI%*12+6
- LDA P+1
- STA K%+NI%*12+7
- LDA P+2
- STA K%+NI%*12+8
+ENDIF
  
 \ END CALCULATION
 
@@ -55544,7 +55518,39 @@ ENDMACRO
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
+\ Hack to remove division
+
 .DivideBy96
+
+ LDA P+2                \ Extract sign
+ AND #%10000000
+ STA T
+
+ LDA P+2                \ Set K(3 2 1 0) = |P(2 1 0)|
+ AND #%01111111
+ STA K+3
+ LDA P+1
+ STA K+2
+ LDA P
+ STA K+1
+ STZ K
+
+ ASL K                  \ Multiply x4 to effectively divide by 64
+ ROL K+1
+ ROL K+2
+ ROL K+3
+
+ ASL K
+ ROL K+1
+ ROL K+2
+ ROL K+3
+
+ LDA K+3                \ Put sign back
+ AND #%01111111
+ ORA T
+ STA K+3
+
+ RTS
 
                         \ Calculate:
                         \
@@ -55674,155 +55680,50 @@ ENDMACRO
 
                         \ --- End of added code ------------------------------->
 
-.cIndex
-
- EQUB 0
-
-.vIndex
-
- EQUB 0
-
 \ ******************************************************************************
 \
-\       Name: DrawShipPlayer2
-\       Type: Subroutine
+\       Name: vIndex
+\       Type: Variable
 \   Category: Dogfight
-\    Summary: Draw a ship in player 2's frame of reference
+\    Summary: Storage for coordinate offset
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for Dogfight: ------------------->
 
-.DrawShipPlayer3
+.cIndex
 
-{
+ EQUB 0
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 for the
- CMP #2                 \ next check
- BEQ dshp1
- JMP dshp3
+                        \ --- End of added code ------------------------------->
 
-.dshp1
+\ ******************************************************************************
+\
+\       Name: vIndex
+\       Type: Variable
+\   Category: Dogfight
+\    Summary: Storage for vector offset
+\
+\ ******************************************************************************
 
-                        \ This is player 2's Cobra
+                        \ --- Mod: Code added for Dogfight: ------------------->
 
- JSR SaveShipData       \ Save current INWK state
+.vIndex
 
-\LDY #NI%-1             \ There are NI% bytes in each ship data block
+ EQUB 0
 
- LDY #26                \ Copy (x, y, z) and orientation vector from player 2
-                        \ Cobra in ship slot #2 to player 1 Cobra in ship slot
-                        \ #12
+                        \ --- End of added code ------------------------------->
 
-.dshp2
+\ ******************************************************************************
+\
+\       Name: TAS4dog
+\       Type: Subroutine
+\   Category: Dogfight
+\    Summary: TAS4 routine updated to point to dogfight coordinates
+\
+\ ******************************************************************************
 
- LDA K%+NI%*2,Y         \ Copy Y-th entry from slot #2 to slot #12
- STA K%+NI%*12,Y
-
- DEY                    \ Decrement the loop counter
-
- BPL dshp2              \ Loop back for the next byte, until we have copied all
-                        \ nine
-
-}
-
- LDA K%+NI%*2+1         \ x_hi with -x_sign
- ORA K%+NI%*2+2
- EOR #%10000000
- STA XX15
-
- LDA K%+NI%*2+4         \ y_hi with -y_sign
- ORA K%+NI%*2+5
- EOR #%10000000
- STA XX15+1
-
- LDA K%+NI%*2+7         \ z_hi with -z_sign
- ORA K%+NI%*2+8
- EOR #%10000000
- STA XX15+2
-
-                        \ ********** X
-
- LDY #22                \ Call TAS4 to calculate:
- JSR TAS4dog            \
-                        \   (A X) = sidev . XX15
-
- ASL A                  \ Extract sign
- PHP
- CLC
- ROR A
-
- STX T                  \ Scale
- ASL T
- ROL A
- ASL T
- ROL A
-
- STA K%+NI%*12+1        \ Store x_hi
-
- LDA T
- STA K%+NI%*12+0        \ Store x_lo
-
- PLP                    \ Store x_sign
- LDA #0
- ROR A
- STA K%+NI%*12+2
-
-                        \ ********** Y
-
- LDY #16                \ Call TAS4 to calculate:
- JSR TAS4dog            \
-                        \   (A X) = roofv . XX15
-
- ASL A                  \ Extract sign
- PHP
- CLC
- ROR A
-
- STX T                  \ Scale
- ASL T
- ROL A
- ASL T
- ROL A
-
- STA K%+NI%*12+4        \ Store y_hi
-
- LDA T
- STA K%+NI%*12+3        \ Store y_lo
-
- PLP                    \ Store y_sign
- LDA #0
- ROR A
- STA K%+NI%*12+5
-
-                        \ ********** Z
-
- LDY #10                \ Call TAS4 to calculate:
- JSR TAS4dog            \
-                        \   (A X) = nosev . XX15
-
- ASL A                  \ Extract sign
- PHP
- CLC
- ROR A
-
- STX T
- ASL T
- ROL A
- ASL T
- ROL A
-
- STA K%+NI%*12+7        \ Store z_hi
-
- LDA T
- STA K%+NI%*12+6        \ Store z_lo
-
- PLP                    \ Store z_sign
- LDA #0
- ROR A
- STA K%+NI%*12+8
-
- JMP endcalc
+                        \ --- Mod: Code added for Dogfight: ------------------->
 
 .TAS4dog
 
@@ -55873,6 +55774,8 @@ ENDMACRO
                         \             vect_x * XX15
                         \
                         \ and return from the subroutine using a tail call
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
