@@ -23445,7 +23445,8 @@ ENDIF
  LDA #player2Ship       \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
- STZ K%+NI%*12+31       \ Reset "on-screen" state for player 2 ship in slot #12
+ STZ player1Visible     \ Reset "on-screen" state for player 1's ship in player
+                        \ 2's view
  
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
@@ -54953,6 +54954,27 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 
  LDY #v1                \ First do nosev_x * x, so call Multiply32 to calculate:
  LDX #c1                \
+
+IF c = 6
+
+ STZ &8403
+
+ LDA INWK+1,Y
+ STA &8404
+
+ STZ &8405
+
+ LDA INWK+0,X
+ STA &8406
+ LDA INWK+1,X
+ STA &8407
+ LDA INWK+2,X
+ STA &8408
+
+ STZ &8409
+
+ENDIF
+
  JSR Multiply32         \   K(3 2 1 0) = nosev_x * x
                         \
                         \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
@@ -54964,8 +54986,39 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  LDA K+3
  STA XX12+2
 
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL over1
+ INC XX12
+ BNE over1
+ INC XX12+1
+ BNE over1
+ INC XX12+2
+
+.over1
+
  LDY #v2                \ Next do nosev_y * y, so call Multiply32 to calculate:
  LDX #c2                \
+
+IF c = 6
+
+ STZ &8413
+
+ LDA INWK+1,Y
+ STA &8414
+
+ STZ &8415
+
+ LDA INWK+0,X
+ STA &8416
+ LDA INWK+1,X
+ STA &8417
+ LDA INWK+2,X
+ STA &8418
+
+ STZ &8419
+
+ENDIF
+
  JSR Multiply32         \   K(3 2 1 0) = nosev_y * y
                         \
                         \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
@@ -54977,19 +55030,96 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  LDA K+3
  STA XX12+5
 
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL over2
+ INC XX12+3
+ BNE over2
+ INC XX12+4
+ BNE over2
+ INC XX12+5
+
+.over2
+
  LDY #v3                \ Then do nosev_z * z, so call Multiply32 to calculate:
  LDX #c3                \
+
+IF c = 6
+
+ STZ &8423
+
+ LDA INWK+1,Y
+ STA &8424
+
+ STZ &8425
+
+ LDA INWK+0,X
+ STA &8426
+ LDA INWK+1,X
+ STA &8427
+ LDA INWK+2,X
+ STA &8428
+
+ STZ &8429
+
+ENDIF
+
  JSR Multiply32         \   K(3 2 1 0) = nosev_z * z
                         \
                         \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL over3
+ INC K+1
+ BNE over3
+ INC K+2
+ BNE over3
+ INC K+3
+
+.over3
 
                         \ By this point we have:
                         \
                         \   XX12(2 1 0) = nosev_x * x
                         \   XX12(5 4 3) = nosev_y * y
-                        \   K(3 2 1 0)  = nosev_z * z
+                        \   K(3 2 1)    = nosev_z * z
                         \
                         \ So now we need to add them all together
+
+\ DEBUG CODE
+
+\ COPY three additions for z_ to 
+
+IF c = 6
+
+ LDA XX12
+ STA &8400
+ LDA XX12+1
+ STA &8401
+ LDA XX12+2
+ STA &8402
+
+ LDA XX12+3
+ STA &8410
+ LDA XX12+4
+ STA &8411
+ LDA XX12+5
+ STA &8412
+
+ LDA K+1
+ STA &8420
+ LDA K+2
+ STA &8421
+ LDA K+3
+ STA &8422
+
+ENDIF
+
+
+\ DEBUG CODE
+
+
+
+
 
  LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
  STA XX15+1             \                 = nosev_x * x
@@ -55023,27 +55153,32 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
                         \            = (nosev_z * z) + (nosev_x * x)
                         \              + (nosev_y * y)
 
-\LDA P                  \ Set player 2's z-coordinate to the result
-\STA INWK+c
-\LDA P+1
-\STA INWK+c+1
-\LDA P+2
-\STA INWK+c+2
-
  JSR DivideBy96         \ Calculate:
                         \
                         \   K(3 2 1 0) = P(2 1 0) / 96
 
- LDA K+1                \ Set player 2's z-coordinate to the result
- STA INWK+c
+ LDA K+3                \ Extract the sign from K+3 to put into K+2
+ AND #%10000000
+ STA T
+
+ LDA K                  \ Set player 2's z-coordinate to the result in K(2 1 0)
+ STA newCoords+c
  LDA K+1
- STA INWK+c+1
- LDA K+3
- STA INWK+c+2
+ STA newCoords+c+1
+ LDA K+2
+ AND #%01111111
+ ORA T
+ STA newCoords+c+2
 
 ENDMACRO
 
                         \ --- End of added code ------------------------------->
+
+.newCoords
+
+ EQUB 0, 0, 0
+ EQUB 0, 0, 0
+ EQUB 0, 0, 0
 
 \ ******************************************************************************
 \
@@ -55067,7 +55202,7 @@ ENDMACRO
 
                         \ This is player 2's ship
 
- JSR TIDY               \ Tidy orientation vectors for slot #2 so we know the
+\JSR TIDY               \ Tidy orientation vectors for slot #2 so we know the
                         \ low bytes of the vectors are all zero
 
  JSR SaveShipData       \ Save current INWK state for slot #2 so we can retrieve
@@ -55192,6 +55327,25 @@ ELIF TRUE \ 24-bit
 
  ROTATE_COORDINATE_24 6, 9, 0, 11, 3, 13, 6     \ Step 2: z-coordinate
 
+ LDA newCoords
+ STA INWK
+ LDA newCoords+1
+ STA INWK+1
+ LDA newCoords+2
+ STA INWK+2
+ LDA newCoords+3
+ STA INWK+3
+ LDA newCoords+4
+ STA INWK+4
+ LDA newCoords+5
+ STA INWK+5
+ LDA newCoords+6
+ STA INWK+6
+ LDA newCoords+7
+ STA INWK+7
+ LDA newCoords+8
+ STA INWK+8
+
 ELSE \ Fixed in front of us
 
  LDA #0                 \ x = 0
@@ -55265,25 +55419,25 @@ ENDIF
 
 \ END CALCULATION
 
+ LDX #12                \ Copy INWK to ship 12 for debug purposes only
+ JSR GINF
+ JSR STORE
+ LDX #2
+ JSR GINF
+
 .endcalc
 
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
-
-\LDA K%+NI%*2+33        \ Low heap byte
-\STA K%+NI%*12+33
 
  LDA INWK+34            \ High heap byte (&2000 below ship #2)
  SEC
  SBC #&20
  STA INWK+34
 
-\STZ K%+NI%*12+8        \ Clear exploding state for now
+\STZ INWK+8             \ Clear exploding state
 
-\STZ K%+NI%*12+36       \ Clear scooped state for now
-
-\LDX #12                \ Get ship data into INWK
-\JSR GetShipDataToINWK
+\STZ INWK+36            \ Clear scooped state
 
  SEC                    \ Configure drawing for player 2
  ROR playerScreen
@@ -55296,13 +55450,13 @@ ENDIF
  LDA #player1Ship       \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
 
- LDA K%+NI%*12+31       \ Copy "on-screen" state from slot #12 to INWK
+ LDA player1Visible     \ Copy "on-screen" state from slot #12 to INWK
  STA INWK+31
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
  LDA INWK+31            \ Copy "on-screen" state from INWK to player 2 ship
- STA K%+NI%*12+31
+ STA player1Visible
 
  STZ playerScreen       \ Back to drawing the view for player 1
 
@@ -55507,7 +55661,16 @@ ENDIF
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
                         \            = (x_sign x_hi x_lo) * sidev_x_hi
 
+ LDA K+2
+ AND #%10000000
+ BNE trap1
+
  RTS                    \ Return from the subroutine
+
+.trap1
+
+ RTS                    \ Return from the subroutine
+
 
                         \ --- End of added code ------------------------------->
 
@@ -55561,6 +55724,8 @@ ENDIF
  BPL adds1
 
                         \ Addition has overflowed or affected the sign bit
+
+.trap2
 
  LDA #%11111111         \ Set P(1 0) to all set bits
  STA P
@@ -55670,8 +55835,14 @@ ENDIF
 
  STA P+2                \ Store sign byte of addition, so result is in P(2 1 0)
 
+ BCC trap3
+
  RTS                    \ Return from the subroutine
- 
+
+.trap3
+
+ RTS
+
 .adds4
 
                         \ If we get here then |K(3 2 1)| < |XX15(3 2 1)|, so we
@@ -55708,7 +55879,13 @@ ENDIF
 
  STA P+2                \ Store sign byte of addition, so result is in P(2 1 0)
 
+ BCC trap4
+
  RTS                    \ Return from the subroutine
+
+.trap4
+
+ RTS
 
 
                         \ --- End of added code ------------------------------->
@@ -55885,6 +56062,23 @@ ENDIF
 .storeINWK
 
  SKIP NI%
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: player1OnScreen
+\       Type: Variable
+\   Category: Dogfight
+\    Summary: Storage for player 1 on-screen byte in player 2's view
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+.player1Visible
+
+ EQUB 0
 
                         \ --- End of added code ------------------------------->
 
