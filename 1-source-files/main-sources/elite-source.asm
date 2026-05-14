@@ -42407,10 +42407,16 @@ ENDIF
                         \
                         \ and so on
 
- JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
-                        \ prevent the ship from getting elongated and out of
-                        \ shape due to the imprecise nature of trigonometry
-                        \ in assembly language
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
+
+                        \ --- And replaced by: -------------------------------->
+
+ NOP:NOP:NOP            \ Still need to run TIDY, but make it rarer (maybe check
+                        \ for ship being not on-screen first
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \

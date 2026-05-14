@@ -16701,7 +16701,9 @@ Saving file '3-assembled-output/ELTG.bin'
      68D1   45 83      EOR &83
      68D3   29 0F      AND #&0F
      68D5   D0 03      BNE &68DA
-     68D7   20 37 59   JSR &5937
+     68D7   EA         NOP
+     68D8   EA         NOP
+     68D9   EA         NOP
 .MV3
      68DA   A6 8B      LDX &8B
      68DC   10 03      BPL &68E1
