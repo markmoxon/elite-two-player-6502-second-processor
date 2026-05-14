@@ -54953,46 +54953,46 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 
  LDY #v1                \ First do nosev_x * x, so call Multiply32 to calculate:
  LDX #c1                \
- JSR Multiply32         \   K(3 2 1 0) = nosev_x * x / 96
+ JSR Multiply32         \   K(3 2 1 0) = nosev_x * x
                         \
-                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo) / 96
+                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
 
  LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
  STA XX12               \ byte, so:
  LDA K+2                \
- STA XX12+1             \   XX12(2 1 0) = nosev_x * x / 96
+ STA XX12+1             \   XX12(2 1 0) = nosev_x * x
  LDA K+3
  STA XX12+2
 
  LDY #v2                \ Next do nosev_y * y, so call Multiply32 to calculate:
  LDX #c2                \
- JSR Multiply32         \   K(3 2 1 0) = nosev_y * y / 96
+ JSR Multiply32         \   K(3 2 1 0) = nosev_y * y
                         \
-                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo) / 96
+                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
 
  LDA K+1                \ Copy result from K(3 2 1) to XX12(5 4 3), ignoring low
  STA XX12+3             \ byte, so:
  LDA K+2                \
- STA XX12+4             \   XX12(5 4 3) = nosev_y * y / 96
+ STA XX12+4             \   XX12(5 4 3) = nosev_y * y
  LDA K+3
  STA XX12+5
 
  LDY #v3                \ Then do nosev_z * z, so call Multiply32 to calculate:
  LDX #c3                \
- JSR Multiply32         \   K(3 2 1 0) = nosev_z * z / 96
+ JSR Multiply32         \   K(3 2 1 0) = nosev_z * z
                         \
-                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo) / 96
+                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
 
                         \ By this point we have:
                         \
-                        \   XX12(2 1 0) = nosev_x * x / 96
-                        \   XX12(5 4 3) = nosev_y * y / 96
-                        \   K(3 2 1 0)  = nosev_z * z / 96
+                        \   XX12(2 1 0) = nosev_x * x
+                        \   XX12(5 4 3) = nosev_y * y
+                        \   K(3 2 1 0)  = nosev_z * z
                         \
                         \ So now we need to add them all together
 
  LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
- STA XX15+1             \                 = nosev_x * x / 96
+ STA XX15+1             \                 = nosev_x * x
  LDA XX12+1
  STA XX15+2
  LDA XX12+2
@@ -55001,17 +55001,17 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  JSR Add32              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
-                        \            = (nosev_z * z / 96) + (nosev_x * x / 96)
+                        \            = (nosev_z * z) + (nosev_x * x)
 
  LDA XX12+3             \ Set XX15(3 2 1) = XX12(5 4 3)
- STA XX15+1             \                 = nosev_y * y / 96
+ STA XX15+1             \                 = nosev_y * y
  LDA XX12+4
  STA XX15+2
  LDA XX12+5
  STA XX15+3
 
  LDA P                  \ Set K(3 2 1) = P(2 1 0)
- STA K+1                \              = (nosev_z * z / 96) + (nosev_x * x / 96)
+ STA K+1                \              = (nosev_z * z) + (nosev_x * x)
  LDA P+1
  STA K+2
  LDA P+2
@@ -55020,14 +55020,25 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  JSR Add32              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
-                        \            = (nosev_z * z / 96) + (nosev_x * x / 96)
-                        \              + (nosev_y * y / 96)
+                        \            = (nosev_z * z) + (nosev_x * x)
+                        \              + (nosev_y * y)
 
- LDA P                  \ Set player 2's z-coordinate to the result
+\LDA P                  \ Set player 2's z-coordinate to the result
+\STA INWK+c
+\LDA P+1
+\STA INWK+c+1
+\LDA P+2
+\STA INWK+c+2
+
+ JSR DivideBy96         \ Calculate:
+                        \
+                        \   K(3 2 1 0) = P(2 1 0) / 96
+
+ LDA K+1                \ Set player 2's z-coordinate to the result
  STA INWK+c
- LDA P+1
+ LDA K+1
  STA INWK+c+1
- LDA P+2
+ LDA K+3
  STA INWK+c+2
 
 ENDMACRO
@@ -55118,8 +55129,26 @@ ENDIF
                         \       + (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
                         \       + (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
                         \
-                        \ And divide each coordinate by 96 as the unit vector is
-                        \ represented by (0 96 0)
+                        \ And divide each coordinate by (0 96 0) as that's how
+                        \ the unit vector is represented
+                        \
+                        \ Though because we do a TIDY before the calculation, we
+                        \ know the low bytes of the orientation vectors are all
+                        \ zero, so we can simplify the calculation as follows:
+                        \
+                        \   x =   sidev_x_hi * (x_sign x_hi x_lo)
+                        \       + sidev_y_hi * (y_sign y_hi y_lo)
+                        \       + sidev_z_hi * (z_sign z_hi z_lo)
+                        \
+                        \   y =   roofv_x_hi * (x_sign x_hi x_lo)
+                        \       + roofv_y_hi * (y_sign y_hi y_lo)
+                        \       + roofv_z_hi * (z_sign z_hi z_lo)
+                        \
+                        \   z =   nosev_x_hi * (x_sign x_hi x_lo)
+                        \       + nosev_y_hi * (y_sign y_hi y_lo)
+                        \       + nosev_z_hi * (z_sign z_hi z_lo)
+                        \
+                        \ And then divide the result by 96
 
                         \ Step 1: negate [x y z]
 
@@ -55155,7 +55184,7 @@ IF FALSE \ 8-bit
 
  ROTATE_COORDINATE_8 10, 6      \ Step 2: z-coordinate
 
-ELIF FALSE \ 24-bit
+ELIF TRUE \ 24-bit
 
  ROTATE_COORDINATE_24 0, 21, 0, 23, 3, 25, 6    \ Step 2: x-coordinate
 
@@ -55340,7 +55369,7 @@ ENDIF
                         \
                         \ for example
 
-.Multiply32
+\.Multiply32
 
                         \ We do the multiplication like this:
                         \
@@ -55406,6 +55435,84 @@ ENDIF
  RTS                    \ Return from the subroutine
 
                         \ --- End of added code ------------------------------->
+
+
+\ ******************************************************************************
+\
+\       Name: Multiply8By24
+\       Type: Subroutine
+\   Category: Dogfight
+\    Summary: xxx
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Dogfight: ------------------->
+
+                        \ X = The coordinate to multiply:
+                        \
+                        \   * If X = 0, calculate x
+                        \
+                        \   * If X = 3, calculate y
+                        \
+                        \   * If X = 6, calculate z
+                        \
+                        \ Y = The orientation vector to multiply:
+                        \
+                        \   * If Y = 9,  calculate nosev_x
+                        \            11, calculate nosev_y
+                        \            13, calculate nosev_z
+                        \
+                        \   * If Y = 15, calculate roofv_x
+                        \            17, calculate roofv_y
+                        \            19, calculate roofv_z
+                        \
+                        \   * If Y = 21, calculate sidev_x
+                        \            23, calculate sidev_y
+                        \            25, calculate sidev_z
+                        \
+                        \ Calculate:
+                        \
+                        \   K(3 2 1 0) = orientation vector * coordinate
+                        \
+                        \ So if X = 0 and Y = 9, then we set K(3 2 1 0) to:
+                        \
+                        \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
+                        \
+                        \ for example
+
+.Multiply8By24
+
+.Multiply32
+
+                        \ We know the low byte of the orientation vector is zero
+                        \ as we just did a TIDY, so we can do the multiplication
+                        \ like this:
+                        \
+                        \     (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
+                        \
+                        \   = sidev_x_hi * (x_sign x_hi x_lo) << 8
+                        \
+                        \ We know the low byte of the result will be zero, so we
+                        \ can just discard it
+
+ LDA INWK+1,Y           \ Q = sidev_x_hi, which includes the sign bit
+ STA Q
+
+ LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
+ STA P
+ LDA INWK+1,X
+ STA P+1
+ LDA INWK+2,X
+
+ JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
+                        \            = (x_sign x_hi x_lo) * sidev_x_hi
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+
+
 
 \ ******************************************************************************
 \
@@ -55619,7 +55726,7 @@ ENDIF
 
 \ Hack to remove division
 
-.DivideBy96
+\.DivideBy96
 
  LDA P+2                \ Extract sign
  AND #%10000000
@@ -55650,6 +55757,8 @@ ENDIF
  STA K+3
 
  RTS
+
+.DivideBy96
 
                         \ Calculate:
                         \
