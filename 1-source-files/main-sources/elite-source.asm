@@ -23445,6 +23445,8 @@ ENDIF
  LDA #player2Ship       \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
+ STZ K%+NI%*12+31       \ Reset "on-screen" state for player 2 ship in slot #12
+ 
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
                         \ --- End of added code ------------------------------->
@@ -37039,9 +37041,18 @@ ENDMACRO
  LDA #0                 \ Set A = 0 so we can clear the low bytes of the
                         \ orientation vectors
 
- LDX #14                \ We want to clear the low bytes, so start from sidev_y
-                        \ at byte #9+14 (we clear all except sidev_z_lo, though
-                        \ I suspect this is in error and that X should be 16)
+                        \ --- Mod: Code removed for Dogfight: ----------------->
+
+\LDX #14                \ We want to clear the low bytes, so start from sidev_y
+\                       \ at byte #9+14 (we clear all except sidev_z_lo, though
+\                       \ I suspect this is in error and that X should be 16)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #16                \ We want to clear the low bytes, so start from sidev_y
+                        \ at byte #9+14
+
+                        \ --- End of replacement ------------------------------>
 
 .TIL1
 
@@ -42377,8 +42388,8 @@ ENDIF
 
  EOR XSAV               \ Fetch the slot number of the ship we are moving, EOR
  AND #15                \ with the loop counter and apply mod 15 to the result.
-\BNE MV3                \ The result will be zero when "counter mod 15" matches
-NOP:NOP                 \ the slot number, so this makes sure we call TIDY 12
+ BNE MV3                \ The result will be zero when "counter mod 15" matches
+                        \ the slot number, so this makes sure we call TIDY 12
                         \ times every 16 main loop iterations, like this:
                         \
                         \   Iteration 0, tidy the ship in slot 0
@@ -54904,13 +54915,13 @@ MACRO ROTATE_COORDINATE_8 v, c
  ROL A                  \ Add sign and store x_sign
  PLP
  ROR A
- STA K%+NI%*12+c+2
+ STA INWK+c+2
 
  LDA S                  \ Store x_hi
- STA K%+NI%*12+c+1
+ STA INWK+c+1
 
- LDA T
- STA K%+NI%*12+c        \ Store x_lo
+ LDA T                  \ Store x_lo
+ STA INWK+c
 
 ENDMACRO
 
@@ -55013,11 +55024,11 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
                         \              + (nosev_y * y / 96)
 
  LDA P                  \ Set player 2's z-coordinate to the result
- STA K%+NI%*12+c
+ STA INWK+c
  LDA P+1
- STA K%+NI%*12+c+1
+ STA INWK+c+1
  LDA P+2
- STA K%+NI%*12+c+2
+ STA INWK+c+2
 
 ENDMACRO
 
@@ -55043,9 +55054,15 @@ ENDMACRO
 
 .dshp1
 
-                        \ This is player 2's Cobra
+                        \ This is player 2's ship
 
- JSR SaveShipData       \ Save current INWK state
+ JSR TIDY               \ Tidy orientation vectors for slot #2 so we know the
+                        \ low bytes of the vectors are all zero
+
+ JSR SaveShipData       \ Save current INWK state for slot #2 so we can retrieve
+                        \ it later
+
+IF FALSE
 
 \LDY #NI%-1             \ There are NI% bytes in each ship data block
 
@@ -55061,6 +55078,8 @@ ENDMACRO
 
  BPL dshp2              \ Loop back for the next byte, until we have copied all
                         \ nine
+
+ENDIF
 
 \ DO CALCULATION
 
@@ -55104,30 +55123,30 @@ ENDMACRO
 
                         \ Step 1: negate [x y z]
 
- LDA K%+NI%*12+2        \ Negate x_sign
+ LDA INWK+2             \ Negate x_sign
  EOR #%10000000
- STA K%+NI%*12+2
+ STA INWK+2
 
- LDA K%+NI%*12+5        \ Negate y_sign
+ LDA INWK+5             \ Negate y_sign
  EOR #%10000000
- STA K%+NI%*12+5
+ STA INWK+5
 
- LDA K%+NI%*12+8        \ Negate z_sign
+ LDA INWK+8             \ Negate z_sign
  EOR #%10000000
- STA K%+NI%*12+8
+ STA INWK+8
 
-IF FALSE
+IF FALSE \ 8-bit
 
- LDA K%+NI%*12+1        \ x_hi with -x_sign
- ORA K%+NI%*12+2
+ LDA INWK+1             \ x_hi with -x_sign
+ ORA INWK+2
  STA XX15
 
- LDA K%+NI%*12+4        \ y_hi with -y_sign
- ORA K%+NI%*12+5
+ LDA INWK+4             \ y_hi with -y_sign
+ ORA INWK+5
  STA XX15+1
 
- LDA K%+NI%*12+7        \ z_hi with -z_sign
- ORA K%+NI%*12+8
+ LDA INWK+7             \ z_hi with -z_sign
+ ORA INWK+8
  STA XX15+2
 
  ROTATE_COORDINATE_8 22, 0      \ Step 2: x-coordinate
@@ -55136,7 +55155,7 @@ IF FALSE
 
  ROTATE_COORDINATE_8 10, 6      \ Step 2: z-coordinate
 
-ELSE
+ELIF FALSE \ 24-bit
 
  ROTATE_COORDINATE_24 0, 21, 0, 23, 3, 25, 6    \ Step 2: x-coordinate
 
@@ -55144,8 +55163,77 @@ ELSE
 
  ROTATE_COORDINATE_24 6, 9, 0, 11, 3, 13, 6     \ Step 2: z-coordinate
 
+ELSE \ Fixed in front of us
+
+ LDA #0                 \ x = 0
+ STA INWK
+ STA INWK+1
+ STA INWK+2
+
+ STA INWK+3             \ y = 0
+ STA INWK+4
+ STA INWK+5
+
+ STA INWK+6             \ z_hi = 4
+ STA INWK+8
+ LDA #4
+ STA INWK+7
+
 ENDIF
- 
+
+IF TRUE
+
+                        \ Step 3: Transpose orientation matrix
+
+\ Transpose matrix to rotate player 1 correctly for player 2 view
+\ Matrix is in INWK +9 through +26
+\
+\ Stored as lo/hi
+\
+\ sidev_x sidev_y sidev_z     21/22     23/24     25/26
+\ roofv_x roofv_y roofv_z  =  15/16     17/18     19/20
+\ nosev_x nosev_y nosev_z      9/10     11/12     13/14
+\
+\ sidev_x sidev_y sidev_z      sidev_x roofv_x nosev_x
+\ roofv_x roofv_y roofv_z  ->  sidev_y roofv_y nosev_y
+\ nosev_x nosev_y nosev_z      sidev_z roofv_z nosev_z
+\
+\ Swap nosev_x and sidev_z  ->   9/10 and 25/26
+\ Swap nosev_y and roofv_z  ->  11/12 and 19/20
+\ Swap roofv_x and sidev_y  ->  15/16 and 23/24
+
+ LDA INWK+9        \ nosev_x_lo
+ LDX INWK+25       \ sidev_z_lo
+ STA INWK+25
+ STX INWK+9
+
+ LDA INWK+10       \ nosev_x_hi
+ LDX INWK+26       \ sidev_z_hi
+ STA INWK+26
+ STX INWK+10
+
+ LDA INWK+11       \ nosev_y_lo
+ LDX INWK+19       \ roofv_z_lo
+ STA INWK+19
+ STX INWK+11
+
+ LDA INWK+12       \ nosev_y_hi
+ LDX INWK+20       \ roofv_z_hi
+ STA INWK+20
+ STX INWK+12
+
+ LDA INWK+15       \ roofv_x_lo
+ LDX INWK+23       \ sidev_y_lo
+ STA INWK+23
+ STX INWK+15
+
+ LDA INWK+16       \ roofv_x_hi
+ LDX INWK+24       \ sidev_y_hi
+ STA INWK+24
+ STX INWK+16
+
+ENDIF
+
 \ END CALCULATION
 
 .endcalc
@@ -55153,20 +55241,20 @@ ENDIF
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
 
- LDA K%+NI%*2+33        \ Low heap byte
- STA K%+NI%*12+33
+\LDA K%+NI%*2+33        \ Low heap byte
+\STA K%+NI%*12+33
 
- LDA K%+NI%*2+34        \ High heap byte (&2000 below ship #2)
+ LDA INWK+34            \ High heap byte (&2000 below ship #2)
  SEC
  SBC #&20
- STA K%+NI%*12+34
+ STA INWK+34
 
 \STZ K%+NI%*12+8        \ Clear exploding state for now
 
 \STZ K%+NI%*12+36       \ Clear scooped state for now
 
- LDX #12                \ Get ship data into INWK
- JSR GetShipDataToINWK
+\LDX #12                \ Get ship data into INWK
+\JSR GetShipDataToINWK
 
  SEC                    \ Configure drawing for player 2
  ROR playerScreen
@@ -55178,6 +55266,9 @@ ENDIF
 
  LDA #player1Ship       \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
+
+ LDA K%+NI%*12+31       \ Copy "on-screen" state from slot #12 to INWK
+ STA INWK+31
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
@@ -55262,15 +55353,15 @@ ENDIF
 
  STY vIndex             \ Store orientation vector index
 
- LDA K%+NI%*12,Y        \ Q = sidev_x_lo, shifted right to clear the sign bit
+ LDA INWK,Y             \ Q = sidev_x_lo, shifted right to clear the sign bit
  LSR A                  \ (we discard the lowest bit)
  STA Q
 
- LDA K%+NI%*12+0,X      \ (A P+1 P) = (x_sign x_hi x_lo)
+ LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
  STA P
- LDA K%+NI%*12+1,X
+ LDA INWK+1,X
  STA P+1
- LDA K%+NI%*12+2,X
+ LDA INWK+2,X
 
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
                         \            = (x_sign x_hi x_lo) * sidev_x_lo
@@ -55288,18 +55379,18 @@ ENDIF
  
  LDY vIndex             \ Retrieve orientation vector index
 
- LDA K%+NI%*12+1,Y      \ Q = sidev_x_hi, which includes the sign bit
+ LDA INWK+1,Y           \ Q = sidev_x_hi, which includes the sign bit
  STA Q
 
  LDX cIndex             \ Retrieve coordinate index
 
- LDA K%+NI%*12+0,X      \ (A P+1 P) = (x_sign x_hi x_lo)
+ LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
  STA P
- LDA K%+NI%*12+1,X
+ LDA INWK+1,X
  STA P+1
- LDA K%+NI%*12+2,X
+ LDA INWK+2,X
 
-\LDA K%+NI%*12+2,X      \ (A P+1 P) = (x_sign x_hi x_lo)
+\LDA INWK+2,X           \ (A P+1 P) = (x_sign x_hi x_lo)
 
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
                         \            = (x_sign x_hi x_lo) * sidev_x_hi
@@ -55751,7 +55842,7 @@ ENDIF
                         \
                         \   i.e. [vect_x vect_y vect_z] . [x y z]
 
- LDX K%+NI%*12,Y        \ Set Q = the Y-th byte of K%+NI%, i.e. vect_x from the
+ LDX INWK,Y             \ Set Q = the Y-th byte of K%+NI%, i.e. vect_x from the
  STX Q                  \ second ship data block at K%
 
  LDA XX15               \ Set A = XX15
@@ -55759,7 +55850,7 @@ ENDIF
  JSR MULT12             \ Set (S R) = Q * A
                         \           = vect_x * XX15
 
- LDX K%+NI%*12+2,Y      \ Set Q = the Y+2-th byte of K%+NI%, i.e. vect_y
+ LDX INWK+2,Y           \ Set Q = the Y+2-th byte of K%+NI%, i.e. vect_y
  STX Q
 
  LDA XX15+1             \ Set A = XX15+1
@@ -55770,7 +55861,7 @@ ENDIF
  STA S                  \ Set (S R) = (A X)
  STX R
 
- LDX K%+NI%*12+4,Y      \ Set Q = the Y+4-th byte of K%+NI%, i.e. vect_z
+ LDX INWK+4,Y           \ Set Q = the Y+4-th byte of K%+NI%, i.e. vect_z
  STX Q
 
  LDA XX15+2             \ Set A = XX15+2
