@@ -77,7 +77,7 @@ endif
 
 variant-number=2
 folder=/sng45
-suffix=-dogfight
+suffix=-two-player-6502sp
 boot=-opt 2
 
 .PHONY:all

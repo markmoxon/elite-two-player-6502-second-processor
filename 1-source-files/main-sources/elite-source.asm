@@ -88,7 +88,7 @@ ENDIF
  NOST = 18              \ The number of stardust particles in normal space (this
                         \ goes down to 3 in witchspace)
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \NOSH = 20              \ The maximum number of ships in our local bubble of
 \                       \ universe
@@ -151,7 +151,7 @@ ENDIF
 
  DOD = 34               \ Ship type for a Dodecahedron ("Dodo") space station
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  player1Ship = CYL      \ Ship type for player 1
 
@@ -3599,7 +3599,7 @@ ENDIF
                         \ the scroll text lines onto the Star Wars perspective
                         \ view and then onto the screen
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .splitScreen
 
@@ -3655,7 +3655,7 @@ ENDIF
 
  SKIP NOSH * NI%        \ Ship data blocks and ship line heap
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .K2%
 
@@ -4805,7 +4805,7 @@ ENDIF
  DEC DELTA              \ The "slow down" key is being pressed, so we decrement
                         \ the current ship speed in DELTA
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \BNE MA4                \ If the speed is still greater than zero, jump to MA4
 
@@ -5695,7 +5695,7 @@ ENDIF
 
 .MA8
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  STZ playerScreen       \ Draw ship for player 1
 
@@ -5703,7 +5703,7 @@ ENDIF
 
  JSR LL9                \ Call LL9 to draw the ship we're processing on-screen
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
 
@@ -7890,7 +7890,7 @@ ENDIF
 
  NEXT
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  FOR I%, NOSH+1, NOSH*2
 
@@ -8844,7 +8844,7 @@ ENDIF
  LDA Y1                 \ Fetch the y-coordinate offset into A and clear the
  AND #%01111111         \ sign bit, so A = |Y1|
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \CMP #96                \ If |Y1| >= 96 then it's off the screen (as 96 is half
 \BCS PX4                \ the screen height), so return from the subroutine (as
@@ -8868,7 +8868,7 @@ ENDIF
                         \ it to a positive number, i.e. A is now |Y1|
 
 .PX2
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \STA T                  \ Set A = #Y + 1 - Y1
 \LDA #Y+1               \
@@ -9872,7 +9872,7 @@ ENDIF
  STA SY,Y               \ the new x-coordinate is in (y_hi y_lo) and the high
  STA Y1                 \ byte is in Y1
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \AND #%01111111         \ If |y_hi| >= 120 then jump to KILL1 to recycle this
 \CMP #120               \ particle, as it's gone off the top or bottom of the
@@ -9917,7 +9917,7 @@ ENDIF
 
  JSR DORND              \ Set A and X to random numbers
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust
 
@@ -18247,7 +18247,7 @@ ENDIF
 
  AND #7                 \ Restrict A to a random value in the range 0 to 7
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \ADC #Y-4               \ Set LASY to four pixels above the centre of the
 \STA LASY               \ screen (#Y), plus our random number, so the laser
@@ -18325,7 +18325,7 @@ ENDIF
  LDA LASY
  STA Y1
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #2*Y-1             \ Set Y2 = 2 * #Y - 1. The constant #Y is 96, the
 \STA Y2                 \ y-coordinate of the mid-point of the space view, so
@@ -18351,7 +18351,7 @@ ENDIF
 
  STY X2                 \ Set X2 = Y
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #2*Y-1             \ Set Y2 = 2 * #Y - 1, the y-coordinate of the bottom
 \STA Y2                 \ pixel row of the space view (as before)
@@ -20410,7 +20410,7 @@ ENDIF
  LDX QQ11               \ A >= 152, so we need to check whether this will fit in
                         \ this view, so fetch the view type
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  BEQ TT87               \ If this is the space view then the y-coordinate is
                         \ fine, so skip to TT87
@@ -23426,7 +23426,7 @@ ENDIF
  JSR TT111              \ Select the system closest to galactic coordinates
                         \ (QQ9, QQ10)
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  JSR SOLAR              \ Halve our legal status, update the missile indicators,
                         \ and set up data blocks and slots for the planet and
@@ -28523,7 +28523,7 @@ ENDIF
                         \ new sun, given that P(2 1) contains the 16-bit maximum
                         \ y-coordinate of the new sun on-screen
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #2*Y-1             \ #Y is the y-coordinate of the centre of the space
 \                       \ view, so this sets Y to the y-coordinate of the bottom
@@ -28562,7 +28562,7 @@ ENDIF
                         \ and the direction in which we need to draw them, both
                         \ from the centre of the new sun
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #2*Y-1             \ Set (A X) = y-coordinate of bottom of screen - K4(1 0)
 \SEC                    \
@@ -28642,7 +28642,7 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDY #2*Y-1             \ Set Y = y-coordinate of the bottom of the screen,
 \                       \ which we use as a counter in the following routine to
@@ -29487,7 +29487,7 @@ ENDIF
  LDA SUNX+1             \ screen
  STA YY+1
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDY #2*Y-1             \ #Y is the y-coordinate of the centre of the space
 \                       \ view, so this sets Y as a counter for the number of
@@ -30977,7 +30977,7 @@ ENDIF
  JSR ZERO               \ Reset the ship slots for the local bubble of universe,
                         \ and various flight and ship status variables
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  STZ splitScreen        \ Turn off split-screen drawing
 
@@ -31037,7 +31037,7 @@ ENDIF
 
 .RES2
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #NOST              \ Reset NOSTM, the number of stardust particles, to the
 \STA NOSTM              \ maximum allowed (18)
@@ -31502,7 +31502,7 @@ ENDIF
 
  DEC MCNT               \ Decrement the main loop counter in MCNT
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \BEQ P%+5               \ If the counter has reached zero, which it will do
 \                       \ every 256 main loops, skip the next JMP instruction
@@ -37042,7 +37042,7 @@ ENDMACRO
  LDA #0                 \ Set A = 0 so we can clear the low bytes of the
                         \ orientation vectors
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDX #14                \ We want to clear the low bytes, so start from sidev_y
 \                       \ at byte #9+14 (we clear all except sidev_z_lo, though
@@ -37504,7 +37504,7 @@ ENDMACRO
 
  LOAD_G% = LOAD% + P% - CODE%
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \IF _MATCH_ORIGINAL_BINARIES
 \
@@ -40764,7 +40764,7 @@ ENDIF
  LDA XX3+1,X            \ Fetch the x_hi coordinate of the edge's end vertex
  STA XX15+5             \ from the XX3 heap into XX15+5
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \JSR LL147              \ Call LL147 to see if the new line segment needs to be
 \                       \ clipped to fit on-screen, returning the clipped line's
@@ -41767,7 +41767,7 @@ ENDIF
 
 .LL145
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  BIT splitScreen        \ Skip if split screen disabled
  BPL LL145a
@@ -42407,7 +42407,7 @@ ENDIF
                         \
                         \ and so on
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
 
@@ -43983,7 +43983,7 @@ ENDIF
 
 .SIGHT
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDY VIEW               \ Fetch the laser power for our new view
 \LDA LASER,Y
@@ -44016,7 +44016,7 @@ ENDIF
  LDA #128               \ Set QQ19 to the x-coordinate of the centre of the
  STA QQ19               \ screen
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #Y-24              \ Set QQ19+1 to the y-coordinate of the centre of the
 \STA QQ19+1             \ screen, minus 24 (because TT15 will add 24 to the
@@ -44138,7 +44138,7 @@ ENDIF
  STZ de                 \ Clear de, the flag that appends " DESTROYED" to the
                         \ end of the next text token, so that it doesn't
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  LDA QQ11               \ If this is a space view, enable split-screen
  BNE clsc1
@@ -44199,7 +44199,7 @@ ENDIF
  LDA #175               \ Print recursive token 15 ("VIEW ")
  JSR TT27
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  BIT splitScreen        \ Skip the following if this is not a split screen space
  BPL tt66               \ view
@@ -50868,7 +50868,7 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code moved for Dogfight: ------------------->
+                        \ --- Mod: Code moved for two-player Elite: ----------->
 
 \.MTIN
 \
@@ -50945,7 +50945,7 @@ ENDIF
                         \ And then we copy the &22 pages of ship blueprints from
                         \ F% + &0400 to D%
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
                         \ And then we copy the &22 pages of ship blueprints from
                         \ F% + &0400 to D%
@@ -50967,7 +50967,7 @@ ENDIF
  LDA #HI(D%)
  STA SC+1
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDX #&22               \ Set X = &22 to act as a counter for copying &22 pages
 
@@ -54888,12 +54888,12 @@ ENDMACRO
 \
 \       Name: ROTATE_COORDINATE_24
 \       Type: Macro
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Rotate a coordinate by an orientation vector (24-bits)
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 
@@ -55038,12 +55038,12 @@ ENDMACRO
 \
 \       Name: DrawShipPlayer2
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Draw a ship in player 2's frame of reference
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .DrawShipPlayer2
 
@@ -55259,13 +55259,13 @@ ENDMACRO
 \
 \       Name: newCoords
 \       Type: Variable
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Storage for the coordinates for player 1's ship in player 2's view
 \             during the calculation
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .newCoords
 
@@ -55279,12 +55279,12 @@ ENDMACRO
 \
 \       Name: Multiply16x24
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
                         \ X = The coordinate to multiply:
                         \
@@ -55391,12 +55391,12 @@ IF FALSE
 \
 \       Name: vIndex
 \       Type: Variable
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Storage for coordinate offset
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .cIndex
 
@@ -55408,12 +55408,12 @@ IF FALSE
 \
 \       Name: vIndex
 \       Type: Variable
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Storage for vector offset
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .vIndex
 
@@ -55427,12 +55427,12 @@ ENDIF
 \
 \       Name: Multiply8x24
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
                         \ X = The coordinate to multiply:
                         \
@@ -55499,12 +55499,12 @@ ENDIF
 \
 \       Name: Add32
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .Add32
 
@@ -55697,12 +55697,12 @@ ENDIF
 \
 \       Name: DivideBy96
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .DivideBy96
 
@@ -55725,12 +55725,12 @@ ENDIF
 \
 \       Name: SaveShipData
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .SaveShipData
 
@@ -55756,12 +55756,12 @@ ENDIF
 \
 \       Name: LoadShipData
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .LoadShipData
 
@@ -55787,12 +55787,12 @@ ENDIF
 \
 \       Name: GetShipDataToINWK
 \       Type: Subroutine
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .GetShipDataToINWK
 
@@ -55821,12 +55821,12 @@ ENDIF
 \
 \       Name: storeINWK
 \       Type: Variable
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: xxx
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .storeINWK
 
@@ -55838,12 +55838,12 @@ ENDIF
 \
 \       Name: player1OnScreen
 \       Type: Variable
-\   Category: Dogfight
+\   Category: Two-player Elite
 \    Summary: Storage for player 1 on-screen byte in player 2's view
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code added for Dogfight: ------------------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .player1Visible
 
@@ -55872,7 +55872,7 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code moved for Dogfight: ------------------->
+                        \ --- Mod: Code moved for two-player Elite: ----------->
 
 .MTIN
 
