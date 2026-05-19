@@ -309,7 +309,7 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code removed for Dogfight: ----------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
 \PRINT "P% = ", ~P%
 \PRINT "S.P.CODE ", ~LOAD%, ~(F% + &0400 + &2200), " ", ~LOAD%, ~LOAD%
