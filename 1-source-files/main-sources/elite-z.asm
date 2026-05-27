@@ -6614,6 +6614,19 @@ ENDMACRO
  LDY #12                \ Store the high byte of the Bitstik rotation value in
  STA (OSSC),Y           \ byte #12 of the block pointed to by OSSC
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX #4                 \ Call OSBYTE with A = 128 to fetch the 16-bit value
+ LDA #128               \ from ADC channel 4 (the joystick 2 Y value),
+ JSR OSBYTE             \ returning the value in (Y X)
+
+ TYA                    \ Copy Y to A, so the result is now in (A X)
+
+ LDY #13                \ Store the high byte of the joystick 2 Y value in
+ STA (OSSC),Y           \ byte #13 of the block pointed to by OSSC
+
+                        \ --- End of added code ------------------------------->
+
  LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
  LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
  STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
@@ -6984,6 +6997,50 @@ ENDMACRO
 
 \ ******************************************************************************
 \
+\       Name: cls1
+\       Type: Subroutine
+\   Category: Drawing the screen
+\    Summary: Clear player 1's view and draw a border box
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.cls1
+
+ JSR ClearPlayer1       \ Call ClearPlayer1 to clear the top part of the screen
+                        \ and draw a border box
+
+ JMP RR4                \ Jump to RR4 to restore X and Y from the stack and A
+                        \ from K3, and return from the subroutine using a tail
+                        \ call
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: cls2
+\       Type: Subroutine
+\   Category: Drawing the screen
+\    Summary: Clear player 2's view and draw a border box
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.cls2
+
+ JSR ClearPlayer2       \ Call ClearPlayer1 to clear the top part of the screen
+                        \ and draw a border box
+
+ JMP RR4                \ Jump to RR4 to restore X and Y from the stack and A
+                        \ from K3, and return from the subroutine using a tail
+                        \ call
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: TT67
 \       Type: Subroutine
 \   Category: Text
@@ -7076,6 +7133,16 @@ ENDMACRO
  CMP #11                \ If this is control code 11 (clear screen), jump to cls
  BEQ cls                \ to clear the top part of the screen, draw a white
                         \ border and return from the subroutine via RR4
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ CMP #14                \ If this is control code 14, jump to cls1 to clear
+ BEQ cls1               \ player 1's view
+
+ CMP #15                \ If this is control code 15, jump to cls1 to clear
+ BEQ cls2               \ player 2's view
+
+                        \ --- End of added code ------------------------------->
 
  CMP #7                 \ If this is not control code 7 (beep), skip the next
  BNE P%+5               \ instruction
@@ -7621,6 +7688,218 @@ ENDMACRO
                         \ used by LOIN will otherwise make them black)
 
  RTS                    \ Return from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: ClearPlayer1
+\       Type: Subroutine
+\   Category: Drawing the screen
+\    Summary: Clear the player 1 part of the screen and draw a border box
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.ClearPlayer1
+
+{
+
+ LDX #&40               \ Set X to point to page &40, which is the start of the
+                        \ screen memory at &4000
+
+.BOL1
+
+ JSR ZES1               \ Call ZES1 to zero-fill the page in X, which will clear
+                        \ half a character row
+
+ INX                    \ Increment X to point to the next page in screen
+                        \ memory
+
+ CPX #&58               \ Loop back to keep clearing character rows until we
+ BNE BOL1               \ have cleared up to &5800, which is where player 2's
+                        \ view starts
+
+ LDA #%00001111         \ Set COL = %00001111 to act as a four-pixel yellow
+ STA COL                \ character byte (i.e. set the line colour to yellow)
+
+ LDY #1                 \ Move the text cursor to row 1
+ STY YC
+
+ LDY #11                \ Move the text cursor to column 11
+ STY XC
+
+ LDX #0                 \ Set X1 = Y1 = Y2 = 0
+ STX X1
+ STX Y1
+ STX Y2
+
+\STX QQ17               \ This instruction is commented out in the original
+                        \ source
+
+ DEX                    \ Set X2 = 255
+ STX X2
+
+ JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2), so that's from
+                        \ (0, 0) to (255, 0), along the very top of the screen
+
+ LDA #2                 \ Set X1 = X2 = 2
+ STA X1
+ STA X2
+
+ JSR BOS2               \ Call BOS2 below, which will call BOS1 twice, and then
+                        \ fall through into BOS2 again, so we effectively do
+                        \ BOS1 four times, decrementing X1 and X2 each time
+                        \ before calling LOIN, so this whole loop-within-a-loop
+                        \ mind-bender ends up drawing these four lines:
+                        \
+                        \   (1, 0)   to (1, 95)
+                        \   (0, 0)   to (0, 95)
+                        \   (255, 0) to (255, 95)
+                        \   (254, 0) to (254, 95)
+                        \
+                        \ So that's a two-pixel wide vertical border along the
+                        \ left edge of the upper part of the screen, and a
+                        \ two-pixel wide vertical border along the right edge
+
+.BOS2
+
+ JSR BOS1               \ Call BOS1 below and then fall through into it, which
+                        \ ends up running BOS1 twice. This is all part of the
+                        \ loop-the-loop border-drawing mind-bender explained
+                        \ above
+
+.BOS1
+
+ LDA #0                 \ Set Y1 = 0
+ STA Y1
+
+ LDA #Y                 \ Set Y2 = 2 * #Y. The constant #Y is 96, the
+ STA Y2                 \ y-coordinate of the mid-point of the space view, so
+                        \ this sets Y2 to 191, the y-coordinate of the bottom
+                        \ pixel row of the space view
+
+ DEC X1                 \ Decrement X1 and X2
+ DEC X2
+
+ JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2)
+
+ LDA #%00001111         \ Set locations &4000 and &41F8 to yellow, as otherwise
+ STA &4000              \ the top-left and top-right corners will be black (as
+ STA &41F8              \ the lines overlap at the corners, and the EOR logic
+                        \ used by LOIN will otherwise make them black)
+
+ RTS                    \ Return from the subroutine
+
+}
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: ClearPlayer2
+\       Type: Subroutine
+\   Category: Drawing the screen
+\    Summary: Clear the player 2 part of the screen and draw a border box
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.ClearPlayer2
+
+{
+
+ LDX #&58               \ Set X to point to page &58, which is the start of the
+                        \ player 2 view in screen memory at &5800
+
+.BOL1
+
+ JSR ZES1               \ Call ZES1 to zero-fill the page in X, which will clear
+                        \ half a character row
+
+ INX                    \ Increment X to point to the next page in screen
+                        \ memory
+
+ CPX #&70               \ Loop back to keep clearing character rows until we
+ BNE BOL1               \ have cleared up to &7000, which is where the dashboard
+                        \ starts
+
+ LDA #%00001111         \ Set COL = %00001111 to act as a four-pixel yellow
+ STA COL                \ character byte (i.e. set the line colour to yellow)
+
+ LDY #13                \ Move the text cursor to row 13
+ STY YC
+
+ LDY #11                \ Move the text cursor to column 11
+ STY XC
+
+ LDX #Y                 \ Set Y1 = Y2 = #Y = 96
+ STX Y1
+ STX Y2
+
+ LDX #0                 \ Set X1 = 0
+ STX X1
+
+\STX QQ17               \ This instruction is commented out in the original
+                        \ source
+
+ DEX                    \ Set X2 = 255
+ STX X2
+
+ JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2), so that's from
+                        \ (0, 0) to (255, 0), along the very top of the screen
+
+ LDA #2                 \ Set X1 = X2 = 2
+ STA X1
+ STA X2
+
+ JSR BOS2               \ Call BOS2 below, which will call BOS1 twice, and then
+                        \ fall through into BOS2 again, so we effectively do
+                        \ BOS1 four times, decrementing X1 and X2 each time
+                        \ before calling LOIN, so this whole loop-within-a-loop
+                        \ mind-bender ends up drawing these four lines:
+                        \
+                        \   (1, 96)   to (1, 191)
+                        \   (0, 96)   to (0, 191)
+                        \   (255, 96) to (255, 191)
+                        \   (254, 96) to (254, 191)
+                        \
+                        \ So that's a two-pixel wide vertical border along the
+                        \ left edge of the upper part of the screen, and a
+                        \ two-pixel wide vertical border along the right edge
+
+.BOS2
+
+ JSR BOS1               \ Call BOS1 below and then fall through into it, which
+                        \ ends up running BOS1 twice. This is all part of the
+                        \ loop-the-loop border-drawing mind-bender explained
+                        \ above
+
+.BOS1
+
+ LDA #Y                 \ Set Y1 = #Y = 96
+ STA Y1
+
+ LDA #2*Y-1             \ Set Y2 = 2 * #Y - 1. The constant #Y is 96, the
+ STA Y2                 \ y-coordinate of the mid-point of the space view, so
+                        \ this sets Y2 to 191, the y-coordinate of the bottom
+                        \ pixel row of the space view
+
+ DEC X1                 \ Decrement X1 and X2
+ DEC X2
+
+ JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2)
+
+ LDA #%00001111         \ Set locations &5800 and &59F8 to yellow, as otherwise
+ STA &5800              \ the top-left and top-right corners will be black (as
+ STA &59F8              \ the lines overlap at the corners, and the EOR logic
+                        \ used by LOIN will otherwise make them black)
+
+ RTS                    \ Return from the subroutine
+
+}
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \

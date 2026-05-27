@@ -93,7 +93,6 @@ ENDIF
 \NOSH = 20              \ The maximum number of ships in our local bubble of
 \                       \ universe
 
-
                         \ --- And replaced by: -------------------------------->
 
  NOSH = 10              \ The maximum number of ships in our local bubble of
@@ -3612,9 +3611,57 @@ ENDIF
 
  SKIP 1                 \ Determines which player to update in the split screen
                         \
-                        \   * Bit 7 clear = player 1 (top)
+                        \   * Bit 7 clear = draw player 1's view (top)
                         \
-                        \   * Bit 7 set = enable split-screen
+                        \   * Bit 7 set =  draw player 2's view (bottom)
+
+.player1Visible
+
+ SKIP 1                 \ Storage for player 1 on-screen byte in player 2's view
+
+.player2View
+
+ SKIP 1                 \ Storage for player 2's VIEW setting
+
+.player2Alpha
+
+ SKIP 1                 \ Storage for player 2's ALPHA setting
+
+.player2Alp1
+
+ SKIP 1                 \ Storage for player 2's ALP1 setting
+
+.player2Alp2
+
+ SKIP 2                 \ Storage for player 2's ALP2 and APL2+1 settings
+
+.player2Beta
+
+ SKIP 1                 \ Storage for player 2's BETA setting
+
+.player2Bet1
+
+ SKIP 1                 \ Storage for player 2's BET1 setting
+
+.player2Bet2
+
+ SKIP 2                 \ Storage for player 2's BET2 and BET2+1 settings
+
+.player2Delta
+
+ SKIP 1                 \ Storage for player 2's DELTA setting
+
+.player2Delt4
+
+ SKIP 2                 \ Storage for player 2's DELT4(1 0) setting
+
+.player2JSTX
+
+ SKIP 1                 \ Player 2's current roll rate
+
+.player2JSTY
+
+ SKIP 1                 \ Player 2's current pitch rate
 
                         \ --- End of added code ------------------------------->
 
@@ -4914,10 +4961,14 @@ ENDIF
 
 .noescp
 
- LDA KY18               \ If "J" is being pressed, keep going, otherwise skip
- BEQ P%+5               \ the next instruction
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR WARP               \ Call the WARP routine to do an in-system jump
+\LDA KY18               \ If "J" is being pressed, keep going, otherwise skip
+\BEQ P%+5               \ the next instruction
+\
+\JSR WARP               \ Call the WARP routine to do an in-system jump
+
+                        \ --- End of removed code ----------------------------->
 
  LDA KY17               \ If "E" is being pressed and we have an E.C.M. fitted,
  AND ECM                \ keep going, otherwise jump down to MA64 to skip the
@@ -8884,6 +8935,11 @@ ENDIF
                         \ centre at y-coordinate Y/2, while a negative Y1 means
                         \ down from the centre
 
+ BIT playerScreen       \ If we are drawing player 2's stars, draw them in the
+ BPL P%+5               \ bottom half of the space view
+ CLC
+ ADC #Y
+
                         \ --- End of replacement ------------------------------>
 
                         \ Fall through into PIXEL to draw the stardust at the
@@ -9515,6 +9571,20 @@ ENDIF
  LDY NOSTM              \ Set Y to the current number of stardust particles, so
                         \ we can use it as a counter through all the stardust
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 2's stars
+ BPL flip1
+
+ TYA                    \ Then use the second half of the table
+ CLC
+ ADC #NOST/2
+ TAY
+
+.flip1
+
+                        \ --- End of added code ------------------------------->
+
 .FLL1
 
  LDX SY,Y               \ Copy the Y-th particle's y-coordinate from SY+Y into X
@@ -9533,11 +9603,36 @@ ENDIF
 
  JSR PIXEL2             \ Draw a stardust particle at (X1,Y1) with distance ZZ
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 2's stars
+ BPL flip2
+
+ DEY                    \ Decrement the counter to point to the next particle of
+                        \ stardust
+
+ CPY #NOST/2            \ Loop back to FLL1 until we have moved all the stardust
+ BNE FLL1               \ particles
+
+ BEQ flip3              \ We are done initialising stars so jump to news3 to
+                        \ keep going (this JMP is effectively a BEQ as we just
+                        \ passed through a BNE)
+
+.flip2
+
+                        \ --- End of added code ------------------------------->
+
  DEY                    \ Decrement the counter to point to the next particle of
                         \ stardust
 
  BNE FLL1               \ Loop back to FLL1 until we have moved all the stardust
                         \ particles
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.flip3
+
+                        \ --- End of added code ------------------------------->
 
  RTS                    \ Return from the subroutine
 
@@ -9556,12 +9651,40 @@ ENDIF
 
 .STARS
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ JSR SaveShipMovement   \ Switch to player 2's movement data
+ JSR GetPlayer2Movement
+
+ SEC                    \ Update player 2 stars
+ ROR playerScreen
+
+ ASL NOSTM              \ Use star data from second half of table
+
+ LDX player2View        \ Fetch player 2's view
+
+ JSR dstr1              \ Update stars
+
+ LSR NOSTM              \ Back to first half of table
+
+ JSR LoadShipMovement   \ Switch to player 1's movement data
+
+ STZ playerScreen       \ Update player 1 stars
+
+                        \ --- End of added code ------------------------------->
+
  LDX VIEW               \ Load the current view into X:
                         \
                         \   0 = front
                         \   1 = rear
                         \   2 = left
                         \   3 = right
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.dstr1
+
+                        \ --- End of added code ------------------------------->
 
  BEQ STARS1             \ If this is view 0, jump to STARS1 to process the
                         \ stardust for the front view
@@ -9898,6 +10021,28 @@ ENDIF
                         \ i.e. draw the newly moved particle at (x_hi, y_hi)
                         \ with distance z_hi
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 1's stars, jump to star1
+ BPL star1
+
+ DEY                    \ Decrement the loop counter to point to the next
+                        \ stardust particle
+
+ CPY #NOST/2            \ Is this the last star for player 2's view?
+
+ BEQ P%+5               \ If we have just done the last particle, skip the next
+                        \ instruction to return from the subroutine
+
+ JMP STL1               \ We have more stardust to process, so jump back up to
+                        \ STL1 for the next particle
+
+ RTS                    \ Return from the subroutine
+
+.star1
+
+                        \ --- End of added code ------------------------------->
+
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
 
@@ -9919,7 +10064,10 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
 
                         \ --- End of added code ------------------------------->
 
@@ -10240,6 +10388,28 @@ ENDIF
                         \ i.e. draw the newly moved particle at (x_hi, y_hi)
                         \ with distance z_hi
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 1's stars, jump to star2
+ BPL star2
+
+ DEY                    \ Decrement the loop counter to point to the next
+                        \ stardust particle
+
+ CPY #NOST/2            \ Is this the last star for player 2's view?
+
+ BEQ P%+5               \ If we have just done the last particle, skip the next
+                        \ instruction to return from the subroutine
+
+ JMP STL6               \ We have more stardust to process, so jump back up to
+                        \ STL6 for the next particle
+
+ RTS                    \ Return from the subroutine
+
+.star2
+
+                        \ --- End of added code ------------------------------->
+
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
 
@@ -10278,6 +10448,15 @@ ENDIF
 
  JSR DORND              \ Set A and X to random numbers
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
+
+                        \ --- End of added code ------------------------------->
+
  STA Y1                 \ Set y_hi and Y1 to random numbers, so the particle
  STA SY,Y               \ starts anywhere along either the left or right edge
 
@@ -10295,6 +10474,15 @@ ENDIF
  LDA #230               \ Set A to either +115 or -115 (230 >> 1) depending on
  ROR A                  \ the C flag, as this is a sign-magnitude number with
                         \ the C flag rotated into its sign bit
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
+
+                        \ --- End of added code ------------------------------->
 
  STA Y1                 \ Set y_hi and Y1 to A, so the particle starts anywhere
  STA SY,Y               \ along either the top or bottom edge of the screen
@@ -16003,6 +16191,28 @@ ENDIF
                         \ i.e. draw the newly moved particle at (x_hi, y_hi)
                         \ with distance z_hi
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 1's stars, jump to star1
+ BPL star3
+
+ DEY                    \ Decrement the loop counter to point to the next
+                        \ stardust particle
+
+ CPY #NOST/2            \ Is this the last star for player 2's view?
+
+ BEQ P%+5               \ If we have just done the last particle, skip the next
+                        \ instruction to return from the subroutine
+
+ JMP STL2               \ We have more stardust to process, so jump back up to
+                        \ STL2 for the next particle
+
+ RTS                    \ Return from the subroutine
+
+.star3
+
+                        \ --- End of added code ------------------------------->
+
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
 
@@ -16042,6 +16252,15 @@ ENDIF
 
  JSR DORND              \ Set A and X to random numbers
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
+
+                        \ --- End of added code ------------------------------->
+
  STA Y1                 \ Set y_hi and Y1 to random numbers, so the particle
  STA SY,Y               \ starts anywhere along the y-axis
 
@@ -16063,6 +16282,15 @@ ENDIF
 
  LDA #110               \ Make sure A is at least 110 and has the sign in AL2+1,
  ORA ALP2+1             \ the flipped sign of the roll angle alpha
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
+
+                        \ --- End of added code ------------------------------->
 
  STA Y1                 \ Set y_hi and Y1 to A, so the particle starts at the
  STA SY,Y               \ top or bottom edge, depending on the current roll
@@ -23495,7 +23723,20 @@ ENDIF
  LDX #0                 \ Set QQ12 to 0 to indicate we are not docked
  STX QQ12
 
- JMP LOOK1              \ Jump to LOOK1 to switch to the front view (X = 0),
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ SEC                    \ Initialise player 2's view
+ ROR playerScreen
+
+ JSR LOOK1              \ Jump to LOOK1 to switch to the front view (X = 0)
+
+ STZ playerScreen       \ Initialise player 1's view
+
+ LDX #0                 \ Front view
+
+                        \ --- End of added code ------------------------------->
+
+ JMP LQ                 \ Jump to LQ to clear and set up draw player 1's view,
                         \ returning from the subroutine using a tail call
 
 \ ******************************************************************************
@@ -26023,6 +26264,20 @@ ENDIF
  LDY NOSTM              \ Set Y to the current number of stardust particles, so
                         \ we can use it as a counter through all the stardust
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 2's stars
+ BPL news1
+
+ TYA                    \ Then use the second half of the table
+ CLC
+ ADC #NOST/2
+ TAY
+
+.news1
+
+                        \ --- End of added code ------------------------------->
+
 .SAL4
 
  JSR DORND              \ Set A and X to random numbers
@@ -26043,6 +26298,15 @@ ENDIF
 
  JSR DORND              \ Set A and X to random numbers
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LSR A                  \ Halve the vertical range for stardust, keeping the
+ LSR A                  \ balance of negative vs positive
+ BCC P%+4
+ ORA #%11000000
+
+                        \ --- End of added code ------------------------------->
+
  STA SY,Y               \ Store A in the Y-th particle's y_hi coordinate at
                         \ SY+Y, so the particle appears in front of us
 
@@ -26050,11 +26314,36 @@ ENDIF
 
  JSR PIXEL2             \ Draw a stardust particle at (X1,Y1) with distance ZZ
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If we are drawing player 2's stars
+ BPL news2
+
+ DEY                    \ Decrement the counter to point to the next particle of
+                        \ stardust
+
+ CPY #NOST/2            \ Loop back to SAL4 until we have randomised all the
+ BNE SAL4               \ stardust particles
+
+ BEQ news3              \ We are done initialising stars so jump to news3 to
+                        \ keep going (this JMP is effectively a BEQ as we just
+                        \ passed through a BNE)
+
+.news2
+
+                        \ --- End of added code ------------------------------->
+
  DEY                    \ Decrement the counter to point to the next particle of
                         \ stardust
 
  BNE SAL4               \ Loop back to SAL4 until we have randomised all the
                         \ stardust particles
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.news3
+
+                        \ --- End of added code ------------------------------->
 
  JSR PBFL               \ Call PBFL to send the contents of the pixel buffer to
                         \ the I/O processor for plotting on-screen
@@ -30993,6 +31282,13 @@ ENDIF
 
  BPL SAL3               \ Loop back for the next byte to zero
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA player2Beta        \ Set player 2's movement variables
+ STA player2Bet1
+
+                        \ --- End of added code ------------------------------->
+
  TXA                    \ X is now negative - i.e. &FF - so this sets A and QQ12
  STA QQ12               \ to &FF to indicate we are docked
 
@@ -31061,6 +31357,13 @@ ENDIF
  STA ALP2               \ Reset ALP2 (roll sign) and BET2 (pitch sign)
  STA BET2               \ to negative, i.e. pitch and roll negative
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA player2Alp2        \ Set player 2's movement variables
+ STA player2Bet2
+
+                        \ --- End of added code ------------------------------->
+
  ASL A                  \ This sets A to 0
 
  STA BETA               \ Reset BETA (pitch angle alpha) to 0
@@ -31070,6 +31373,15 @@ ENDIF
  STA ALP2+1             \ Reset ALP2+1 (flipped roll sign) and BET2+1 (flipped
  STA BET2+1             \ pitch sign) to positive, i.e. pitch and roll negative
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA player2Beta        \ Set player 2's movement variables
+ STA player2Bet1
+ STA player2Alp2+1
+ STA player2Bet2+1
+
+                        \ --- End of added code ------------------------------->
+
  STA MCNT               \ Reset MCNT (the main loop counter) to 0
 
  LDA #3                 \ Reset DELTA (speed) to 3
@@ -31078,6 +31390,14 @@ ENDIF
  STA ALPHA              \ Reset ALPHA (roll angle alpha) to 3
 
  STA ALP1               \ Reset ALP1 (magnitude of roll angle alpha) to 3
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA player2Delta       \ Set player 2's movement variables
+ STA player2Alpha
+ STA player2Alp1
+
+                        \ --- End of added code ------------------------------->
 
  LDA SSPR               \ Fetch the "space station present" flag, and if we are
  BEQ P%+5               \ not inside the safe zone, skip the next instruction
@@ -32249,6 +32569,12 @@ ENDIF
  CMP #f3+1              \ pressed is f1, f2 or f3)
  BCS LABEL_3
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STZ playerScreen       \ Apply f0-f3 to player 1's view only
+
+                        \ --- End of added code ------------------------------->
+
  AND #3                 \ If we get here then we are either in space, or we are
  TAX                    \ docked and none of f1-f3 were pressed, so we can now
  JMP LOOK1              \ process f1-f3 with their in-flight functions, i.e.
@@ -32266,6 +32592,45 @@ ENDIF
                         \ compile in BeebAsm and it's pretty cryptic, so instead
                         \ this version sticks with the label LABEL_3 from the
                         \ cassette version
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ SEC                    \ Get ready for changing player 2's view
+ ROR playerScreen
+
+ CMP #&39               \ Up arrow = front
+ BNE keys1
+
+ LDX #0                 \ Switch to front view
+ JMP LOOK1
+
+.keys1
+
+ CMP #&29               \ Down arrow = rear
+ BNE keys2
+
+ LDX #1                 \ Switch to rear view
+ JMP LOOK1
+
+.keys2
+
+ CMP #&19               \ Left arrow = left
+ BNE keys3
+
+ LDX #2                 \ Switch to left view
+ JMP LOOK1
+
+.keys3
+
+ CMP #&79               \ Right arrow = right
+ BNE keys4
+
+ LDX #3                 \ Switch to right view
+ JMP LOOK1
+
+.keys4
+
+                        \ --- End of added code ------------------------------->
 
  CMP #&54               \ If "H" was pressed, jump to hyp to do a hyperspace
  BNE P%+5               \ jump (if we are in space), returning from the
@@ -35004,147 +35369,151 @@ ENDIF
 \
 \ ******************************************************************************
 
-.WARP
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDX JUNK               \ Set X to the total number of junk items in the
-                        \ vicinity (e.g. asteroids, escape pods, cargo
-                        \ canisters, Shuttles, Transporters and so on)
+\.WARP
+\
+\LDX JUNK               \ Set X to the total number of junk items in the
+\                       \ vicinity (e.g. asteroids, escape pods, cargo
+\                       \ canisters, Shuttles, Transporters and so on)
+\
+\LDA FRIN+2,X           \ If the slot at FRIN+2+X is non-zero, then we have
+\                       \ something else in the vicinity besides asteroids,
+\                       \ escape pods and cargo canisters, so to check whether
+\                       \ we can jump, we first grab the slot contents into A
+\
+\ORA SSPR               \ If there is a space station nearby, then SSPR will
+\                       \ be non-zero, so OR'ing with SSPR will produce a
+\                       \ non-zero result if either A or SSPR are non-zero
+\
+\ORA MJ                 \ If we are in witchspace, then MJ will be non-zero, so
+\                       \ OR'ing with MJ will produce a non-zero result if
+\                       \ either A or SSPR or MJ are non-zero
+\
+\BNE WA1                \ A is non-zero if we have either a ship or a space
+\                       \ station in the vicinity, or we are in witchspace, in
+\                       \ which case jump to WA1 to make a low beep to show that
+\                       \ we can't do an in-system jump
+\
+\LDY K%+8               \ Otherwise we can do an in-system jump, so now we fetch
+\                       \ the byte at K%+8, which contains the z_sign for the
+\                       \ first ship slot, i.e. the distance of the planet
+\
+\BMI WA3                \ If the planet's z_sign is negative, then the planet
+\                       \ is behind us, so jump to WA3 to skip the following
+\
+\TAY                    \ Set A = Y = 0 (as we didn't BNE above) so the call
+\                       \ to MAS2 measures the distance to the planet
+\
+\JSR MAS2               \ Call MAS2 to set A to the largest distance to the
+\                       \ planet in any of the three axes (we could also call
+\                       \ routine m to do the same thing, as A = 0)
+\
+\CMP #2                 \ If A < 2 then jump to WA1 to abort the in-system jump
+\BCC WA1                \ with a low beep, as we are facing the planet and are
+\                       \ too close to jump in that direction
+\
+\.WA3
+\
+\LDY K%+NI%+8           \ Fetch the z_sign (byte #8) of the second ship in the
+\                       \ ship data workspace at K%, which is reserved for the
+\                       \ sun or the space station (in this case it's the
+\                       \ former, as we already confirmed there isn't a space
+\                       \ station in the vicinity)
+\
+\BMI WA2                \ If the sun's z_sign is negative, then the sun is
+\                       \ behind us, so jump to WA2 to skip the following
+\
+\LDY #NI%               \ Set Y to point to the offset of the ship data block
+\                       \ for the sun, which is NI% (as each block is NI% bytes
+\                       \ long, and the sun is the second block)
+\
+\JSR m                  \ Call m to set A to the largest distance to the sun
+\                       \ in any of the three axes
+\
+\CMP #2                 \ If A < 2 then jump to WA1 to abort the in-system jump
+\BCC WA1                \ with a low beep, as we are facing the sun and are too
+\                       \ close to jump in that direction
+\
+\.WA2
+\
+\                       \ If we get here, then we can do an in-system jump, as
+\                       \ we don't have any ships or space stations in the
+\                       \ vicinity, we are not in witchspace, and if we are
+\                       \ facing the planet or the sun, we aren't too close to
+\                       \ jump towards it
+\                       \
+\                       \ We do an in-system jump by moving the sun and planet,
+\                       \ rather than moving our own local bubble (this is why
+\                       \ in-system jumps drag asteroids, cargo canisters and
+\                       \ escape pods along for the ride). Specifically, we move
+\                       \ them in the z-axis by a fixed amount in the opposite
+\                       \ direction to travel, thus performing a jump towards
+\                       \ our destination
+\
+\LDA #&81               \ Set R = R = P = &81
+\STA S
+\STA R
+\STA P
+\
+\LDA K%+8               \ Set A = z_sign for the planet
+\
+\JSR ADD                \ Set (A X) = (A P) + (S R)
+\                       \           = (z_sign &81) + &8181
+\                       \           = (z_sign &81) - &0181
+\                       \
+\                       \ This moves the planet against the direction of travel
+\                       \ by reducing z_sign by 1, as the above maths is:
+\                       \
+\                       \         z_sign 00000000
+\                       \   +   00000000 10000001
+\                       \   -   00000001 10000001
+\                       \
+\                       \ or:
+\                       \
+\                       \         z_sign 00000000
+\                       \   +   00000000 00000000
+\                       \   -   00000001 00000000
+\                       \
+\                       \ i.e. the high byte is z_sign - 1, making sure the sign
+\                       \ is preserved
+\
+\STA K%+8               \ Set the planet's z_sign to the high byte of the result
+\
+\LDA K%+NI%+8           \ Set A = z_sign for the sun
+\
+\JSR ADD                \ Set (A X) = (A P) + (S R)
+\                       \           = (z_sign &81) + &8181
+\                       \           = (z_sign &81) - &0181
+\                       \
+\                       \ which moves the sun against the direction of travel
+\                       \ by reducing z_sign by 1
+\
+\STA K%+NI%+8           \ Set the planet's z_sign to the high byte of the result
+\
+\LDA #1                 \ Temporarily set the view type to a non-zero value, so
+\STA QQ11               \ the call to LOOK1 below clears the screen before
+\                       \ switching to the space view
+\
+\STA MCNT               \ Set the main loop counter to 1, so the next iteration
+\                       \ through the main loop will potentially spawn ships
+\                       \ (see part 2 of the main game loop at me3)
+\
+\LSR A                  \ Set EV, the extra vessels spawning counter, to 0
+\STA EV                 \ (the LSR produces a 0 as A was previously 1)
+\
+\LDX VIEW               \ Set X to the current view (front, rear, left or right)
+\JMP LOOK1              \ and jump to LOOK1 to initialise that view, returning
+\                       \ from the subroutine using a tail call
+\
+\.WA1
+\
+\LDA #40                \ If we get here then we can't do an in-system jump, so
+\BNE NOISE              \ call the NOISE routine with A = 40 to make a long, low
+\                       \ beep and return from the subroutine using a tail call
+\                       \ (the BNE is effectively a JMP as A is never zero)
 
- LDA FRIN+2,X           \ If the slot at FRIN+2+X is non-zero, then we have
-                        \ something else in the vicinity besides asteroids,
-                        \ escape pods and cargo canisters, so to check whether
-                        \ we can jump, we first grab the slot contents into A
-
- ORA SSPR               \ If there is a space station nearby, then SSPR will
-                        \ be non-zero, so OR'ing with SSPR will produce a
-                        \ non-zero result if either A or SSPR are non-zero
-
- ORA MJ                 \ If we are in witchspace, then MJ will be non-zero, so
-                        \ OR'ing with MJ will produce a non-zero result if
-                        \ either A or SSPR or MJ are non-zero
-
- BNE WA1                \ A is non-zero if we have either a ship or a space
-                        \ station in the vicinity, or we are in witchspace, in
-                        \ which case jump to WA1 to make a low beep to show that
-                        \ we can't do an in-system jump
-
- LDY K%+8               \ Otherwise we can do an in-system jump, so now we fetch
-                        \ the byte at K%+8, which contains the z_sign for the
-                        \ first ship slot, i.e. the distance of the planet
-
- BMI WA3                \ If the planet's z_sign is negative, then the planet
-                        \ is behind us, so jump to WA3 to skip the following
-
- TAY                    \ Set A = Y = 0 (as we didn't BNE above) so the call
-                        \ to MAS2 measures the distance to the planet
-
- JSR MAS2               \ Call MAS2 to set A to the largest distance to the
-                        \ planet in any of the three axes (we could also call
-                        \ routine m to do the same thing, as A = 0)
-
- CMP #2                 \ If A < 2 then jump to WA1 to abort the in-system jump
- BCC WA1                \ with a low beep, as we are facing the planet and are
-                        \ too close to jump in that direction
-
-.WA3
-
- LDY K%+NI%+8           \ Fetch the z_sign (byte #8) of the second ship in the
-                        \ ship data workspace at K%, which is reserved for the
-                        \ sun or the space station (in this case it's the
-                        \ former, as we already confirmed there isn't a space
-                        \ station in the vicinity)
-
- BMI WA2                \ If the sun's z_sign is negative, then the sun is
-                        \ behind us, so jump to WA2 to skip the following
-
- LDY #NI%               \ Set Y to point to the offset of the ship data block
-                        \ for the sun, which is NI% (as each block is NI% bytes
-                        \ long, and the sun is the second block)
-
- JSR m                  \ Call m to set A to the largest distance to the sun
-                        \ in any of the three axes
-
- CMP #2                 \ If A < 2 then jump to WA1 to abort the in-system jump
- BCC WA1                \ with a low beep, as we are facing the sun and are too
-                        \ close to jump in that direction
-
-.WA2
-
-                        \ If we get here, then we can do an in-system jump, as
-                        \ we don't have any ships or space stations in the
-                        \ vicinity, we are not in witchspace, and if we are
-                        \ facing the planet or the sun, we aren't too close to
-                        \ jump towards it
-                        \
-                        \ We do an in-system jump by moving the sun and planet,
-                        \ rather than moving our own local bubble (this is why
-                        \ in-system jumps drag asteroids, cargo canisters and
-                        \ escape pods along for the ride). Specifically, we move
-                        \ them in the z-axis by a fixed amount in the opposite
-                        \ direction to travel, thus performing a jump towards
-                        \ our destination
-
- LDA #&81               \ Set R = R = P = &81
- STA S
- STA R
- STA P
-
- LDA K%+8               \ Set A = z_sign for the planet
-
- JSR ADD                \ Set (A X) = (A P) + (S R)
-                        \           = (z_sign &81) + &8181
-                        \           = (z_sign &81) - &0181
-                        \
-                        \ This moves the planet against the direction of travel
-                        \ by reducing z_sign by 1, as the above maths is:
-                        \
-                        \         z_sign 00000000
-                        \   +   00000000 10000001
-                        \   -   00000001 10000001
-                        \
-                        \ or:
-                        \
-                        \         z_sign 00000000
-                        \   +   00000000 00000000
-                        \   -   00000001 00000000
-                        \
-                        \ i.e. the high byte is z_sign - 1, making sure the sign
-                        \ is preserved
-
- STA K%+8               \ Set the planet's z_sign to the high byte of the result
-
- LDA K%+NI%+8           \ Set A = z_sign for the sun
-
- JSR ADD                \ Set (A X) = (A P) + (S R)
-                        \           = (z_sign &81) + &8181
-                        \           = (z_sign &81) - &0181
-                        \
-                        \ which moves the sun against the direction of travel
-                        \ by reducing z_sign by 1
-
- STA K%+NI%+8           \ Set the planet's z_sign to the high byte of the result
-
- LDA #1                 \ Temporarily set the view type to a non-zero value, so
- STA QQ11               \ the call to LOOK1 below clears the screen before
-                        \ switching to the space view
-
- STA MCNT               \ Set the main loop counter to 1, so the next iteration
-                        \ through the main loop will potentially spawn ships
-                        \ (see part 2 of the main game loop at me3)
-
- LSR A                  \ Set EV, the extra vessels spawning counter, to 0
- STA EV                 \ (the LSR produces a 0 as A was previously 1)
-
- LDX VIEW               \ Set X to the current view (front, rear, left or right)
- JMP LOOK1              \ and jump to LOOK1 to initialise that view, returning
-                        \ from the subroutine using a tail call
-
-.WA1
-
- LDA #40                \ If we get here then we can't do an in-system jump, so
- BNE NOISE              \ call the NOISE routine with A = 40 to make a long, low
-                        \ beep and return from the subroutine using a tail call
-                        \ (the BNE is effectively a JMP as A is never zero)
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -35832,6 +36201,22 @@ ENDIF
  EOR JSTGY              \ JSTGY will be &FF if the game is configured to
  STA JSTY               \ reverse the joystick Y channel, so this EOR does
                         \ exactly that, and then we store the result in JSTY
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX #3                 \ Call DKS2 to fetch the value of ADC channel 3 (the
+ JSR DKS2               \ joystick 2 X value) into (A X), and OR A with 1. This
+ ORA #1                 \ ensures that the high byte is at least 1, and then we
+ STA player2JSTX        \ store the result in player2JSTX
+
+ LDX #4                 \ Call DKS2 to fetch the value of ADC channel 4 (the
+ JSR DKS2               \ joystick 2 Y value) into (A X), and EOR A with JSTGY.
+ EOR JSTGY              \ JSTGY will be &FF if the game is configured to
+ STA player2JSTY        \ reverse the joystick Y channel, so this EOR does
+                        \ exactly that, and then we store the result in
+                        \ player2JSTY
+
+                        \ --- End of added code ------------------------------->
 
  JMP DK4                \ We are done scanning the joystick flight controls,
                         \ so jump to DK4 to scan for other keys, using a tail
@@ -43931,7 +44316,26 @@ ENDIF
 
 .LQ
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If this is player 2
+ BPL view1
+
+ STX player2View        \ Set the current space view for player 2 to X
+
+ JMP view2              \ Skip the following instruction
+
+.view1
+
+                        \ --- End of added code ------------------------------->
+
  STX VIEW               \ Set the current space view to X
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.view2
+
+                        \ --- End of added code ------------------------------->
 
  JSR TT66               \ Clear the top part of the screen, draw a border box,
                         \ and set the current view type in QQ11 to 0 (space
@@ -43954,10 +44358,32 @@ ENDIF
  LDY QQ11               \ If the current view is not a space view, jump up to LQ
  BNE LQ                 \ to set up a new space view
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If this is player 2
+ BPL view3
+
+ CPX player2View        \ If the current view is already of type X, jump to LO2
+ BEQ LO2                \ to return from the subroutine (as LO2 contains an RTS)
+
+ STX player2View        \ Set the current space view for player 2 to X
+
+ JMP view4              \ Skip the following instruction
+
+.view3
+
+                        \ --- End of added code ------------------------------->
+
  CPX VIEW               \ If the current view is already of type X, jump to LO2
  BEQ LO2                \ to return from the subroutine (as LO2 contains an RTS)
 
  STX VIEW               \ Change the current space view to X
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.view4
+
+                        \ --- End of added code ------------------------------->
 
  JSR TT66               \ Clear the top part of the screen, draw a border box,
                         \ and set the current view type in QQ11 to 0 (space
@@ -43995,18 +44421,6 @@ ENDIF
                         \ --- And replaced by: -------------------------------->
 
  LDA #POW               \ Give everyone a pulse laser for now
-
- LDA playerScreen       \ Draw sights for both players for now
- PHA
- STZ playerScreen
- JSR sigh1
- SEC
- ROR playerScreen
- JSR sigh1
- PLA
- RTS
-
-.sigh1
 
                         \ --- End of replacement ------------------------------>
 
@@ -44144,18 +44558,31 @@ ENDIF
  BNE clsc1
  SEC
  ROR splitScreen
- BNE clsc2
+
+ LDA #14                \ Set A to 14 or 15, for clearing the correct part of
+ BIT playerScreen       \ the screen
+ BPL P%+4
+ LDA #15
+
+ JSR OSWRCH             \ Send control code 14 or 15 to OSWRCH, to instruct the
+                        \ I/O processor to clear the top part of the screen
+
+ JMP clsc2              \ Skip the following
 
 .clsc1
 
- STZ splitScreen        \ And don't if it isn't
-
-.clsc2
+ STZ splitScreen        \ Disable split-screen if this isn't a space view
 
                         \ --- End of added code ------------------------------->
 
  LDA #11                \ Send control code 11 to OSWRCH, to instruct the I/O
  JSR OSWRCH             \ processor to clear the top part of the screen
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.clsc2
+
+                        \ --- End of added code ------------------------------->
 
  LDX QQ22+1             \ Fetch into X the number that's shown on-screen during
                         \ the hyperspace countdown
@@ -44170,17 +44597,33 @@ ENDIF
 
 .OLDBOX
 
- LDA #1                 \ Move the text cursor to column 1
+ LDA #1                 \ Move the text cursor to row 1
  JSR DOYC
 
  LDA QQ11               \ If this is not a space view, jump to tt66 to skip
  BNE tt66               \ displaying the view name
 
- LDA #11                \ Move the text cursor to row 11
+ LDA #11                \ Move the text cursor to column 11
  JSR DOXC
 
  LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
  JSR DOCOL              \ switch to colour 3, which is cyan in the space view
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If this is player 2
+ BPL clsc3
+
+ LDA #13                \ Move the text cursor to column 11, row 13
+ JSR DOYC
+
+ LDA player2View        \ Fetch player 2's view
+
+ JMP clsc4              \ Skip the following instruction
+
+.clsc3
+
+                        \ --- End of added code ------------------------------->
 
  LDA VIEW               \ Load the current view into A:
                         \
@@ -44188,6 +44631,12 @@ ENDIF
                         \   1 = rear
                         \   2 = left
                         \   3 = right
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.clsc4
+
+                        \ --- End of added code ------------------------------->
 
  ORA #&60               \ OR with &60 so we get a value of &60 to &63 (96 to 99)
 
@@ -44198,28 +44647,6 @@ ENDIF
 
  LDA #175               \ Print recursive token 15 ("VIEW ")
  JSR TT27
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- BIT splitScreen        \ Skip the following if this is not a split screen space
- BPL tt66               \ view
-
- LDA #Y                 \ Draw a screen-wide horizontal line at pixel row #Y
- JSR NLIN2              \ for the line between the views
-
- LDA #13                \ Move the text cursor to column 11, row 13
- JSR DOYC
- LDA #11
- JSR DOXC
-
- LDA VIEW               \ Print player 2's view
- ORA #&60
- JSR TT27
- JSR TT162
- LDA #175
- JSR TT27
-
-                        \ --- End of added code ------------------------------->
 
 .tt66
 
@@ -44717,9 +45144,13 @@ ENDIF
 \
 \ ******************************************************************************
 
-.HIMCNT
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB 0
+\.HIMCNT
+\
+\EQUB 0
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -44788,29 +45219,33 @@ ENDIF
 \
 \ ******************************************************************************
 
-.TWIST2
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB &2C               \ Skip the next instruction by turning it into
-                        \ &2C &A9 &00, or BIT &00A9, which does nothing apart
-                        \ from affect the flags
+\.TWIST2
+\
+\EQUB &2C               \ Skip the next instruction by turning it into
+\                       \ &2C &A9 &00, or BIT &00A9, which does nothing apart
+\                       \ from affect the flags
+\
+\.TWIST
+\
+\LDA #0                 \ Set A = 0
+\
+\STA RAT2               \ Set the pitch direction in RAT2 to A
+\
+\LDX #15                \ Rotate (roofv_x, nosev_x) by a small angle (pitch)
+\LDY #9                 \ in the direction given in RAT2
+\JSR MVS5
+\
+\LDX #17                \ Rotate (roofv_y, nosev_y) by a small angle (pitch)
+\LDY #11                \ in the direction given in RAT2
+\JSR MVS5
+\
+\LDX #19                \ Rotate (roofv_z, nosev_z) by a small angle (pitch)
+\LDY #13                \ in the direction given in RAT2 and return from the
+\JMP MVS5               \ subroutine using a tail call
 
-.TWIST
-
- LDA #0                 \ Set A = 0
-
- STA RAT2               \ Set the pitch direction in RAT2 to A
-
- LDX #15                \ Rotate (roofv_x, nosev_x) by a small angle (pitch)
- LDY #9                 \ in the direction given in RAT2
- JSR MVS5
-
- LDX #17                \ Rotate (roofv_y, nosev_y) by a small angle (pitch)
- LDY #11                \ in the direction given in RAT2
- JSR MVS5
-
- LDX #19                \ Rotate (roofv_z, nosev_z) by a small angle (pitch)
- LDY #13                \ in the direction given in RAT2 and return from the
- JMP MVS5               \ subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -44857,411 +45292,419 @@ ENDIF
 
 .DEMON
 
- LDA #1                 \ Clear the top part of the screen, draw a border box,
- JSR TT66               \ and set the current view type in QQ11 to 1
-
- JSR RESET              \ Call RESET to initialise most of the game variables
-
- LDA #0                 \ Set ALPHA and ALP1 to 0, so our roll angle (i.e. that
- STA ALPHA              \ of the camera) is 0
- STA ALP1
-
- STA DELTA              \ Set DELTA to 0, so our current speed (i.e. that of the
-                        \ camera) is 0
-
- STA scacol+CYL         \ Set the scanner colour for the Cobra Mk III to colour
-                        \ 0 (black), so it doesn't appear on the scanner during
-                        \ the demo
-
- JSR DOVDU19            \ Send a #SETVDU19 0 command to the I/O processor to
-                        \ switch to the mode 1 palette for the space view,
-                        \ which is yellow (colour 1), red (colour 2) and cyan
-                        \ (colour 3)
-
- JSR nWq                \ Call nWq to create a random cloud of stardust
-
- LDX #LO(acorn)         \ Set (Y X) to the address of acorn, which contains the
- LDY #HI(acorn)         \ text: "ACORNSOFT PRESENTS" (or, in the Executive
-                        \ version: "PIZZASOFT PRESENTS")
-
- JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
-
- JSR ZINF2              \ Call ZINF2 to reset INWK and the orientation vectors,
-                        \ with nosev pointing into the screen. We are about to
-                        \ add the Elite logo to the universe, and the logo's
-                        \ nosev points out of the top of the logo, so this will
-                        \ spawn the logo with it tilted back so it appears
-                        \ on-edge, with the bottom of the logo pointing towards
-                        \ the viewer
-
- LDA #%10000000         \ Set y_sign to be negative
- STA INWK+5
-
- LDA #100               \ Set y_lo = 100
- STA INWK+3
-
- LDA #LGO               \ Set the ship type to the Elite logo
- STA TYPE
-
- JSR NWSHP              \ Add a new Elite logo to the local bubble (in this
-                        \ case, the demo screen), pointing INF to the new ship's
-                        \ data block in K%
-
- LDA #150               \ Set a loop counter in MCNT to 150 for the grand
- STA MCNT               \ entrance of the logo, which takes it from z = 0 (right
-                        \ up against the camera) to z = 450 (a fair distance in
-                        \ front of us), moving the logo a distance of 3 away
-                        \ from us with each iteration
-
-.FLYL1
-
- LDA INWK+6             \ Set (z_hi z_lo) = (z_hi z_lo) + 3
- CLC                    \
- ADC #3                 \ starting with the low bytes
- STA INWK+6
-
- LDA INWK+7             \ And then adding the high bytes
- ADC #0
- STA INWK+7
-
- JSR LL9                \ Call LL9 to draw the logo on-screen
-
- DEC MCNT               \ Decrement the main loop counter
-
- BNE FLYL1              \ Loop back to FLYL1 until we have done 150 iterations,
-                        \ after which (z_hi z_lo) = 150 * 3 = 450
-
-.FLYL2
-
- LDA INWK+6             \ Set (z_hi z_lo) = (z_hi z_lo) + 2
- CLC                    \
- ADC #2                 \ starting with the low bytes
- STA INWK+6
-
- LDA INWK+7             \ And then adding the high bytes
- ADC #0
- STA INWK+7
-
- LDA #%10000000         \ Call TWIST2 with a negative A to pitch the logo by a
- JSR TWIST2             \ small angle in a negative direction
-
-\DEC INWK+3             \ This instruction is commented out in the original
-                        \ source, but it would decrement y_lo, moving the logo
-                        \ down the screen
-
- JSR LL9                \ Call LL9 to draw the logo on-screen
-
- LDA INWK+14            \ Loop back to FLYL2 to keep pitching, until nosev_z_hi
- BPL FLYL2              \ is negative (i.e. the logo has pitched forward through
-                        \ 90 degrees, as nosev starts out by pointing into the
-                        \ screen towards the camera, in a positive direction,
-                        \ and turns negative when it's reached the vertical).
-                        \ In other words, we loop until the logo has tilted
-                        \ towards the camera and is fully vertical in front of
-                        \ the viewer
-
- JSR STORE              \ Call STORE to copy the ship data block at INWK back to
-                        \ the K% workspace at INF, so the logo becomes the first
-                        \ ship in the K% block
-
- JSR ZINF2              \ Call ZINF2 to reset INWK and the orientation vectors,
-                        \ with nosev pointing into the screen
-
- LDA #108               \ Set y_lo = 108, so the Cobra we are about to spawn
- STA INWK+3             \ appears at the top of the screen
-
- LDA #40                \ Set z_lo = -40, so it appears a small distance behind
- STA INWK+6             \ the camera (the negative part is achieved by setting
- LDA #%10000000         \ z_sign in INWK+8 to be negative, so the ship is behind
- STA INWK+8             \ the camera)
-
- LDA #CYL               \ Set the ship type to a Cobra Mk III
- STA TYPE
-
- JSR NWSHP              \ Add a new Cobra Mk III to the local bubble (in this
-                        \ case, the demo screen), pointing INF to the new ship's
-                        \ data block in K%
-
- LDA #1                 \ Set the Cobra's speed to 1
- STA INWK+27
-
- STA HIMCNT             \ Set HIMCNT = 1 to act as an outer counter for the
-                        \ following loop
-
- LDA #90                \ Set MCNT = 90 to act as an inner counter for the
- STA MCNT               \ following loop
-
- JSR TWIST              \ Call TWIST three times to pitch by a smallish angle in
- JSR TWIST              \ a positive direction (i.e. 3 x 3.6 degree, or 10.8
- JSR TWIST              \ degrees)
-
-                        \ The following loop iterates 90 times while HIMCNT is 1
-                        \ and 256 times while HIMCNT is 0, to give a total of
-                        \ 346 iterations
-
-.FLYL4
-
- JSR LL9                \ Call LL9 to draw the Cobra on-screen
-
- JSR MVEIT              \ Call MVEIT to move the Cobra slowly forward
-
- DEC MCNT               \ Decrement the inner counter in MCNT
-
- BNE FLYL4              \ Loop back to FLYL4 until the inner counter is 0
-
- DEC HIMCNT             \ Decrement the outer counter in HIMCNT
-
- BPL FLYL4              \ Loop back to FLYL4 until the outer counter is negative
-
- JSR ZZAAP              \ Call ZZAAP to draw a vertical laser line from the
-                        \ Cobra
-
- LDA #0                 \ Call the NOISE routine with A = 0 to make the sound
- JSR NOISE              \ of a laser firing
-
- LDY #10                \ Wait for 10/50 of a second (0.2 seconds)
- JSR DELAY
-
- LDA #44                \ Set the Cobra's roll counter to 44 to make it roll in
- STA INWK+29            \ a positive direction (clockwise), for just under a
-                        \ half roll (44 * 1/16 radians = 2.75 radians = 158
-                        \ degrees)
-
- LDA #8                 \ Set the Cobra's speed to 8
- STA INWK+27
-
- LDA #&87               \ Set the Cobra's pitch counter to -7 to make it pitch
- STA INWK+30            \ slightly in a negative direction (pull up), so it
-                        \ starts flying gently towards the top of the screen
-
- JSR STORE              \ Call STORE to copy the ship data block at INWK back to
-                        \ the K% workspace at INF, so the Cobra becomes the
-                        \ second ship in the K% block
-
- LDA #%10000000         \ Set bit 7 of byte #31 of the first ship in the K%
- TSB K%+31              \ block, which is the Elite logo, so this flags the logo
-                        \ as having been killed (the TSB instruction applies the
-                        \ accumulator to the memory location using an OR)
-
- JSR EXNO3              \ Make an explosion sound
-
- JSR ZZAAP              \ Call ZZAAP to redraw the vertical laser line from the
-                        \ Cobra, which removes it from the screen
-
-.FLYL5
-
-                        \ We now want to draw the logo exploding, so we first
-                        \ need to copy the logo's ship data block from K% to
-                        \ INWK
-
- LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
-                        \ bytes in the ship data block
-
-.DML3
-
- LDA K%,X               \ Copy the X-th byte of the first ship data block in K%
- STA INWK,X             \ to the X-th byte of INWK
-
- DEX                    \ Decrement the loop counter
-
- BPL DML3               \ Loop back for the next byte, until we have copied the
-                        \ last byte from K% to INWK
-
- INX                    \ Increment X back to 0
-
- JSR GINF               \ Call GINF to fetch the address of the ship data block
-                        \ for the ship in slot 0 (the logo) and store it in INF
-
- LDA XX21-2+2*LGO       \ Set XX0(1 0) to point to the ship blueprint for the
- STA XX0                \ Elite logo
- LDA XX21-1+2*LGO
- STA XX0+1
-
- LDA #LGO               \ Set the ship type to the Elite logo
- STA TYPE
-
- INC INWK               \ Increment x_lo to move the logo a little to the right
-
- JSR LL9                \ Call LL9 to draw the now-exploding logo on-screen
-
- JSR STORE              \ Call STORE to copy the ship data block at INWK back to
-                        \ the K% workspace at INF
-
- JSR PBFL               \ Call PBFL to send the contents of the pixel buffer to
-                        \ the I/O processor for plotting on-screen
-
- LDA INWK+31            \ Test whether bits 5 and 7 of the logo's byte #31 are
- AND #%10100000         \ both set ("ship is exploding" and "ship has been
- CMP #%10100000         \ killed") and store the resulting flags on the stack
- PHP
-
-                        \ We now want to animate the Cobra flying into the
-                        \ distance while rolling clockwise, so we first need to
-                        \ copy the logo's ship data block from K% to INWK
-
- LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
-                        \ bytes in the ship data block
-
-.DML4
-
- LDA K%+NI%,X           \ Copy the X-th byte of the second ship data block in K%
- STA INWK,X             \ to the X-th byte of INWK
-
- DEX                    \ Decrement the loop counter
-
- BPL DML4               \ Loop back for the next byte, until we have copied the
-                        \ last byte from K% to INWK
-
- LDX #1                 \ Call GINF to fetch the address of the ship data block
- JSR GINF               \ for the ship in slot 1 (the Cobra) and store it in INF
-
- LDA XX21-2+2*CYL       \ Set XX0(1 0) to point to the ship blueprint for a
- STA XX0                \ Cobra Mk III
- LDA XX21-1+2*CYL
- STA XX0+1
-
- LDA #CYL               \ Set the ship type to a Cobra Mk III
- STA TYPE
-
- JSR MVEIT              \ Call MVEIT to move the Cobra so it pitches, rolls and
-                        \ flies on
-
- JSR LL9                \ Call LL9 to draw the Cobra on-screen
-
- JSR STORE              \ Call STORE to copy the ship data block at INWK back to
-                        \ the K% workspace
-
- PLP                    \ Restore the flags that we stored on the stack above
-
- BNE FLYL5              \ If it is not the case that bits 5 and 7 of the logo's
-                        \ byte #31 are both set, jump back to FLYL5 to keep
-                        \ drawing the exploding logo and the Cobra
-
-                        \ The logo has now finished exploding, as bits 5 and 7
-                        \ of the logo's byte #31 are now both set ("ship is
-                        \ exploding" and "ship has been killed"). By this time
-                        \ the Cobra will have reached the upper part of the
-                        \ screen, where we leave it while we do the next bit of
-                        \ scrolling text
-
- LDA #14                \ Set DELTA to 14, so our current speed (i.e. that of
- STA DELTA              \ the camera) is 14
-
- STZ DELT4              \ Set DELT4 = 0
-
- LSR A                  \ Set DELT4+1 = 14 / 4
- ROR DELT4              \
- LSR A                  \ so DELT4(1 0) therefore contains 14 * 64
- ROR DELT4
- STA DELT4+1
-
-IF _EXECUTIVE
-
- LDX #LO(executive)     \ Set (Y X) to the address of executive, which contains
- LDY #HI(executive)     \ the text: "THE EXECUTIVE VERSION"
-
- JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
-
-ENDIF
-
- LDX #LO(byian)         \ Set (Y X) to the address of byian, which contains the
- LDY #HI(byian)         \ text: "BY IAN BELL AND DAVID BRABEN"
-
- JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
-
-                        \ We now want the Cobra to start flying again, so we
-                        \ first need to copy the logo's ship data block from K%
-                        \ to INWK
-
- LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
-                        \ bytes in the ship data block
-
-.DML5
-
- LDA K%+NI%,X           \ Copy the X-th byte of the second ship data block in K%
- STA INWK,X             \ to the X-th byte of INWK
-
- DEX                    \ Decrement the loop counter
-
- BPL DML5               \ Loop back for the next byte, until we have copied the
-                        \ last byte from K% to INWK
-
-.FLYL6
-
- JSR STARS1             \ Call STARS1 to process the stardust for the front view
-
- JSR MVEIT              \ Call MVEIT to move the Cobra so it pitches, rolls and
-                        \ flies onwards
-
- JSR LL9                \ Call LL9 to draw the Cobra on-screen
-
- LDA INWK+8             \ Keep looping back to FLYL6 until z_sign is negative,
- BPL FLYL6              \ i.e. the Cobra has been overtaken by the camera as the
-                        \ camera moves forward, and it's disappeared off the top
-                        \ of the screen
-
- LDX #LO(true3)         \ Set (Y X) to the address of true3, which contains the
- LDY #HI(true3)         \ text: "THE GALAXY IS IN TURMOIL, THE NAVY FAR AWAY AS
-                        \ THE EMPIRE CRUMBLES" (or, in the Executive version:
-                        \ "CONGRATULATIONS ON OBTAINING A COPY OF THIS ELUSIVE
-                        \ PRODUCT")
-
- JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
-
- JSR RES2               \ Reset a number of flight variables and workspaces
-
- LDA #&E0               \ Set nosev_z_hi = -1 (as &E0 is a negative unit vector
- STA INWK+14            \ length), so the ship points out of the screen, towards
-                        \ us
-
- STZ DELTA              \ Set DELTA to 0, so our current speed (i.e. that of the
-                        \ camera) is 0
-
- STZ ALPHA              \ Set ALPHA and ALP1 to 0, so our roll angle (i.e. that
- STZ ALP1               \ of the camera) is 0
-
- LDX #15                \ Set the ship's speed to 15
- STX INWK+27
-
- LDX #5                 \ Set the ship's z_hi to 5, so it's in the distance
- STX INWK+7
-
- LDA #ADA               \ Set the ship type to an Adder
- STA TYPE
-
- JSR NWSHP              \ Add a new Adder to the local bubble (in this case, the
-                        \ demo screen)
-
-.FLYL7
-
- JSR MVEIT              \ Call MVEIT to move the Adder so it flies towards the
-                        \ camera
-
- JSR LL9                \ Call LL9 to draw the Adder on-screen
-
- LDA INWK+7             \ Keep looping back to FLYL7 until z_hi is zero
- BNE FLYL7
-
- LDA #3                 \ Set the Adder's roll counter to 3 to make it roll in
- STA INWK+29            \ a positive direction (clockwise)
-
- STA INWK+30            \ Set the Adder's pitch counter to 3 to make it pitch in
-                        \ a positive direction (dive)
-
- LDA INWK+8             \ Keep looping back to FLYL7 until z_sign is negative
- BPL FLYL7              \ i.e. the Adder has flown past the camera
-
- JSR SCAN               \ Call SCAN to remove the adder from the scanner (by
-                        \ redrawing it)
-
- JSR RES2               \ Reset a number of flight variables and workspaces
-
- LDA #CYAN2             \ Set the scanner colour for the Cobra Mk III to its
- STA scacol+CYL         \ default colour of cyan, so Cobras will appear on the
-                        \ scanner once again
-
- JMP DEATH2             \ Jump to DEATH2 to reset most of the game and restart
-                        \ from the title screen
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #1                 \ Clear the top part of the screen, draw a border box,
+\JSR TT66               \ and set the current view type in QQ11 to 1
+\
+\JSR RESET              \ Call RESET to initialise most of the game variables
+\
+\LDA #0                 \ Set ALPHA and ALP1 to 0, so our roll angle (i.e. that
+\STA ALPHA              \ of the camera) is 0
+\STA ALP1
+\
+\STA DELTA              \ Set DELTA to 0, so our current speed (i.e. that of the
+\                       \ camera) is 0
+\
+\STA scacol+CYL         \ Set the scanner colour for the Cobra Mk III to colour
+\                       \ 0 (black), so it doesn't appear on the scanner during
+\                       \ the demo
+\
+\JSR DOVDU19            \ Send a #SETVDU19 0 command to the I/O processor to
+\                       \ switch to the mode 1 palette for the space view,
+\                       \ which is yellow (colour 1), red (colour 2) and cyan
+\                       \ (colour 3)
+\
+\JSR nWq                \ Call nWq to create a random cloud of stardust
+\
+\LDX #LO(acorn)         \ Set (Y X) to the address of acorn, which contains the
+\LDY #HI(acorn)         \ text: "ACORNSOFT PRESENTS" (or, in the Executive
+\                       \ version: "PIZZASOFT PRESENTS")
+\
+\JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
+\
+\JSR ZINF2              \ Call ZINF2 to reset INWK and the orientation vectors,
+\                       \ with nosev pointing into the screen. We are about to
+\                       \ add the Elite logo to the universe, and the logo's
+\                       \ nosev points out of the top of the logo, so this will
+\                       \ spawn the logo with it tilted back so it appears
+\                       \ on-edge, with the bottom of the logo pointing towards
+\                       \ the viewer
+\
+\LDA #%10000000         \ Set y_sign to be negative
+\STA INWK+5
+\
+\LDA #100               \ Set y_lo = 100
+\STA INWK+3
+\
+\LDA #LGO               \ Set the ship type to the Elite logo
+\STA TYPE
+\
+\JSR NWSHP              \ Add a new Elite logo to the local bubble (in this
+\                       \ case, the demo screen), pointing INF to the new ship's
+\                       \ data block in K%
+\
+\LDA #150               \ Set a loop counter in MCNT to 150 for the grand
+\STA MCNT               \ entrance of the logo, which takes it from z = 0 (right
+\                       \ up against the camera) to z = 450 (a fair distance in
+\                       \ front of us), moving the logo a distance of 3 away
+\                       \ from us with each iteration
+\
+\.FLYL1
+\
+\LDA INWK+6             \ Set (z_hi z_lo) = (z_hi z_lo) + 3
+\CLC                    \
+\ADC #3                 \ starting with the low bytes
+\STA INWK+6
+\
+\LDA INWK+7             \ And then adding the high bytes
+\ADC #0
+\STA INWK+7
+\
+\JSR LL9                \ Call LL9 to draw the logo on-screen
+\
+\DEC MCNT               \ Decrement the main loop counter
+\
+\BNE FLYL1              \ Loop back to FLYL1 until we have done 150 iterations,
+\                       \ after which (z_hi z_lo) = 150 * 3 = 450
+\
+\.FLYL2
+\
+\LDA INWK+6             \ Set (z_hi z_lo) = (z_hi z_lo) + 2
+\CLC                    \
+\ADC #2                 \ starting with the low bytes
+\STA INWK+6
+\
+\LDA INWK+7             \ And then adding the high bytes
+\ADC #0
+\STA INWK+7
+\
+\LDA #%10000000         \ Call TWIST2 with a negative A to pitch the logo by a
+\JSR TWIST2             \ small angle in a negative direction
+\
+\\DEC INWK+3             \ This instruction is commented out in the original
+\                       \ source, but it would decrement y_lo, moving the logo
+\                       \ down the screen
+\
+\JSR LL9                \ Call LL9 to draw the logo on-screen
+\
+\LDA INWK+14            \ Loop back to FLYL2 to keep pitching, until nosev_z_hi
+\BPL FLYL2              \ is negative (i.e. the logo has pitched forward through
+\                       \ 90 degrees, as nosev starts out by pointing into the
+\                       \ screen towards the camera, in a positive direction,
+\                       \ and turns negative when it's reached the vertical).
+\                       \ In other words, we loop until the logo has tilted
+\                       \ towards the camera and is fully vertical in front of
+\                       \ the viewer
+\
+\JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+\                       \ the K% workspace at INF, so the logo becomes the first
+\                       \ ship in the K% block
+\
+\JSR ZINF2              \ Call ZINF2 to reset INWK and the orientation vectors,
+\                       \ with nosev pointing into the screen
+\
+\LDA #108               \ Set y_lo = 108, so the Cobra we are about to spawn
+\STA INWK+3             \ appears at the top of the screen
+\
+\LDA #40                \ Set z_lo = -40, so it appears a small distance behind
+\STA INWK+6             \ the camera (the negative part is achieved by setting
+\LDA #%10000000         \ z_sign in INWK+8 to be negative, so the ship is behind
+\STA INWK+8             \ the camera)
+\
+\LDA #CYL               \ Set the ship type to a Cobra Mk III
+\STA TYPE
+\
+\JSR NWSHP              \ Add a new Cobra Mk III to the local bubble (in this
+\                       \ case, the demo screen), pointing INF to the new ship's
+\                       \ data block in K%
+\
+\LDA #1                 \ Set the Cobra's speed to 1
+\STA INWK+27
+\
+\STA HIMCNT             \ Set HIMCNT = 1 to act as an outer counter for the
+\                       \ following loop
+\
+\LDA #90                \ Set MCNT = 90 to act as an inner counter for the
+\STA MCNT               \ following loop
+\
+\JSR TWIST              \ Call TWIST three times to pitch by a smallish angle in
+\JSR TWIST              \ a positive direction (i.e. 3 x 3.6 degree, or 10.8
+\JSR TWIST              \ degrees)
+\
+\                       \ The following loop iterates 90 times while HIMCNT is 1
+\                       \ and 256 times while HIMCNT is 0, to give a total of
+\                       \ 346 iterations
+\
+\.FLYL4
+\
+\JSR LL9                \ Call LL9 to draw the Cobra on-screen
+\
+\JSR MVEIT              \ Call MVEIT to move the Cobra slowly forward
+\
+\DEC MCNT               \ Decrement the inner counter in MCNT
+\
+\BNE FLYL4              \ Loop back to FLYL4 until the inner counter is 0
+\
+\DEC HIMCNT             \ Decrement the outer counter in HIMCNT
+\
+\BPL FLYL4              \ Loop back to FLYL4 until the outer counter is negative
+\
+\JSR ZZAAP              \ Call ZZAAP to draw a vertical laser line from the
+\                       \ Cobra
+\
+\LDA #0                 \ Call the NOISE routine with A = 0 to make the sound
+\JSR NOISE              \ of a laser firing
+\
+\LDY #10                \ Wait for 10/50 of a second (0.2 seconds)
+\JSR DELAY
+\
+\LDA #44                \ Set the Cobra's roll counter to 44 to make it roll in
+\STA INWK+29            \ a positive direction (clockwise), for just under a
+\                       \ half roll (44 * 1/16 radians = 2.75 radians = 158
+\                       \ degrees)
+\
+\LDA #8                 \ Set the Cobra's speed to 8
+\STA INWK+27
+\
+\LDA #&87               \ Set the Cobra's pitch counter to -7 to make it pitch
+\STA INWK+30            \ slightly in a negative direction (pull up), so it
+\                       \ starts flying gently towards the top of the screen
+\
+\JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+\                       \ the K% workspace at INF, so the Cobra becomes the
+\                       \ second ship in the K% block
+\
+\LDA #%10000000         \ Set bit 7 of byte #31 of the first ship in the K%
+\TSB K%+31              \ block, which is the Elite logo, so this flags the logo
+\                       \ as having been killed (the TSB instruction applies the
+\                       \ accumulator to the memory location using an OR)
+\
+\JSR EXNO3              \ Make an explosion sound
+\
+\JSR ZZAAP              \ Call ZZAAP to redraw the vertical laser line from the
+\                       \ Cobra, which removes it from the screen
+\
+\.FLYL5
+\
+\                       \ We now want to draw the logo exploding, so we first
+\                       \ need to copy the logo's ship data block from K% to
+\                       \ INWK
+\
+\LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
+\                       \ bytes in the ship data block
+\
+\.DML3
+\
+\LDA K%,X               \ Copy the X-th byte of the first ship data block in K%
+\STA INWK,X             \ to the X-th byte of INWK
+\
+\DEX                    \ Decrement the loop counter
+\
+\BPL DML3               \ Loop back for the next byte, until we have copied the
+\                       \ last byte from K% to INWK
+\
+\INX                    \ Increment X back to 0
+\
+\JSR GINF               \ Call GINF to fetch the address of the ship data block
+\                       \ for the ship in slot 0 (the logo) and store it in INF
+\
+\LDA XX21-2+2*LGO       \ Set XX0(1 0) to point to the ship blueprint for the
+\STA XX0                \ Elite logo
+\LDA XX21-1+2*LGO
+\STA XX0+1
+\
+\LDA #LGO               \ Set the ship type to the Elite logo
+\STA TYPE
+\
+\INC INWK               \ Increment x_lo to move the logo a little to the right
+\
+\JSR LL9                \ Call LL9 to draw the now-exploding logo on-screen
+\
+\JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+\                       \ the K% workspace at INF
+\
+\JSR PBFL               \ Call PBFL to send the contents of the pixel buffer to
+\                       \ the I/O processor for plotting on-screen
+\
+\LDA INWK+31            \ Test whether bits 5 and 7 of the logo's byte #31 are
+\AND #%10100000         \ both set ("ship is exploding" and "ship has been
+\CMP #%10100000         \ killed") and store the resulting flags on the stack
+\PHP
+\
+\                       \ We now want to animate the Cobra flying into the
+\                       \ distance while rolling clockwise, so we first need to
+\                       \ copy the logo's ship data block from K% to INWK
+\
+\LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
+\                       \ bytes in the ship data block
+\
+\.DML4
+\
+\LDA K%+NI%,X           \ Copy the X-th byte of the second ship data block in K%
+\STA INWK,X             \ to the X-th byte of INWK
+\
+\DEX                    \ Decrement the loop counter
+\
+\BPL DML4               \ Loop back for the next byte, until we have copied the
+\                       \ last byte from K% to INWK
+\
+\LDX #1                 \ Call GINF to fetch the address of the ship data block
+\JSR GINF               \ for the ship in slot 1 (the Cobra) and store it in INF
+\
+\LDA XX21-2+2*CYL       \ Set XX0(1 0) to point to the ship blueprint for a
+\STA XX0                \ Cobra Mk III
+\LDA XX21-1+2*CYL
+\STA XX0+1
+\
+\LDA #CYL               \ Set the ship type to a Cobra Mk III
+\STA TYPE
+\
+\JSR MVEIT              \ Call MVEIT to move the Cobra so it pitches, rolls and
+\                       \ flies on
+\
+\JSR LL9                \ Call LL9 to draw the Cobra on-screen
+\
+\JSR STORE              \ Call STORE to copy the ship data block at INWK back to
+\                       \ the K% workspace
+\
+\PLP                    \ Restore the flags that we stored on the stack above
+\
+\BNE FLYL5              \ If it is not the case that bits 5 and 7 of the logo's
+\                       \ byte #31 are both set, jump back to FLYL5 to keep
+\                       \ drawing the exploding logo and the Cobra
+\
+\                       \ The logo has now finished exploding, as bits 5 and 7
+\                       \ of the logo's byte #31 are now both set ("ship is
+\                       \ exploding" and "ship has been killed"). By this time
+\                       \ the Cobra will have reached the upper part of the
+\                       \ screen, where we leave it while we do the next bit of
+\                       \ scrolling text
+\
+\LDA #14                \ Set DELTA to 14, so our current speed (i.e. that of
+\STA DELTA              \ the camera) is 14
+\
+\STZ DELT4              \ Set DELT4 = 0
+\
+\LSR A                  \ Set DELT4+1 = 14 / 4
+\ROR DELT4              \
+\LSR A                  \ so DELT4(1 0) therefore contains 14 * 64
+\ROR DELT4
+\STA DELT4+1
+\
+\IF _EXECUTIVE
+\
+\LDX #LO(executive)     \ Set (Y X) to the address of executive, which contains
+\LDY #HI(executive)     \ the text: "THE EXECUTIVE VERSION"
+\
+\JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
+\
+\ENDIF
+\
+\LDX #LO(byian)         \ Set (Y X) to the address of byian, which contains the
+\LDY #HI(byian)         \ text: "BY IAN BELL AND DAVID BRABEN"
+\
+\JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
+\
+\                       \ We now want the Cobra to start flying again, so we
+\                       \ first need to copy the logo's ship data block from K%
+\                       \ to INWK
+\
+\LDX #NI%-1             \ Set a counter in X so we can loop through the NI%
+\                       \ bytes in the ship data block
+\
+\.DML5
+\
+\LDA K%+NI%,X           \ Copy the X-th byte of the second ship data block in K%
+\STA INWK,X             \ to the X-th byte of INWK
+\
+\DEX                    \ Decrement the loop counter
+\
+\BPL DML5               \ Loop back for the next byte, until we have copied the
+\                       \ last byte from K% to INWK
+\
+\.FLYL6
+\
+\JSR STARS1             \ Call STARS1 to process the stardust for the front view
+\
+\JSR MVEIT              \ Call MVEIT to move the Cobra so it pitches, rolls and
+\                       \ flies onwards
+\
+\JSR LL9                \ Call LL9 to draw the Cobra on-screen
+\
+\LDA INWK+8             \ Keep looping back to FLYL6 until z_sign is negative,
+\BPL FLYL6              \ i.e. the Cobra has been overtaken by the camera as the
+\                       \ camera moves forward, and it's disappeared off the top
+\                       \ of the screen
+\
+\LDX #LO(true3)         \ Set (Y X) to the address of true3, which contains the
+\LDY #HI(true3)         \ text: "THE GALAXY IS IN TURMOIL, THE NAVY FAR AWAY AS
+\                       \ THE EMPIRE CRUMBLES" (or, in the Executive version:
+\                       \ "CONGRATULATIONS ON OBTAINING A COPY OF THIS ELUSIVE
+\                       \ PRODUCT")
+\
+\JSR SLIDE              \ Call SLIDE to display the Star Wars scroll text
+\
+\JSR RES2               \ Reset a number of flight variables and workspaces
+\
+\LDA #&E0               \ Set nosev_z_hi = -1 (as &E0 is a negative unit vector
+\STA INWK+14            \ length), so the ship points out of the screen, towards
+\                       \ us
+\
+\STZ DELTA              \ Set DELTA to 0, so our current speed (i.e. that of the
+\                       \ camera) is 0
+\
+\STZ ALPHA              \ Set ALPHA and ALP1 to 0, so our roll angle (i.e. that
+\STZ ALP1               \ of the camera) is 0
+\
+\LDX #15                \ Set the ship's speed to 15
+\STX INWK+27
+\
+\LDX #5                 \ Set the ship's z_hi to 5, so it's in the distance
+\STX INWK+7
+\
+\LDA #ADA               \ Set the ship type to an Adder
+\STA TYPE
+\
+\JSR NWSHP              \ Add a new Adder to the local bubble (in this case, the
+\                       \ demo screen)
+\
+\.FLYL7
+\
+\JSR MVEIT              \ Call MVEIT to move the Adder so it flies towards the
+\                       \ camera
+\
+\JSR LL9                \ Call LL9 to draw the Adder on-screen
+\
+\LDA INWK+7             \ Keep looping back to FLYL7 until z_hi is zero
+\BNE FLYL7
+\
+\LDA #3                 \ Set the Adder's roll counter to 3 to make it roll in
+\STA INWK+29            \ a positive direction (clockwise)
+\
+\STA INWK+30            \ Set the Adder's pitch counter to 3 to make it pitch in
+\                       \ a positive direction (dive)
+\
+\LDA INWK+8             \ Keep looping back to FLYL7 until z_sign is negative
+\BPL FLYL7              \ i.e. the Adder has flown past the camera
+\
+\JSR SCAN               \ Call SCAN to remove the adder from the scanner (by
+\                       \ redrawing it)
+\
+\JSR RES2               \ Reset a number of flight variables and workspaces
+\
+\LDA #CYAN2             \ Set the scanner colour for the Cobra Mk III to its
+\STA scacol+CYL         \ default colour of cyan, so Cobras will appear on the
+\                       \ scanner once again
+\
+\JMP DEATH2             \ Jump to DEATH2 to reset most of the game and restart
+\                       \ from the title screen
+
+                        \ --- And replaced by: -------------------------------->
+
+RTS                     \ Return from the subroutine
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -45279,426 +45722,430 @@ ENDIF
 \
 \ ******************************************************************************
 
-.SLIDE
-
- JSR GRIDSET            \ Call GRIDSET to populate the line coordinate tables at
-                        \ X1TB, Y1TB, X2TB and Y2TB (the TB tables) with the
-                        \ lines for the scroll text in (Y X)
-
-                        \ The following section does the following:
-                        \
-                        \   * Clear the VB tables (X1VB, Y1VB, X2VB and Y2VB)
-                        \
-                        \   * Call GRID with values of BALI dropping by 2 each
-                        \     time, from 254 to 252 to 250 ... to 6 to 4 to 2,
-                        \     to display the scroll text moving up the screen
-                        \     and into the distance
-                        \
-                        \   * Clear the VB tables
-                        \
-                        \   * Call GRID with BALI = 2 to erase the final set of
-                        \     lines from the screen
-
- JSR ZEVB               \ Call ZEVB to zero-fill the Y1VB variable, which
-                        \ effectively clears all the VB tables as we only check
-                        \ the Y1VB table for zero values
-
- LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
- JSR DOCOL              \ switch to colour 2, which is yellow
-
- LDA #254               \ Set BALI = 254 to act as a counter from 254 to 2,
- STA BALI               \ decreasing by 2 each iteration, which represents the
-                        \ scrolling of the Star Wars scroll text up the screen
-                        \ and into the distance
-
-.SLL2
-
- JSR GRID               \ Call GRID to draw the Star Wars scroll text at the
-                        \ scroll position in BALI
-
- DEC BALI               \ Set BALI = BALI - 2 to move the scroll text up the
- DEC BALI               \ screen and into the distance
-
- BNE SLL2               \ Loop back to SLL2 until the loop counter is 0 (so GRID
-                        \ was last called with BALI = 2)
-
-.SL1
-
- JSR ZEVB               \ Call ZEVB to zero-fill the Y1VB variable, which
-                        \ effectively clears all the VB tables as we only check
-                        \ the Y1VB table for zero values
-
- LDA #2                 \ Set BALI = 2 and fall into GRID below to redraw the
- STA BALI               \ last set of scroll text, which erases it from the
-                        \ screen
-
-.GRID
-
-                        \ The GRID routine draws the Star Wars scroll text, with
-                        \ the value in BALI determining the scroll position of
-                        \ the perspective view, starting from 254 (not yet
-                        \ on-screen) and going down to 2 (the scroll has almost
-                        \ faded into the distance)
-                        \
-                        \ The routine loops through the lines we just put in the
-                        \ TB tables, projects them into a Star Wars-like
-                        \ perspective scroll view in 3D space, then projects
-                        \ them onto the 2D screen, saving the resulting screen
-                        \ coordinates into the VB table. It then calls the
-                        \ GRIDEX routine to erase the lines from the previous
-                        \ call to GRID, and draw the new ones
-
- LDY #0                 \ Set Y = 0, to act as an index into the TB tables,
-                        \ where we put the line coordinates above
-
- STY UPO                \ Set UPO = 0, to act as an index into the UB tables
-
- STY INWK+8             \ Set z_sign = 0
-
- STY INWK+1             \ Set x_hi = 0
-
- STY INWK+4             \ Set y_hi = 0
-
- DEY                    \ Decrement Y to 255, so the following loop starts with
-                        \ Y pointing to the first byte from the TB tables
-
-.GRIDL
-
- INY                    \ Increment Y to point to the next pair of line
-                        \ coordinates in the TB tables
-
-                        \ We now fetch the line's start point as 3D space
-                        \ coordinates, project it onto the Star Wars perspective
-                        \ scroll text, and project it again onto the 2D screen
-
- STZ INWK+7             \ Set z_hi = 0
-
- LDA Y1TB,Y             \ Set A to the y-coordinate of the line's start point,
-                        \ let's call it Y1
-
- BNE P%+5               \ If A = 0, jump to GREX to draw the projected lines
- JMP GREX               \ as we have now processed all of them
-
- SEC                    \ Set A = A - BALI
- SBC BALI               \       = Y1 - BALI
-
- BCC GRIDL              \ If Y1 < BALI, jump back to GRIDL to process the next
-                        \ line, as this one is not yet on-screen
-
- STA R                  \ Set R = Y1 - BALI
-
- ASL A                  \ Shift bits 6-7 of A into bits 0-1 of z_hi, so the C
- ROL INWK+7             \ flag is clear (as we set z_hi to 0 above) and z_hi is
- ASL A                  \ the high byte if A * 4 = (Y1 - BALI) * 4 is expressed
- ROL INWK+7             \ as a 16-bit value, i.e. HI((Y1 - BALI) * 4)
-
- ADC #D                 \ Set (z_hi z_lo) = (z_hi z_lo) + #D
- STA INWK+6             \
-                        \ first adding the low bytes
-
- LDA INWK+7             \ And then adding the high bytes, so we now have:
- ADC #0                 \
- STA INWK+7             \   (z_hi z_lo) = HI((Y1 - BALI) * 4) + #D
-                        \
-                        \ so because we set z_sign to 0 above, we have:
-                        \
-                        \   (z_sign z_hi z_lo) = HI((Y1 - BALI) * 4) + #D
-
- STZ S                  \ Set S = 0
-
- LDA #%10000000         \ Set A to a negative sign byte
-
- STA P                  \ Set P = 128
-
- JSR ADD                \ Set (A X) = (A P) + (S R)
-                        \           = -128 + (0 R)
-                        \           = -128 + R
-                        \           = -128 + (Y1 - BALI)
-                        \           = Y1 - BALI - 128
-
- STA INWK+5             \ Set (y_sign y_lo) = (A X)
- STX INWK+3             \                   = Y1 - BALI - 128
-                        \
-                        \ so because we set y_hi to 0 above, we have:
-                        \
-                        \   (y_sign y_hi y_lo) = Y1 - BALI - 128
-
- LDA X1TB,Y             \ Set A to the x-coordinate of the line's start point,
-                        \ let's call it X1. A is in the range 0 to 255, and we
-                        \ now need to move the coordinate to the left so it's in
-                        \ the range -128 to +128, but we need to put the result
-                        \ into (x_sign x_hi x_lo) which is a sign-magnitude
-                        \ number, so we can't just subtract 128, as that would
-                        \ give us a two's complement number
-
- EOR #%10000000         \ Flip the sign bit of A
-
- BPL GR2                \ If bit 7 is now clear, meaning it was previously set,
-                        \ then jump to GR2 as the original A was in the range
-                        \ 128 to 255, and we now have the correct result for
-                        \ A = A - 128, which is also |A - 128| as A was positive
-
-                        \ Otherwise bit 7 was previously clear, so A was in the
-                        \ range 0 to 127 and the EOR has shifted that up to 128
-                        \ to 255, so we need to negate the number so that 128
-                        \ becomes 0, 129 becomes 1 and so on
-
- EOR #%11111111         \ Negate the result in A by flipping all the bits and
- INA                    \ adding 1, i.e. using two's complement to negate it to
-                        \ set A to the magnitude part of the sign-magnitude
-                        \ number A - 128, i.e. |A - 128|
-
-.GR2
-
- STA INWK               \ Set x_lo = |A - 128|
-                        \          = |X1 - 128|
-
- LDA X1TB,Y             \ Set x_sign to the opposite of bit 7 in X1, so it will
- EOR #%10000000         \ be positive if X1 > 127 and negative if X1 <= 127, so
- AND #%10000000         \ x_sign has the correct sign for X1 - 128:
- STA INWK+2             \
-                        \   (x_sign x_lo) = X1 - 128
-                        \
-                        \ and because we set x_hi to 0 above, we have:
-                        \
-                        \   (x_sign x_hi x_lo) = X1 - 128
-
- STY YS                 \ Store Y, the index into the TB tables, in YS
-
- JSR PROJ               \ Project the line's start coordinate onto the screen,
-                        \ returning:
-                        \
-                        \   * K3(1 0) = the screen x-coordinate
-                        \   * K4(1 0) = the screen y-coordinate
-
- LDY YS                 \ Retrieve the value of Y from YS, so it once again
-                        \ contains the index into the TB tables
-
- LDA K3                 \ Set XX15(1 0) = K3(1 0)
- STA XX15
- LDA K3+1
- STA XX15+1
-
- LDA K4                 \ Set XX15(3 2) = K4(1 0)
- STA XX15+2
- LDA K4+1
- STA XX15+3
-
-                        \ We now fetch the line's end point as 3D space
-                        \ coordinates, project it onto the Star Wars perspective
-                        \ scroll text, and project it again onto the 2D screen
-
- STZ INWK+7             \ Set x_hi = 0
-
- LDA Y2TB,Y             \ Set A to Y2, the end point's y-coordinate from Y2TB
-
- SEC                    \ Set A = A - BALI
- SBC BALI               \       = Y2 - BALI
-
- BCC GR6                \ If Y2 < BALI, jump down to GR6 to process the next
-                        \ line, as this one is not yet on-screen
-
- STA R                  \ Set R = Y2 - BALI
-
- ASL A                  \ Shift bits 6-7 of A into bits 0-1 of z_hi, so the C
- ROL INWK+7             \ flag is clear (as we set z_hi to 0 above) and z_hi is
- ASL A                  \ the high byte if A * 4 = (Y2 - BALI) * 4 is expressed
- ROL INWK+7             \ as a 16-bit value, i.e. HI((Y2 - BALI) * 4)
-
- ADC #D                 \ Set (z_hi z_lo) = (z_hi z_lo) + #D
- STA INWK+6             \
-                        \ first adding the low bytes
-
- LDA INWK+7             \ And then adding the high bytes, so we now have:
- ADC #0                 \
- STA INWK+7             \   (z_hi z_lo) = HI((Y2 - BALI) * 4) + #D
-                        \
-                        \ so because we set z_sign to 0 above, we have:
-                        \
-                        \   (z_sign z_hi z_lo) = HI((Y2 - BALI) * 4) + #D
-
- STZ S                  \ Set S = 0
-
- LDA #%10000000         \ Set A to a negative sign byte
-
- STA P                  \ Set P = 128
-
- JSR ADD                \ Set (A X) = (A P) + (S R)
-                        \           = -128 + (0 R)
-                        \           = -128 + R
-                        \           = -128 + (Y2 - BALI)
-                        \           = Y2 - BALI - 128
-
- STA INWK+5             \ Set (y_sign y_lo) = (A X)
- STX INWK+3             \                   = Y2 - BALI - 128
-                        \
-                        \ so because we set y_hi to 0 above, we have:
-                        \
-                        \   (y_sign y_hi y_lo) = Y2 - BALI - 128
-
- LDA X2TB,Y             \ Set A to the x-coordinate of the line's start point,
-                        \ let's call it X2. A is in the range 0 to 255, and we
-                        \ now need to move the coordinate to the left so it's in
-                        \ the range -128 to +128, but we need to put the result
-                        \ into (x_sign x_hi x_lo) which is a sign-magnitude
-                        \ number, so we can't just subtract 128, as that would
-                        \ give us a two's complement number
-
- EOR #%10000000         \ Flip the sign bit of A
-
- BPL GR3                \ If bit 7 is now clear, meaning it was previously set,
-                        \ then jump to GR3 as the original A was in the range
-                        \ 128 to 255, and we now have the correct result for
-                        \ A = A - 128, which is also |A - 128| as A was positive
-
-                        \ Otherwise bit 7 was previously clear, so A was in the
-                        \ range 0 to 127 and the EOR has shifted that up to 128
-                        \ to 255, so we need to negate the number so that 128
-                        \ becomes 0, 129 becomes 1 and so on
-
- EOR #%11111111         \ Negate the result in A by flipping all the bits and
- INA                    \ adding 1, i.e. using two's complement to negate it to
-                        \ set A to the magnitude part of the sign-magnitude
-                        \ number A - 128, i.e. |A - 128|
-
-.GR3
-
- STA INWK               \ Set x_lo = |A - 128|
-                        \          = |X2 - 128|
-
- LDA X2TB,Y             \ Set x_sign to the opposite of bit 7 in X2, so it will
- EOR #%10000000         \ be positive if X2 > 127 and negative if X2 <= 127, so
- AND #%10000000         \ x_sign has the correct sign for X2 - 128:
- STA INWK+2             \
-                        \   (x_sign x_lo) = X2 - 128
-                        \
-                        \ and because we set x_hi to 0 above, we have:
-                        \
-                        \   (x_sign x_hi x_lo) = X2 - 128
-
- JSR PROJ               \ Project the line's end coordinate onto the screen,
-                        \ returning:
-                        \
-                        \   * K3(1 0) = the screen x-coordinate
-                        \   * K4(1 0) = the screen y-coordinate
-
- LDA K3                 \ Set XX15(5 4) = K3(1 0)
- STA XX15+4
- LDA K3+1
- STA XX15+5
-
- LDA K4                 \ Set XX12(1 0) = K4(1 0)
- STA XX12
- LDA K4+1
- STA XX12+1
-
-                        \ We now have our line, projected onto the Star Wars
-                        \ perspective scroll text and then onto the screen, so
-                        \ we can clip it and store it in the UB tables for
-                        \ drawing later, once we have processed all the lines in
-                        \ the scroll text in the same way
-
- JSR LL145              \ Call LL145 to see if the new line segment needs to be
-                        \ clipped to fit on-screen, returning the clipped line's
-                        \ end-points in (X1, Y1) and (X2, Y2)
-
- LDY YS                 \ Retrieve the value of Y from YS, so it once again
-                        \ contains the index into the TB tables
-
- BCS GR6                \ If the C flag is set then the line is not visible on
-                        \ screen, so loop back to GRIDL via GR6 to process the
-                        \ next line to draw in the scroll text
-
- INC UPO                \ Increment the table pointer in UPO to point to the
-                        \ next free slot in the UB tables
-
- LDX UPO                \ Load the UPO table pointer into X
-
- LDA X1                 \ Store the line coordinates (X1, Y1) and (X2, Y2) in
- STA X1UB,X             \ the next free slot in the UB tables
- LDA Y1
- STA Y1UB,X
- LDA X2
- STA X2UB,X
- LDA Y2
- STA Y2UB,X
-
-.GR6
-
- JMP GRIDL              \ Loop back to GRIDL to process the next line to draw
-                        \ in the scroll text
-
-.GREX
-
-                        \ If we get here then it's time to draw the lines we
-                        \ just projected, and remove any lines that are already
-                        \ on-screen
-                        \
-                        \ The VB table holds the new lines to draw, while UB
-                        \ holds all their previous coordinates, i.e. the current
-                        \ lines on-screen, so drawing the VB lines draws the
-                        \ lines in their new positions, while drawing the UB
-                        \ lines erases the old lines from the screen
-
- LDY UPO                \ Set Y to the UPO table pointer, which contains the
-                        \ number of coordinates in the X1UB, Y1UB, X2UB and Y2UB
-                        \ tables (i.e. the number of lines we projected)
-
- BEQ GREX2              \ If UPO = 0 then there are no projected lines to draw,
-                        \ so jump to GREX2 to return from the subroutine
-
-                        \ We now loop through the projected lines, using Y as a
-                        \ loop counter that doubles as an index into the line
-                        \ coordinate tables
-                        \
-                        \ First we draw the Y-th line from the VB table, if
-                        \ there is one, and then we draw the Y-th line from the
-                        \ UB table, before copying the Y-th VB line coordinates
-                        \ into the UB table (so the UB table contains the lines
-                        \ that are now on-screen)
-
-.GRL2
-
- LDA Y1VB,Y             \ If there is no Y-th line in the VB table, jump to GR4
- BEQ GR4
-
- STA Y1                 \ Otherwise copy the Y-th line's coordinates from the VB
- LDA X1VB,Y             \ table into (X1, Y1) and (X2, Y2)
- STA X1
- LDA X2VB,Y
- STA X2
- LDA Y2VB,Y
- STA Y2
-
- JSR LOIN               \ Draw the line from (X1, Y1) to (X2, Y2)
-
-.GR4
-
- LDA X1UB,Y             \ Copy the Y-th line's coordinates from the UB table
- STA X1                 \ into both the VB table and into (X1, Y1) and (X2, Y2)
- STA X1VB,Y
- LDA Y1UB,Y
- STA Y1
- STA Y1VB,Y
- LDA X2UB,Y
- STA X2
- STA X2VB,Y
- LDA Y2UB,Y
- STA Y2
- STA Y2VB,Y
-
- JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2)
-
- DEY                    \ Decrement the number of coordinates in Y
-
- BNE GRL2               \ Loop back to GRL2 to draw the next set of coordinates
-                        \ until we have done them all
-
- JSR LBFL               \ Call LBFL to draw the line in the line buffer
-
-.GREX2
-
- RTS                    \ Return from the subroutine
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\.SLIDE
+\
+\JSR GRIDSET            \ Call GRIDSET to populate the line coordinate tables at
+\                       \ X1TB, Y1TB, X2TB and Y2TB (the TB tables) with the
+\                       \ lines for the scroll text in (Y X)
+\
+\                       \ The following section does the following:
+\                       \
+\                       \   * Clear the VB tables (X1VB, Y1VB, X2VB and Y2VB)
+\                       \
+\                       \   * Call GRID with values of BALI dropping by 2 each
+\                       \     time, from 254 to 252 to 250 ... to 6 to 4 to 2,
+\                       \     to display the scroll text moving up the screen
+\                       \     and into the distance
+\                       \
+\                       \   * Clear the VB tables
+\                       \
+\                       \   * Call GRID with BALI = 2 to erase the final set of
+\                       \     lines from the screen
+\
+\JSR ZEVB               \ Call ZEVB to zero-fill the Y1VB variable, which
+\                       \ effectively clears all the VB tables as we only check
+\                       \ the Y1VB table for zero values
+\
+\LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
+\JSR DOCOL              \ switch to colour 2, which is yellow
+\
+\LDA #254               \ Set BALI = 254 to act as a counter from 254 to 2,
+\STA BALI               \ decreasing by 2 each iteration, which represents the
+\                       \ scrolling of the Star Wars scroll text up the screen
+\                       \ and into the distance
+\
+\.SLL2
+\
+\JSR GRID               \ Call GRID to draw the Star Wars scroll text at the
+\                       \ scroll position in BALI
+\
+\DEC BALI               \ Set BALI = BALI - 2 to move the scroll text up the
+\DEC BALI               \ screen and into the distance
+\
+\BNE SLL2               \ Loop back to SLL2 until the loop counter is 0 (so GRID
+\                       \ was last called with BALI = 2)
+\
+\.SL1
+\
+\JSR ZEVB               \ Call ZEVB to zero-fill the Y1VB variable, which
+\                       \ effectively clears all the VB tables as we only check
+\                       \ the Y1VB table for zero values
+\
+\LDA #2                 \ Set BALI = 2 and fall into GRID below to redraw the
+\STA BALI               \ last set of scroll text, which erases it from the
+\                       \ screen
+\
+\.GRID
+\
+\                       \ The GRID routine draws the Star Wars scroll text, with
+\                       \ the value in BALI determining the scroll position of
+\                       \ the perspective view, starting from 254 (not yet
+\                       \ on-screen) and going down to 2 (the scroll has almost
+\                       \ faded into the distance)
+\                       \
+\                       \ The routine loops through the lines we just put in the
+\                       \ TB tables, projects them into a Star Wars-like
+\                       \ perspective scroll view in 3D space, then projects
+\                       \ them onto the 2D screen, saving the resulting screen
+\                       \ coordinates into the VB table. It then calls the
+\                       \ GRIDEX routine to erase the lines from the previous
+\                       \ call to GRID, and draw the new ones
+\
+\LDY #0                 \ Set Y = 0, to act as an index into the TB tables,
+\                       \ where we put the line coordinates above
+\
+\STY UPO                \ Set UPO = 0, to act as an index into the UB tables
+\
+\STY INWK+8             \ Set z_sign = 0
+\
+\STY INWK+1             \ Set x_hi = 0
+\
+\STY INWK+4             \ Set y_hi = 0
+\
+\DEY                    \ Decrement Y to 255, so the following loop starts with
+\                       \ Y pointing to the first byte from the TB tables
+\
+\.GRIDL
+\
+\INY                    \ Increment Y to point to the next pair of line
+\                       \ coordinates in the TB tables
+\
+\                       \ We now fetch the line's start point as 3D space
+\                       \ coordinates, project it onto the Star Wars perspective
+\                       \ scroll text, and project it again onto the 2D screen
+\
+\STZ INWK+7             \ Set z_hi = 0
+\
+\LDA Y1TB,Y             \ Set A to the y-coordinate of the line's start point,
+\                       \ let's call it Y1
+\
+\BNE P%+5               \ If A = 0, jump to GREX to draw the projected lines
+\JMP GREX               \ as we have now processed all of them
+\
+\SEC                    \ Set A = A - BALI
+\SBC BALI               \       = Y1 - BALI
+\
+\BCC GRIDL              \ If Y1 < BALI, jump back to GRIDL to process the next
+\                       \ line, as this one is not yet on-screen
+\
+\STA R                  \ Set R = Y1 - BALI
+\
+\ASL A                  \ Shift bits 6-7 of A into bits 0-1 of z_hi, so the C
+\ROL INWK+7             \ flag is clear (as we set z_hi to 0 above) and z_hi is
+\ASL A                  \ the high byte if A * 4 = (Y1 - BALI) * 4 is expressed
+\ROL INWK+7             \ as a 16-bit value, i.e. HI((Y1 - BALI) * 4)
+\
+\ADC #D                 \ Set (z_hi z_lo) = (z_hi z_lo) + #D
+\STA INWK+6             \
+\                       \ first adding the low bytes
+\
+\LDA INWK+7             \ And then adding the high bytes, so we now have:
+\ADC #0                 \
+\STA INWK+7             \   (z_hi z_lo) = HI((Y1 - BALI) * 4) + #D
+\                       \
+\                       \ so because we set z_sign to 0 above, we have:
+\                       \
+\                       \   (z_sign z_hi z_lo) = HI((Y1 - BALI) * 4) + #D
+\
+\STZ S                  \ Set S = 0
+\
+\LDA #%10000000         \ Set A to a negative sign byte
+\
+\STA P                  \ Set P = 128
+\
+\JSR ADD                \ Set (A X) = (A P) + (S R)
+\                       \           = -128 + (0 R)
+\                       \           = -128 + R
+\                       \           = -128 + (Y1 - BALI)
+\                       \           = Y1 - BALI - 128
+\
+\STA INWK+5             \ Set (y_sign y_lo) = (A X)
+\STX INWK+3             \                   = Y1 - BALI - 128
+\                       \
+\                       \ so because we set y_hi to 0 above, we have:
+\                       \
+\                       \   (y_sign y_hi y_lo) = Y1 - BALI - 128
+\
+\LDA X1TB,Y             \ Set A to the x-coordinate of the line's start point,
+\                       \ let's call it X1. A is in the range 0 to 255, and we
+\                       \ now need to move the coordinate to the left so it's in
+\                       \ the range -128 to +128, but we need to put the result
+\                       \ into (x_sign x_hi x_lo) which is a sign-magnitude
+\                       \ number, so we can't just subtract 128, as that would
+\                       \ give us a two's complement number
+\
+\EOR #%10000000         \ Flip the sign bit of A
+\
+\BPL GR2                \ If bit 7 is now clear, meaning it was previously set,
+\                       \ then jump to GR2 as the original A was in the range
+\                       \ 128 to 255, and we now have the correct result for
+\                       \ A = A - 128, which is also |A - 128| as A was positive
+\
+\                       \ Otherwise bit 7 was previously clear, so A was in the
+\                       \ range 0 to 127 and the EOR has shifted that up to 128
+\                       \ to 255, so we need to negate the number so that 128
+\                       \ becomes 0, 129 becomes 1 and so on
+\
+\EOR #%11111111         \ Negate the result in A by flipping all the bits and
+\INA                    \ adding 1, i.e. using two's complement to negate it to
+\                       \ set A to the magnitude part of the sign-magnitude
+\                       \ number A - 128, i.e. |A - 128|
+\
+\.GR2
+\
+\STA INWK               \ Set x_lo = |A - 128|
+\                       \          = |X1 - 128|
+\
+\LDA X1TB,Y             \ Set x_sign to the opposite of bit 7 in X1, so it will
+\EOR #%10000000         \ be positive if X1 > 127 and negative if X1 <= 127, so
+\AND #%10000000         \ x_sign has the correct sign for X1 - 128:
+\STA INWK+2             \
+\                       \   (x_sign x_lo) = X1 - 128
+\                       \
+\                       \ and because we set x_hi to 0 above, we have:
+\                       \
+\                       \   (x_sign x_hi x_lo) = X1 - 128
+\
+\STY YS                 \ Store Y, the index into the TB tables, in YS
+\
+\JSR PROJ               \ Project the line's start coordinate onto the screen,
+\                       \ returning:
+\                       \
+\                       \   * K3(1 0) = the screen x-coordinate
+\                       \   * K4(1 0) = the screen y-coordinate
+\
+\LDY YS                 \ Retrieve the value of Y from YS, so it once again
+\                       \ contains the index into the TB tables
+\
+\LDA K3                 \ Set XX15(1 0) = K3(1 0)
+\STA XX15
+\LDA K3+1
+\STA XX15+1
+\
+\LDA K4                 \ Set XX15(3 2) = K4(1 0)
+\STA XX15+2
+\LDA K4+1
+\STA XX15+3
+\
+\                       \ We now fetch the line's end point as 3D space
+\                       \ coordinates, project it onto the Star Wars perspective
+\                       \ scroll text, and project it again onto the 2D screen
+\
+\STZ INWK+7             \ Set x_hi = 0
+\
+\LDA Y2TB,Y             \ Set A to Y2, the end point's y-coordinate from Y2TB
+\
+\SEC                    \ Set A = A - BALI
+\SBC BALI               \       = Y2 - BALI
+\
+\BCC GR6                \ If Y2 < BALI, jump down to GR6 to process the next
+\                       \ line, as this one is not yet on-screen
+\
+\STA R                  \ Set R = Y2 - BALI
+\
+\ASL A                  \ Shift bits 6-7 of A into bits 0-1 of z_hi, so the C
+\ROL INWK+7             \ flag is clear (as we set z_hi to 0 above) and z_hi is
+\ASL A                  \ the high byte if A * 4 = (Y2 - BALI) * 4 is expressed
+\ROL INWK+7             \ as a 16-bit value, i.e. HI((Y2 - BALI) * 4)
+\
+\ADC #D                 \ Set (z_hi z_lo) = (z_hi z_lo) + #D
+\STA INWK+6             \
+\                       \ first adding the low bytes
+\
+\LDA INWK+7             \ And then adding the high bytes, so we now have:
+\ADC #0                 \
+\STA INWK+7             \   (z_hi z_lo) = HI((Y2 - BALI) * 4) + #D
+\                       \
+\                       \ so because we set z_sign to 0 above, we have:
+\                       \
+\                       \   (z_sign z_hi z_lo) = HI((Y2 - BALI) * 4) + #D
+\
+\STZ S                  \ Set S = 0
+\
+\LDA #%10000000         \ Set A to a negative sign byte
+\
+\STA P                  \ Set P = 128
+\
+\JSR ADD                \ Set (A X) = (A P) + (S R)
+\                       \           = -128 + (0 R)
+\                       \           = -128 + R
+\                       \           = -128 + (Y2 - BALI)
+\                       \           = Y2 - BALI - 128
+\
+\STA INWK+5             \ Set (y_sign y_lo) = (A X)
+\STX INWK+3             \                   = Y2 - BALI - 128
+\                       \
+\                       \ so because we set y_hi to 0 above, we have:
+\                       \
+\                       \   (y_sign y_hi y_lo) = Y2 - BALI - 128
+\
+\LDA X2TB,Y             \ Set A to the x-coordinate of the line's start point,
+\                       \ let's call it X2. A is in the range 0 to 255, and we
+\                       \ now need to move the coordinate to the left so it's in
+\                       \ the range -128 to +128, but we need to put the result
+\                       \ into (x_sign x_hi x_lo) which is a sign-magnitude
+\                       \ number, so we can't just subtract 128, as that would
+\                       \ give us a two's complement number
+\
+\EOR #%10000000         \ Flip the sign bit of A
+\
+\BPL GR3                \ If bit 7 is now clear, meaning it was previously set,
+\                       \ then jump to GR3 as the original A was in the range
+\                       \ 128 to 255, and we now have the correct result for
+\                       \ A = A - 128, which is also |A - 128| as A was positive
+\
+\                       \ Otherwise bit 7 was previously clear, so A was in the
+\                       \ range 0 to 127 and the EOR has shifted that up to 128
+\                       \ to 255, so we need to negate the number so that 128
+\                       \ becomes 0, 129 becomes 1 and so on
+\
+\EOR #%11111111         \ Negate the result in A by flipping all the bits and
+\INA                    \ adding 1, i.e. using two's complement to negate it to
+\                       \ set A to the magnitude part of the sign-magnitude
+\                       \ number A - 128, i.e. |A - 128|
+\
+\.GR3
+\
+\STA INWK               \ Set x_lo = |A - 128|
+\                       \          = |X2 - 128|
+\
+\LDA X2TB,Y             \ Set x_sign to the opposite of bit 7 in X2, so it will
+\EOR #%10000000         \ be positive if X2 > 127 and negative if X2 <= 127, so
+\AND #%10000000         \ x_sign has the correct sign for X2 - 128:
+\STA INWK+2             \
+\                       \   (x_sign x_lo) = X2 - 128
+\                       \
+\                       \ and because we set x_hi to 0 above, we have:
+\                       \
+\                       \   (x_sign x_hi x_lo) = X2 - 128
+\
+\JSR PROJ               \ Project the line's end coordinate onto the screen,
+\                       \ returning:
+\                       \
+\                       \   * K3(1 0) = the screen x-coordinate
+\                       \   * K4(1 0) = the screen y-coordinate
+\
+\LDA K3                 \ Set XX15(5 4) = K3(1 0)
+\STA XX15+4
+\LDA K3+1
+\STA XX15+5
+\
+\LDA K4                 \ Set XX12(1 0) = K4(1 0)
+\STA XX12
+\LDA K4+1
+\STA XX12+1
+\
+\                       \ We now have our line, projected onto the Star Wars
+\                       \ perspective scroll text and then onto the screen, so
+\                       \ we can clip it and store it in the UB tables for
+\                       \ drawing later, once we have processed all the lines in
+\                       \ the scroll text in the same way
+\
+\JSR LL145              \ Call LL145 to see if the new line segment needs to be
+\                       \ clipped to fit on-screen, returning the clipped line's
+\                       \ end-points in (X1, Y1) and (X2, Y2)
+\
+\LDY YS                 \ Retrieve the value of Y from YS, so it once again
+\                       \ contains the index into the TB tables
+\
+\BCS GR6                \ If the C flag is set then the line is not visible on
+\                       \ screen, so loop back to GRIDL via GR6 to process the
+\                       \ next line to draw in the scroll text
+\
+\INC UPO                \ Increment the table pointer in UPO to point to the
+\                       \ next free slot in the UB tables
+\
+\LDX UPO                \ Load the UPO table pointer into X
+\
+\LDA X1                 \ Store the line coordinates (X1, Y1) and (X2, Y2) in
+\STA X1UB,X             \ the next free slot in the UB tables
+\LDA Y1
+\STA Y1UB,X
+\LDA X2
+\STA X2UB,X
+\LDA Y2
+\STA Y2UB,X
+\
+\.GR6
+\
+\JMP GRIDL              \ Loop back to GRIDL to process the next line to draw
+\                       \ in the scroll text
+\
+\.GREX
+\
+\                       \ If we get here then it's time to draw the lines we
+\                       \ just projected, and remove any lines that are already
+\                       \ on-screen
+\                       \
+\                       \ The VB table holds the new lines to draw, while UB
+\                       \ holds all their previous coordinates, i.e. the current
+\                       \ lines on-screen, so drawing the VB lines draws the
+\                       \ lines in their new positions, while drawing the UB
+\                       \ lines erases the old lines from the screen
+\
+\LDY UPO                \ Set Y to the UPO table pointer, which contains the
+\                       \ number of coordinates in the X1UB, Y1UB, X2UB and Y2UB
+\                       \ tables (i.e. the number of lines we projected)
+\
+\BEQ GREX2              \ If UPO = 0 then there are no projected lines to draw,
+\                       \ so jump to GREX2 to return from the subroutine
+\
+\                       \ We now loop through the projected lines, using Y as a
+\                       \ loop counter that doubles as an index into the line
+\                       \ coordinate tables
+\                       \
+\                       \ First we draw the Y-th line from the VB table, if
+\                       \ there is one, and then we draw the Y-th line from the
+\                       \ UB table, before copying the Y-th VB line coordinates
+\                       \ into the UB table (so the UB table contains the lines
+\                       \ that are now on-screen)
+\
+\.GRL2
+\
+\LDA Y1VB,Y             \ If there is no Y-th line in the VB table, jump to GR4
+\BEQ GR4
+\
+\STA Y1                 \ Otherwise copy the Y-th line's coordinates from the VB
+\LDA X1VB,Y             \ table into (X1, Y1) and (X2, Y2)
+\STA X1
+\LDA X2VB,Y
+\STA X2
+\LDA Y2VB,Y
+\STA Y2
+\
+\JSR LOIN               \ Draw the line from (X1, Y1) to (X2, Y2)
+\
+\.GR4
+\
+\LDA X1UB,Y             \ Copy the Y-th line's coordinates from the UB table
+\STA X1                 \ into both the VB table and into (X1, Y1) and (X2, Y2)
+\STA X1VB,Y
+\LDA Y1UB,Y
+\STA Y1
+\STA Y1VB,Y
+\LDA X2UB,Y
+\STA X2
+\STA X2VB,Y
+\LDA Y2UB,Y
+\STA Y2
+\STA Y2VB,Y
+\
+\JSR LOIN               \ Draw a line from (X1, Y1) to (X2, Y2)
+\
+\DEY                    \ Decrement the number of coordinates in Y
+\
+\BNE GRL2               \ Loop back to GRL2 to draw the next set of coordinates
+\                       \ until we have done them all
+\
+\JSR LBFL               \ Call LBFL to draw the line in the line buffer
+\
+\.GREX2
+\
+\RTS                    \ Return from the subroutine
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -45750,101 +46197,105 @@ ENDIF
 \
 \ ******************************************************************************
 
-.GRIDSET
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STX GSL1+1             \ Modify the LDA instruction at GSL1 below to point to
- STY GSL1+2             \ (Y X) instead of P%, i.e. to the Y-th character of the
-                        \ text we want to display
+\.GRIDSET
+\
+\STX GSL1+1             \ Modify the LDA instruction at GSL1 below to point to
+\STY GSL1+2             \ (Y X) instead of P%, i.e. to the Y-th character of the
+\                       \ text we want to display
+\
+\LDA #254               \ Set YP = 254
+\STA YP
+\
+\LDY #0                 \ Set Y = 0, to act as an index into the text we want
+\                       \ to display, pointing to the character we are currently
+\                       \ processing
+\
+\LDX #0                 \ Set X = 0, to act as a pointer when populating the TB
+\                       \ tables with one byte per character
+\
+\STX XP                 \ Set XP = 0, so we now have (XP, YP) = (0, 254)
+\                       \
+\                       \ (XP, YP) is the coordinate in space where we start
+\                       \ drawing the lines that make up the scroll text, so
+\                       \ this effectively moves the scroll text cursor to the
+\                       \ top-left corner (as these are space coordinates where
+\                       \ higher y-coordinates are further up the screen)
+\
+\.GSL1
+\
+\LDA P%,Y               \ This instruction was modified above to load the Y-th
+\                       \ character from the text we want to display into A, so
+\                       \ A now contains the ASCII code of the character we want
+\                       \ to process
+\
+\BEQ GRSEX              \ If A = 0 then we have reached the end of the text to
+\                       \ display, so jump down to GRSEX
+\
+\STY T                  \ Store the character index in T so we can retrieve it
+\                       \ later
+\
+\SEC                    \ Set S = A - ASCII ",", as the table at LTDEF starts
+\SBC #','               \ with the lines needed for a comma, so A now contains
+\STA S                  \ the number of the entry in LTDEF for this character
+\
+\ASL A                  \ Set Y = S + 4 * A
+\ASL A                  \       = A + 4 * A
+\ADC S                  \       = 5 * A
+\TAY                    \
+\                       \ so Y now points to the offset of the definition in the
+\                       \ LTDEF table for the character in A, where the first
+\                       \ character in the table is a comma and each definition
+\                       \ in LTDEF consists of five bytes
+\
+\LDA LTDEF,Y            \ Call GRS1 to put the coordinates of the character's
+\JSR GRS1               \ first line into the TB tables
+\
+\LDA LTDEF+1,Y          \ Call GRS1 to put the coordinates of the character's
+\JSR GRS1               \ second line into the TB tables
+\
+\LDA LTDEF+2,Y          \ Call GRS1 to put the coordinates of the character's
+\JSR GRS1               \ third line into the TB tables
+\
+\LDA LTDEF+3,Y          \ Call GRS1 to put the coordinates of the character's
+\JSR GRS1               \ fourth line into the TB tables
+\
+\LDA LTDEF+4,Y          \ Call GRS1 to put the coordinates of the character's
+\JSR GRS1               \ fifth line into the TB tables
+\
+\LDY T                  \ Retrieve the original character index from T into Y
+\
+\INY                    \ Increment the character index to point to the next
+\                       \ character in the text we want to display
+\
+\LDA XP                 \ Set XP = XP + #W2
+\CLC                    \
+\ADC #W2                \ to move the x-coordinate along by #W2 (the horizontal
+\STA XP                 \ character spacing for the scroll text)
+\
+\BCC GSL1               \ If the addition didn't overflow (i.e. XP < 256) loop
+\                       \ back to GSL1
+\
+\LDA #0                 \ Otherwise we just reached the end of a line in the
+\STA XP                 \ scroll text, so set XP = 0 to move the scroll text
+\                       \ cursor to the start of the line
+\
+\LDA YP                 \ And set YP = YP - #W2Y to move the scroll text cursor
+\SBC #W2Y               \ down by one line (as #W2Y is the scroll text's
+\STA YP                 \ vertical line spacing)
+\
+\JMP GSL1               \ Loop back to GSL1 to process the next character in the
+\                       \ scroll text
+\
+\.GRSEX
+\
+\LDA #0                 \ Set the X-th byte of Y1TB to 0 to indicate that we
+\STA Y1TB,X             \ have reached the end of the scroll text
+\
+\RTS                    \ Return from the subroutine
 
- LDA #254               \ Set YP = 254
- STA YP
-
- LDY #0                 \ Set Y = 0, to act as an index into the text we want
-                        \ to display, pointing to the character we are currently
-                        \ processing
-
- LDX #0                 \ Set X = 0, to act as a pointer when populating the TB
-                        \ tables with one byte per character
-
- STX XP                 \ Set XP = 0, so we now have (XP, YP) = (0, 254)
-                        \
-                        \ (XP, YP) is the coordinate in space where we start
-                        \ drawing the lines that make up the scroll text, so
-                        \ this effectively moves the scroll text cursor to the
-                        \ top-left corner (as these are space coordinates where
-                        \ higher y-coordinates are further up the screen)
-
-.GSL1
-
- LDA P%,Y               \ This instruction was modified above to load the Y-th
-                        \ character from the text we want to display into A, so
-                        \ A now contains the ASCII code of the character we want
-                        \ to process
-
- BEQ GRSEX              \ If A = 0 then we have reached the end of the text to
-                        \ display, so jump down to GRSEX
-
- STY T                  \ Store the character index in T so we can retrieve it
-                        \ later
-
- SEC                    \ Set S = A - ASCII ",", as the table at LTDEF starts
- SBC #','               \ with the lines needed for a comma, so A now contains
- STA S                  \ the number of the entry in LTDEF for this character
-
- ASL A                  \ Set Y = S + 4 * A
- ASL A                  \       = A + 4 * A
- ADC S                  \       = 5 * A
- TAY                    \
-                        \ so Y now points to the offset of the definition in the
-                        \ LTDEF table for the character in A, where the first
-                        \ character in the table is a comma and each definition
-                        \ in LTDEF consists of five bytes
-
- LDA LTDEF,Y            \ Call GRS1 to put the coordinates of the character's
- JSR GRS1               \ first line into the TB tables
-
- LDA LTDEF+1,Y          \ Call GRS1 to put the coordinates of the character's
- JSR GRS1               \ second line into the TB tables
-
- LDA LTDEF+2,Y          \ Call GRS1 to put the coordinates of the character's
- JSR GRS1               \ third line into the TB tables
-
- LDA LTDEF+3,Y          \ Call GRS1 to put the coordinates of the character's
- JSR GRS1               \ fourth line into the TB tables
-
- LDA LTDEF+4,Y          \ Call GRS1 to put the coordinates of the character's
- JSR GRS1               \ fifth line into the TB tables
-
- LDY T                  \ Retrieve the original character index from T into Y
-
- INY                    \ Increment the character index to point to the next
-                        \ character in the text we want to display
-
- LDA XP                 \ Set XP = XP + #W2
- CLC                    \
- ADC #W2                \ to move the x-coordinate along by #W2 (the horizontal
- STA XP                 \ character spacing for the scroll text)
-
- BCC GSL1               \ If the addition didn't overflow (i.e. XP < 256) loop
-                        \ back to GSL1
-
- LDA #0                 \ Otherwise we just reached the end of a line in the
- STA XP                 \ scroll text, so set XP = 0 to move the scroll text
-                        \ cursor to the start of the line
-
- LDA YP                 \ And set YP = YP - #W2Y to move the scroll text cursor
- SBC #W2Y               \ down by one line (as #W2Y is the scroll text's
- STA YP                 \ vertical line spacing)
-
- JMP GSL1               \ Loop back to GSL1 to process the next character in the
-                        \ scroll text
-
-.GRSEX
-
- LDA #0                 \ Set the X-th byte of Y1TB to 0 to indicate that we
- STA Y1TB,X             \ have reached the end of the scroll text
-
- RTS                    \ Return from the subroutine
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -45881,56 +46332,60 @@ ENDIF
 \
 \ ******************************************************************************
 
-.GRS1
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- BEQ GRR1               \ If A = 0, jump to GRR1 to return from the subroutine
-                        \ as 0 denotes no line segment
+\.GRS1
+\
+\BEQ GRR1               \ If A = 0, jump to GRR1 to return from the subroutine
+\                       \ as 0 denotes no line segment
+\
+\STA R                  \ Store the value from the LTDEF table in R
+\
+\AND #%00001111         \ Set A to bits 0-3 of the LTDEF table value, i.e. the
+\                       \ low nibble
+\
+\STY P                  \ Store the offset in P, so we can preserve it through
+\                       \ calls to GRS1
+\
+\TAY                    \ Set Y = A
+\
+\LDA NOFX,Y             \ Set X1TB+X = XP + NOFX+Y
+\CLC                    \
+\ADC XP                 \ so the X1 coordinate is XP + the NOFX entry given by
+\STA X1TB,X             \ the low nibble of the LTDEF table value
+\
+\LDA YP                 \ Set Y1TB+X = YP - NOFY+Y
+\SEC                    \
+\SBC NOFY,Y             \ so the Y1 coordinate is YP - the NOFY entry given by
+\STA Y1TB,X             \ the low nibble of the LTDEF table value
+\
+\LDA R                  \ Set Y to bits 4-7 of the LTDEF table value, i.e. the
+\LSR A                  \ high nibble
+\LSR A
+\LSR A
+\LSR A
+\TAY
+\
+\LDA NOFX,Y             \ Set X2TB+X = XP + NOFX+Y
+\CLC                    \
+\ADC XP                 \ so the X2 coordinate is XP + the NOFX entry given by
+\STA X2TB,X             \ the high nibble of the LTDEF table value
+\
+\LDA YP                 \ Set Y2TB+X = YP - NOFY+Y
+\SEC                    \
+\SBC NOFY,Y             \ so the Y2 coordinate is YP - the NOFY entry given by
+\STA Y2TB,X             \ the high nibble of the LTDEF table value
+\
+\INX                    \ Increment the byte pointer in X
+\
+\LDY P                  \ Restore Y from P so it gets preserved through calls to
+\                       \ GRS1
+\
+\.GRR1
+\
+\RTS                    \ Return from the subroutine
 
- STA R                  \ Store the value from the LTDEF table in R
-
- AND #%00001111         \ Set A to bits 0-3 of the LTDEF table value, i.e. the
-                        \ low nibble
-
- STY P                  \ Store the offset in P, so we can preserve it through
-                        \ calls to GRS1
-
- TAY                    \ Set Y = A
-
- LDA NOFX,Y             \ Set X1TB+X = XP + NOFX+Y
- CLC                    \
- ADC XP                 \ so the X1 coordinate is XP + the NOFX entry given by
- STA X1TB,X             \ the low nibble of the LTDEF table value
-
- LDA YP                 \ Set Y1TB+X = YP - NOFY+Y
- SEC                    \
- SBC NOFY,Y             \ so the Y1 coordinate is YP - the NOFY entry given by
- STA Y1TB,X             \ the low nibble of the LTDEF table value
-
- LDA R                  \ Set Y to bits 4-7 of the LTDEF table value, i.e. the
- LSR A                  \ high nibble
- LSR A
- LSR A
- LSR A
- TAY
-
- LDA NOFX,Y             \ Set X2TB+X = XP + NOFX+Y
- CLC                    \
- ADC XP                 \ so the X2 coordinate is XP + the NOFX entry given by
- STA X2TB,X             \ the high nibble of the LTDEF table value
-
- LDA YP                 \ Set Y2TB+X = YP - NOFY+Y
- SEC                    \
- SBC NOFY,Y             \ so the Y2 coordinate is YP - the NOFY entry given by
- STA Y2TB,X             \ the high nibble of the LTDEF table value
-
- INX                    \ Increment the byte pointer in X
-
- LDY P                  \ Restore Y from P so it gets preserved through calls to
-                        \ GRS1
-
-.GRR1
-
- RTS                    \ Return from the subroutine
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -45941,24 +46396,28 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ZZAAP
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
- JSR DOCOL              \ switch to colour 2, which is red in the space view
+\.ZZAAP
+\
+\LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
+\JSR DOCOL              \ switch to colour 2, which is red in the space view
+\
+\LDA #128               \ Set X1 = 128
+\STA X1
+\
+\STA X2                 \ Set X2 = 128
+\
+\LDA #67                \ Set Y1 = 67
+\STA Y1
+\
+\LDA #160               \ Set Y2 = 160
+\STA Y2
+\
+\JMP LL30               \ Call LL30 to draw a line from (X1, Y1) to (X2, Y2),
+\                       \ returning from the subroutine using a tail
 
- LDA #128               \ Set X1 = 128
- STA X1
-
- STA X2                 \ Set X2 = 128
-
- LDA #67                \ Set Y1 = 67
- STA Y1
-
- LDA #160               \ Set Y2 = 160
- STA Y2
-
- JMP LL30               \ Call LL30 to draw a line from (X1, Y1) to (X2, Y2),
-                        \ returning from the subroutine using a tail
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -45987,55 +46446,59 @@ ENDIF
 \
 \ ******************************************************************************
 
-.LTDEF
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB &63, &34, &47, &76, &97   \ Letter definition for ","
- EQUB &35, &00, &00, &00, &00   \ Letter definition for "-"
- EQUB &63, &34, &47, &76, &00   \ Letter definition for "."
- EQUB &61, &00, &00, &00, &00   \ Letter definition for "/"
- EQUB &73, &31, &15, &57, &00   \ Letter definition for "0"
- EQUB &31, &17, &00, &00, &00   \ Letter definition for "1"
- EQUB &02, &25, &53, &36, &68   \ Letter definition for "2"
- EQUB &02, &28, &86, &35, &00   \ Letter definition for "3"
- EQUB &82, &23, &35, &00, &00   \ Letter definition for "4"
- EQUB &20, &03, &35, &58, &86   \ Letter definition for "5"
- EQUB &20, &06, &68, &85, &53   \ Letter definition for "6"
- EQUB &02, &28, &00, &00, &00   \ Letter definition for "7"
- EQUB &60, &02, &28, &86, &35   \ Letter definition for "8"
- EQUB &82, &20, &03, &35, &00   \ Letter definition for "9"
- EQUB &00, &00, &00, &00, &00   \ Letter definition for ":" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for ";" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for "<" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for "=" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for ">" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for "?" (blank)
- EQUB &00, &00, &00, &00, &00   \ Letter definition for "@" (blank)
- EQUB &60, &02, &28, &35, &00   \ Letter definition for "A"
- EQUB &60, &02, &28, &86, &35   \ Letter definition for "B"
- EQUB &86, &60, &02, &00, &00   \ Letter definition for "C"
- EQUB &60, &05, &56, &00, &00   \ Letter definition for "D"
- EQUB &86, &60, &02, &35, &00   \ Letter definition for "E"
- EQUB &60, &02, &35, &00, &00   \ Letter definition for "F"
- EQUB &45, &58, &86, &60, &02   \ Letter definition for "G"
- EQUB &60, &28, &35, &00, &00   \ Letter definition for "H"
- EQUB &17, &00, &00, &00, &00   \ Letter definition for "I"
- EQUB &28, &86, &63, &00, &00   \ Letter definition for "J"
- EQUB &60, &23, &83, &00, &00   \ Letter definition for "K"
- EQUB &86, &60, &00, &00, &00   \ Letter definition for "L"
- EQUB &60, &04, &42, &28, &00   \ Letter definition for "M"
- EQUB &60, &08, &82, &00, &00   \ Letter definition for "N"
- EQUB &60, &02, &28, &86, &00   \ Letter definition for "O"
- EQUB &60, &02, &25, &53, &00   \ Letter definition for "P"
- EQUB &60, &02, &28, &86, &48   \ Letter definition for "Q"
- EQUB &60, &02, &25, &53, &48   \ Letter definition for "R"
- EQUB &20, &03, &35, &58, &86   \ Letter definition for "S"
- EQUB &02, &17, &00, &00, &00   \ Letter definition for "T"
- EQUB &28, &86, &60, &00, &00   \ Letter definition for "U"
- EQUB &27, &70, &00, &00, &00   \ Letter definition for "V"
- EQUB &28, &84, &46, &60, &00   \ Letter definition for "W"
- EQUB &26, &08, &00, &00, &00   \ Letter definition for "X"
- EQUB &74, &04, &24, &00, &00   \ Letter definition for "Y"
- EQUB &02, &26, &68, &00, &00   \ Letter definition for "Z"
+\.LTDEF
+\
+\EQUB &63, &34, &47, &76, &97   \ Letter definition for ","
+\EQUB &35, &00, &00, &00, &00   \ Letter definition for "-"
+\EQUB &63, &34, &47, &76, &00   \ Letter definition for "."
+\EQUB &61, &00, &00, &00, &00   \ Letter definition for "/"
+\EQUB &73, &31, &15, &57, &00   \ Letter definition for "0"
+\EQUB &31, &17, &00, &00, &00   \ Letter definition for "1"
+\EQUB &02, &25, &53, &36, &68   \ Letter definition for "2"
+\EQUB &02, &28, &86, &35, &00   \ Letter definition for "3"
+\EQUB &82, &23, &35, &00, &00   \ Letter definition for "4"
+\EQUB &20, &03, &35, &58, &86   \ Letter definition for "5"
+\EQUB &20, &06, &68, &85, &53   \ Letter definition for "6"
+\EQUB &02, &28, &00, &00, &00   \ Letter definition for "7"
+\EQUB &60, &02, &28, &86, &35   \ Letter definition for "8"
+\EQUB &82, &20, &03, &35, &00   \ Letter definition for "9"
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for ":" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for ";" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for "<" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for "=" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for ">" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for "?" (blank)
+\EQUB &00, &00, &00, &00, &00   \ Letter definition for "@" (blank)
+\EQUB &60, &02, &28, &35, &00   \ Letter definition for "A"
+\EQUB &60, &02, &28, &86, &35   \ Letter definition for "B"
+\EQUB &86, &60, &02, &00, &00   \ Letter definition for "C"
+\EQUB &60, &05, &56, &00, &00   \ Letter definition for "D"
+\EQUB &86, &60, &02, &35, &00   \ Letter definition for "E"
+\EQUB &60, &02, &35, &00, &00   \ Letter definition for "F"
+\EQUB &45, &58, &86, &60, &02   \ Letter definition for "G"
+\EQUB &60, &28, &35, &00, &00   \ Letter definition for "H"
+\EQUB &17, &00, &00, &00, &00   \ Letter definition for "I"
+\EQUB &28, &86, &63, &00, &00   \ Letter definition for "J"
+\EQUB &60, &23, &83, &00, &00   \ Letter definition for "K"
+\EQUB &86, &60, &00, &00, &00   \ Letter definition for "L"
+\EQUB &60, &04, &42, &28, &00   \ Letter definition for "M"
+\EQUB &60, &08, &82, &00, &00   \ Letter definition for "N"
+\EQUB &60, &02, &28, &86, &00   \ Letter definition for "O"
+\EQUB &60, &02, &25, &53, &00   \ Letter definition for "P"
+\EQUB &60, &02, &28, &86, &48   \ Letter definition for "Q"
+\EQUB &60, &02, &25, &53, &48   \ Letter definition for "R"
+\EQUB &20, &03, &35, &58, &86   \ Letter definition for "S"
+\EQUB &02, &17, &00, &00, &00   \ Letter definition for "T"
+\EQUB &28, &86, &60, &00, &00   \ Letter definition for "U"
+\EQUB &27, &70, &00, &00, &00   \ Letter definition for "V"
+\EQUB &28, &84, &46, &60, &00   \ Letter definition for "W"
+\EQUB &26, &08, &00, &00, &00   \ Letter definition for "X"
+\EQUB &74, &04, &24, &00, &00   \ Letter definition for "Y"
+\EQUB &02, &26, &68, &00, &00   \ Letter definition for "Z"
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46046,23 +46509,27 @@ ENDIF
 \
 \ ******************************************************************************
 
-.NOFX
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB 4                 \ Grid points 0-2
- EQUB 8
- EQUB 12
+\.NOFX
+\
+\EQUB 4                 \ Grid points 0-2
+\EQUB 8
+\EQUB 12
+\
+\EQUB 4                 \ Grid points 3-5
+\EQUB 8
+\EQUB 12
+\
+\EQUB 4                 \ Grid points 6-8
+\EQUB 8
+\EQUB 12
+\
+\EQUB 4                 \ Grid points 9-B
+\EQUB 8
+\EQUB 12
 
- EQUB 4                 \ Grid points 3-5
- EQUB 8
- EQUB 12
-
- EQUB 4                 \ Grid points 6-8
- EQUB 8
- EQUB 12
-
- EQUB 4                 \ Grid points 9-B
- EQUB 8
- EQUB 12
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46073,23 +46540,27 @@ ENDIF
 \
 \ ******************************************************************************
 
-.NOFY
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB 0                 \ Grid points 0-2
- EQUB 0
- EQUB 0
+\.NOFY
+\
+\EQUB 0                 \ Grid points 0-2
+\EQUB 0
+\EQUB 0
+\
+\EQUB WY                \ Grid points 3-5
+\EQUB WY
+\EQUB WY
+\
+\EQUB 2*WY              \ Grid points 6-8
+\EQUB 2*WY
+\EQUB 2*WY
+\
+\EQUB 2.5*WY            \ Grid points 9-B
+\EQUB 2.5*WY
+\EQUB 2.5*WY
 
- EQUB WY                \ Grid points 3-5
- EQUB WY
- EQUB WY
-
- EQUB 2*WY              \ Grid points 6-8
- EQUB 2*WY
- EQUB 2*WY
-
- EQUB 2.5*WY            \ Grid points 9-B
- EQUB 2.5*WY
- EQUB 2.5*WY
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46100,23 +46571,27 @@ ENDIF
 \
 \ ******************************************************************************
 
-.acorn
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-IF _SNG45 OR _SOURCE_DISC
+\.acorn
+\
+\IF _SNG45 OR _SOURCE_DISC
+\
+\EQUS ":::ACORNSOFT::::"
+\EQUS ";;;;;;;;;;;;;;;;"
+\EQUS "::::PRESENTS"
+\EQUB 0
+\
+\ELIF _EXECUTIVE
+\
+\EQUS ":::PIZZASOFT::::"
+\EQUS ";;;;;;;;;;;;;;;;"
+\EQUS "::::PRESENTS"
+\EQUB 0
+\
+\ENDIF
 
- EQUS ":::ACORNSOFT::::"
- EQUS ";;;;;;;;;;;;;;;;"
- EQUS "::::PRESENTS"
- EQUB 0
-
-ELIF _EXECUTIVE
-
- EQUS ":::PIZZASOFT::::"
- EQUS ";;;;;;;;;;;;;;;;"
- EQUS "::::PRESENTS"
- EQUB 0
-
-ENDIF
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46127,13 +46602,17 @@ ENDIF
 \
 \ ******************************************************************************
 
-.byian
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUS "::::::BY:;::::::"
- EQUS ";;;;IAN;BELL;;;;"
- EQUS "::::::AND:::::::"
- EQUS ";;DAVID;BRABEN"
- EQUB 0
+\.byian
+\
+\EQUS "::::::BY:;::::::"
+\EQUS ";;;;IAN;BELL;;;;"
+\EQUS "::::::AND:::::::"
+\EQUS ";;DAVID;BRABEN"
+\EQUB 0
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46144,16 +46623,20 @@ ENDIF
 \
 \ ******************************************************************************
 
-.executive
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-IF _EXECUTIVE
+\.executive
+\
+\IF _EXECUTIVE
+\
+\EQUS "::::::THE;::::::"
+\EQUS ";;;EXECUTIVE;;;;"
+\EQUS "::::VERSION"
+\EQUB 0
+\
+\ENDIF
 
- EQUS "::::::THE;::::::"
- EQUS ";;;EXECUTIVE;;;;"
- EQUS "::::VERSION"
- EQUB 0
-
-ENDIF
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -46164,25 +46647,29 @@ ENDIF
 \
 \ ******************************************************************************
 
-.true3
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-IF _SNG45 OR _SOURCE_DISC
+\.true3
+\
+\IF _SNG45 OR _SOURCE_DISC
+\
+\EQUS "THE:GALAXY:IS:IN"
+\EQUS "TURMOIL,THE:NAVY"
+\EQUS "FAR:AWAY:AS::THE"
+\EQUS "EMPIRE:CRUMBLES."
+\EQUB 0
+\
+\ELIF _EXECUTIVE
+\
+\EQUS "CONGRATULATIONS:"
+\EQUS ";ON;OBTAINING;A;"
+\EQUS "::COPY:OF:THIS::"
+\EQUS "ELUSIVE;PRODUCT."
+\EQUB 0
+\
+\ENDIF
 
- EQUS "THE:GALAXY:IS:IN"
- EQUS "TURMOIL,THE:NAVY"
- EQUS "FAR:AWAY:AS::THE"
- EQUS "EMPIRE:CRUMBLES."
- EQUB 0
-
-ELIF _EXECUTIVE
-
- EQUS "CONGRATULATIONS:"
- EQUS ";ON;OBTAINING;A;"
- EQUS "::COPY:OF:THIS::"
- EQUS "ELUSIVE;PRODUCT."
- EQUB 0
-
-ENDIF
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -50868,50 +51355,46 @@ ENDIF
 \
 \ ******************************************************************************
 
-                        \ --- Mod: Code moved for two-player Elite: ----------->
+.MTIN
 
-\.MTIN
-\
-\EQUB 16                \ Token  0: a random extended token between 16 and 20
-\EQUB 21                \ Token  1: a random extended token between 21 and 25
-\EQUB 26                \ Token  2: a random extended token between 26 and 30
-\EQUB 31                \ Token  3: a random extended token between 31 and 35
-\EQUB 155               \ Token  4: a random extended token between 155 and 159
-\EQUB 160               \ Token  5: a random extended token between 160 and 164
-\EQUB 46                \ Token  6: a random extended token between 46 and 50
-\EQUB 165               \ Token  7: a random extended token between 165 and 169
-\EQUB 36                \ Token  8: a random extended token between 36 and 40
-\EQUB 41                \ Token  9: a random extended token between 41 and 45
-\EQUB 61                \ Token 10: a random extended token between 61 and 65
-\EQUB 51                \ Token 11: a random extended token between 51 and 55
-\EQUB 56                \ Token 12: a random extended token between 56 and 60
-\EQUB 170               \ Token 13: a random extended token between 170 and 174
-\EQUB 66                \ Token 14: a random extended token between 66 and 70
-\EQUB 71                \ Token 15: a random extended token between 71 and 75
-\EQUB 76                \ Token 16: a random extended token between 76 and 80
-\EQUB 81                \ Token 17: a random extended token between 81 and 85
-\EQUB 86                \ Token 18: a random extended token between 86 and 90
-\EQUB 140               \ Token 19: a random extended token between 140 and 144
-\EQUB 96                \ Token 20: a random extended token between 96 and 100
-\EQUB 101               \ Token 21: a random extended token between 101 and 105
-\EQUB 135               \ Token 22: a random extended token between 135 and 139
-\EQUB 130               \ Token 23: a random extended token between 130 and 134
-\EQUB 91                \ Token 24: a random extended token between 91 and 95
-\EQUB 106               \ Token 25: a random extended token between 106 and 110
-\EQUB 180               \ Token 26: a random extended token between 180 and 184
-\EQUB 185               \ Token 27: a random extended token between 185 and 189
-\EQUB 190               \ Token 28: a random extended token between 190 and 194
-\EQUB 225               \ Token 29: a random extended token between 225 and 229
-\EQUB 230               \ Token 30: a random extended token between 230 and 234
-\EQUB 235               \ Token 31: a random extended token between 235 and 239
-\EQUB 240               \ Token 32: a random extended token between 240 and 244
-\EQUB 245               \ Token 33: a random extended token between 245 and 249
-\EQUB 250               \ Token 34: a random extended token between 250 and 254
-\EQUB 115               \ Token 35: a random extended token between 115 and 119
-\EQUB 120               \ Token 36: a random extended token between 120 and 124
-\EQUB 125               \ Token 37: a random extended token between 125 and 129
-
-                        \ --- End of moved code ------------------------------->
+ EQUB 16                \ Token  0: a random extended token between 16 and 20
+ EQUB 21                \ Token  1: a random extended token between 21 and 25
+ EQUB 26                \ Token  2: a random extended token between 26 and 30
+ EQUB 31                \ Token  3: a random extended token between 31 and 35
+ EQUB 155               \ Token  4: a random extended token between 155 and 159
+ EQUB 160               \ Token  5: a random extended token between 160 and 164
+ EQUB 46                \ Token  6: a random extended token between 46 and 50
+ EQUB 165               \ Token  7: a random extended token between 165 and 169
+ EQUB 36                \ Token  8: a random extended token between 36 and 40
+ EQUB 41                \ Token  9: a random extended token between 41 and 45
+ EQUB 61                \ Token 10: a random extended token between 61 and 65
+ EQUB 51                \ Token 11: a random extended token between 51 and 55
+ EQUB 56                \ Token 12: a random extended token between 56 and 60
+ EQUB 170               \ Token 13: a random extended token between 170 and 174
+ EQUB 66                \ Token 14: a random extended token between 66 and 70
+ EQUB 71                \ Token 15: a random extended token between 71 and 75
+ EQUB 76                \ Token 16: a random extended token between 76 and 80
+ EQUB 81                \ Token 17: a random extended token between 81 and 85
+ EQUB 86                \ Token 18: a random extended token between 86 and 90
+ EQUB 140               \ Token 19: a random extended token between 140 and 144
+ EQUB 96                \ Token 20: a random extended token between 96 and 100
+ EQUB 101               \ Token 21: a random extended token between 101 and 105
+ EQUB 135               \ Token 22: a random extended token between 135 and 139
+ EQUB 130               \ Token 23: a random extended token between 130 and 134
+ EQUB 91                \ Token 24: a random extended token between 91 and 95
+ EQUB 106               \ Token 25: a random extended token between 106 and 110
+ EQUB 180               \ Token 26: a random extended token between 180 and 184
+ EQUB 185               \ Token 27: a random extended token between 185 and 189
+ EQUB 190               \ Token 28: a random extended token between 190 and 194
+ EQUB 225               \ Token 29: a random extended token between 225 and 229
+ EQUB 230               \ Token 30: a random extended token between 230 and 234
+ EQUB 235               \ Token 31: a random extended token between 235 and 239
+ EQUB 240               \ Token 32: a random extended token between 240 and 244
+ EQUB 245               \ Token 33: a random extended token between 245 and 249
+ EQUB 250               \ Token 34: a random extended token between 250 and 254
+ EQUB 115               \ Token 35: a random extended token between 115 and 119
+ EQUB 120               \ Token 36: a random extended token between 120 and 124
+ EQUB 125               \ Token 37: a random extended token between 125 and 129
 
 \ ******************************************************************************
 \
@@ -50976,7 +51459,6 @@ ENDIF
  LDX #&28               \ Set X = &28 to act as a counter for copying &28 pages
 
                         \ --- End of replacement ------------------------------>
-
 
                         \ Fall through into mvblock to copy the ship blueprints
 
@@ -55059,6 +55541,14 @@ ENDMACRO
  JSR SaveShipData       \ Save current INWK state for slot #2 so we can retrieve
                         \ it later
 
+ LDX VIEW               \ If player 1's view is not the front view then the axes
+ BNE dshp1              \ will have been changed in PLUT, so refetch the ship
+ LDX #2                 \ data from slot 2 so that it's the correct way around
+ JSR GetShipDataToINWK  \ for the following calculation (as player 1's choice of
+                        \ view has no bearing on player 2's view)
+
+.dshp2
+
                         \ If:
                         \
                         \   * [x y z] are player 2's coordinates, which is the
@@ -55741,7 +56231,7 @@ ENDIF
 .savs1
 
  LDA INWK,Y             \ Load the Y-th byte of INWK and store it in the Y-th
- STA storeINWK,Y        \ byte of storeINWK
+ STA storeData,Y        \ byte of storeData
 
  DEY                    \ Decrement the loop counter
 
@@ -55771,7 +56261,7 @@ ENDIF
 
 .lods1
 
- LDA storeINWK,Y        \ Load the Y-th byte of storeINWK and store it in the
+ LDA storeData,Y        \ Load the Y-th byte of storeData and store it in the
  STA INWK,Y             \ Y-th byte of INWK
 
  DEY                    \ Decrement the loop counter
@@ -55819,103 +56309,180 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: storeINWK
-\       Type: Variable
+\       Name: SaveShipMovement
+\       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Save current ship movement data
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.storeINWK
+.SaveShipMovement
+
+ LDA ALPHA              \ Save current ship movement data
+ STA storeData
+ LDA ALP1
+ STA storeData+1
+ LDA ALP2
+ STA storeData+2
+ LDA ALP2+1
+ STA storeData+3
+ LDA BETA
+ STA storeData+4
+ LDA BET1
+ STA storeData+5
+ LDA BET2
+ STA storeData+6
+ LDA BET2+1
+ STA storeData+7
+ LDA DELTA
+ STA storeData+8
+ LDA DELT4
+ STA storeData+9
+ LDA DELT4+1
+ STA storeData+10
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: LoadShipMovement
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Save current ship movement data
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.LoadShipMovement
+
+ LDA storeData          \ Restore current ship movement data
+ STA ALPHA
+ LDA storeData+1
+ STA ALP1
+ LDA storeData+2
+ STA ALP2
+ LDA storeData+3
+ STA ALP2+1
+ LDA storeData+4
+ STA BETA
+ LDA storeData+5
+ STA BET1
+ LDA storeData+6
+ STA BET2
+ LDA storeData+7
+ STA BET2+1
+ LDA storeData+8
+ STA DELTA
+ LDA storeData+9
+ STA DELT4
+ LDA storeData+10
+ STA DELT4+1
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: GetPlayer2Movement
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Set the current ship to player 2's movement data
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.GetPlayer2Movement
+
+ LDA player2Alpha       \ Restore current ship movement data
+ STA ALPHA
+ LDA player2Alp1
+ STA ALP1
+ LDA player2Alp2
+ STA ALP2
+ LDA player2Alp2+1
+ STA ALP2+1
+ LDA player2Beta
+ STA BETA
+ LDA player2Bet1
+ STA BET1
+ LDA player2Bet2
+ STA BET2
+ LDA player2Bet2+1
+ STA BET2+1
+ LDA player2Delta
+ STA DELTA
+ LDA player2Delt4
+ STA DELT4
+ LDA player2Delt4+1
+ STA DELT4+1
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: SavePlayer2Movement
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Store the current ship's movement data for player 2
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.SavePlayer2Movement
+
+ LDA ALPHA              \ Save current ship movement data
+ STA player2Alpha
+ LDA ALP1
+ STA player2Alp1
+ LDA ALP2
+ STA player2Alp2
+ LDA ALP2+1
+ STA player2Alp2+1
+ LDA BETA
+ STA player2Beta
+ LDA BET1
+ STA player2Bet1
+ LDA BET2
+ STA player2Bet2
+ LDA BET2+1
+ STA player2Bet2+1
+ LDA DELTA
+ STA player2Delta
+ LDA DELT4
+ STA player2Delt4
+ LDA DELT4+1
+ STA player2Delt4+1
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: storeData
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: Storage for INWK, ship movement etc.
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.storeData
 
  SKIP NI%
 
                         \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: player1OnScreen
-\       Type: Variable
-\   Category: Two-player Elite
-\    Summary: Storage for player 1 on-screen byte in player 2's view
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.player1Visible
-
- EQUB 0
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: MTIN
-\       Type: Variable
-\   Category: Text
-\    Summary: Lookup table for random tokens in the extended token table (0-37)
-\  Deep dive: Extended text tokens
-\
-\ ------------------------------------------------------------------------------
-\
-\ The ERND token type, which is part of the extended token system, takes an
-\ argument between 0 and 37, and returns a randomly chosen token in the range
-\ specified in this table. This is used to generate the extended description of
-\ each system.
-\
-\ For example, the entry at position 13 in this table (counting from 0) is 66,
-\ so ERND 14 will expand into a random token in the range 66-70, i.e. one of
-\ "JUICE", "BRANDY", "WATER", "BREW" and "GARGLE BLASTERS".
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code moved for two-player Elite: ----------->
-
-.MTIN
-
- EQUB 16                \ Token  0: a random extended token between 16 and 20
- EQUB 21                \ Token  1: a random extended token between 21 and 25
- EQUB 26                \ Token  2: a random extended token between 26 and 30
- EQUB 31                \ Token  3: a random extended token between 31 and 35
- EQUB 155               \ Token  4: a random extended token between 155 and 159
- EQUB 160               \ Token  5: a random extended token between 160 and 164
- EQUB 46                \ Token  6: a random extended token between 46 and 50
- EQUB 165               \ Token  7: a random extended token between 165 and 169
- EQUB 36                \ Token  8: a random extended token between 36 and 40
- EQUB 41                \ Token  9: a random extended token between 41 and 45
- EQUB 61                \ Token 10: a random extended token between 61 and 65
- EQUB 51                \ Token 11: a random extended token between 51 and 55
- EQUB 56                \ Token 12: a random extended token between 56 and 60
- EQUB 170               \ Token 13: a random extended token between 170 and 174
- EQUB 66                \ Token 14: a random extended token between 66 and 70
- EQUB 71                \ Token 15: a random extended token between 71 and 75
- EQUB 76                \ Token 16: a random extended token between 76 and 80
- EQUB 81                \ Token 17: a random extended token between 81 and 85
- EQUB 86                \ Token 18: a random extended token between 86 and 90
- EQUB 140               \ Token 19: a random extended token between 140 and 144
- EQUB 96                \ Token 20: a random extended token between 96 and 100
- EQUB 101               \ Token 21: a random extended token between 101 and 105
- EQUB 135               \ Token 22: a random extended token between 135 and 139
- EQUB 130               \ Token 23: a random extended token between 130 and 134
- EQUB 91                \ Token 24: a random extended token between 91 and 95
- EQUB 106               \ Token 25: a random extended token between 106 and 110
- EQUB 180               \ Token 26: a random extended token between 180 and 184
- EQUB 185               \ Token 27: a random extended token between 185 and 189
- EQUB 190               \ Token 28: a random extended token between 190 and 194
- EQUB 225               \ Token 29: a random extended token between 225 and 229
- EQUB 230               \ Token 30: a random extended token between 230 and 234
- EQUB 235               \ Token 31: a random extended token between 235 and 239
- EQUB 240               \ Token 32: a random extended token between 240 and 244
- EQUB 245               \ Token 33: a random extended token between 245 and 249
- EQUB 250               \ Token 34: a random extended token between 250 and 254
- EQUB 115               \ Token 35: a random extended token between 115 and 119
- EQUB 120               \ Token 36: a random extended token between 120 and 124
- EQUB 125               \ Token 37: a random extended token between 125 and 129
-
-                        \ --- End of moved code ------------------------------->
 
 \ ******************************************************************************
 \
