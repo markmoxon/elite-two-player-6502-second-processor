@@ -23678,6 +23678,8 @@ ENDIF
  
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
+ STZ player2View        \ Set player 2's view to front, as we are launching
+
                         \ --- End of added code ------------------------------->
 
  INC INWK+8             \ Increment z_sign ready for the call to SOS, so the
@@ -23725,18 +23727,14 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- SEC                    \ Initialise player 2's view
- ROR playerScreen
+ STZ playerScreen       \ Redraw player 1's view
 
- JSR LOOK1              \ Jump to LOOK1 to switch to the front view (X = 0)
-
- STZ playerScreen       \ Initialise player 1's view
-
- LDX #0                 \ Front view
+ LDX #0                 \ Set player 1's view to the front view (as we only get
+                        \ here by pressing f0)
 
                         \ --- End of added code ------------------------------->
 
- JMP LQ                 \ Jump to LQ to clear and set up draw player 1's view,
+ JMP LOOK1              \ Jump to LOOK1 to switch to the front view (X = 0),
                         \ returning from the subroutine using a tail call
 
 \ ******************************************************************************
@@ -26366,6 +26364,21 @@ ENDIF
 \ ******************************************************************************
 
 .WPSHPS
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT playerScreen       \ If this is player 2
+ BPL wipe1
+
+ LDA player1Visible     \ Clear bits 3, 4 and 6 in the ship's byte #31 for the
+ AND #%10100111         \ player 1 ship as it appears in player 2's view
+ STA player1Visible
+
+ JMP WS2                \ Jump to WS2 to keep going
+
+.wipe1
+
+                        \ --- End of added code ------------------------------->
 
  LDX #0                 \ Set up a counter in X to work our way through all the
                         \ ship slots in FRIN
@@ -44337,6 +44350,13 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
+ STX playerScreen       \ Draw both views as we are setting up a new space view
+ JSR view6
+ SEC
+ ROR playerScreen
+
+.view6
+
  JSR TT66               \ Clear the top part of the screen, draw a border box,
                         \ and set the current view type in QQ11 to 0 (space
                         \ view)
@@ -44554,8 +44574,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA QQ11               \ If this is a space view, enable split-screen
- BNE clsc1
+ LDA QQ11               \ If this is a space view, enable split-screen so that
+ BNE clsc1              \ circles are clipped correctly
  SEC
  ROR splitScreen
 
@@ -55542,7 +55562,7 @@ ENDMACRO
                         \ it later
 
  LDX VIEW               \ If player 1's view is not the front view then the axes
- BNE dshp1              \ will have been changed in PLUT, so refetch the ship
+ BNE dshp2              \ will have been changed in PLUT, so refetch the ship
  LDX #2                 \ data from slot 2 so that it's the correct way around
  JSR GetShipDataToINWK  \ for the following calculation (as player 1's choice of
                         \ view has no bearing on player 2's view)
@@ -55718,6 +55738,9 @@ ENDMACRO
 
  LDA player1Visible     \ Copy "on-screen" state from slot #12 to INWK
  STA INWK+31
+
+ LDX player2View        \ Rotate everything into the correct view
+ JSR PLUT+3
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
