@@ -55562,7 +55562,7 @@ ENDMACRO
                         \ it later
 
  LDX VIEW               \ If player 1's view is not the front view then the axes
- BNE dshp2              \ will have been changed in PLUT, so refetch the ship
+ BEQ dshp2              \ will have been changed in PLUT, so refetch the ship
  LDX #2                 \ data from slot 2 so that it's the correct way around
  JSR GetShipDataToINWK  \ for the following calculation (as player 1's choice of
                         \ view has no bearing on player 2's view)
