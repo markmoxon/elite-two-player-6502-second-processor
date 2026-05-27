@@ -42819,16 +42819,16 @@ ENDIF
                         \
                         \ and so on
 
-                        \ --- Mod: Code removed for two-player Elite: --------->
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
-\JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
+ LDA #%00001000         \ If bit 3 of the ship's byte #31 is set, then the ship
+ BIT INWK+31            \ is currently being drawn on-screen, so skip the
+ BNE P%+5               \ following instruction (so we only tidy ships when they
+                        \ are not visible on-screen)
 
-                        \ --- And replaced by: -------------------------------->
+                        \ --- End of added code ------------------------------->
 
- NOP:NOP:NOP            \ Still need to run TIDY, but make it rarer (maybe check
-                        \ for ship being not on-screen first
-
-                        \ --- End of replacement ------------------------------>
+ JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
 
 \ ******************************************************************************
 \
