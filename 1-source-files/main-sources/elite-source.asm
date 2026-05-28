@@ -10213,9 +10213,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
@@ -10599,9 +10598,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
@@ -10626,9 +10624,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
@@ -16403,9 +16400,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
@@ -16434,9 +16430,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
@@ -26447,9 +26442,8 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LSR A                  \ Halve the vertical range for stardust, keeping the
- LSR A                  \ balance of negative vs positive
- BCC P%+4
- ORA #%11000000
+ BCC P%+4               \ balance of negative vs positive
+ ORA #%10000000
 
                         \ --- End of added code ------------------------------->
 
