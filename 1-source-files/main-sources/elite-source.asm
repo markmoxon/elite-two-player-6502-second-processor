@@ -23822,7 +23822,7 @@ ENDIF
  JSR NWSHP
 
  STZ player1Visible     \ Reset "on-screen" state for player 1's ship in player
-                        \ 2's view
+                        \ 2's view (bit 4 set = visible on scanner)
  
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
@@ -55840,11 +55840,40 @@ ENDMACRO
  JSR SaveShipData       \ Save current INWK state for slot #2 so we can retrieve
                         \ it later
 
- LDX VIEW               \ If player 1's view is not the front view then the axes
- BEQ dshp2              \ will have been changed in PLUT, so refetch the ship
- LDX #2                 \ data from slot 2 so that it's the correct way around
- JSR GetShipDataToINWK  \ for the following calculation (as player 1's choice of
-                        \ view has no bearing on player 2's view)
+ LDA newCoords          \ Copy player 1's ship coords into INWK (so they're the
+ STA INWK               \ coordinates from the last time we did this calculation)
+ LDA newCoords+1
+ STA INWK+1
+ LDA newCoords+2
+ STA INWK+2
+ LDA newCoords+3
+ STA INWK+3
+ LDA newCoords+4
+ STA INWK+4
+ LDA newCoords+5
+ STA INWK+5
+ LDA newCoords+6
+ STA INWK+6
+ LDA newCoords+7
+ STA INWK+7
+ LDA newCoords+8
+ STA INWK+8
+ LDA player1Visible
+ STA INWK+31
+
+ LDA #1                 \ Set TYPE purely to control the colour on the scanner
+ STA TYPE               \ (we set this to the correct type later)
+
+ JSR SCAN               \ Remove the ship from the scanner, if it's there
+
+ LDA player1Visible     \ From this point on we are definitely drawing the ship
+ ORA #%00010000         \ on the scanner, so set bit 4 = visible on scanner
+ STA player1Visible
+
+ LDX #2                 \ Refetch the ship data from slot 2 so that it's the
+ JSR GetShipDataToINWK  \ correct way around for the following calculation, even
+                        \ if player 1 has changed view (so this reverts any PLUT
+                        \ calls in the main loop)
 
 .dshp2
 
@@ -55942,6 +55971,8 @@ ENDMACRO
  STA INWK+7
  LDA newCoords+8
  STA INWK+8
+
+ JSR SCAN               \ Draw the ship on the scanner
 
  JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
 
