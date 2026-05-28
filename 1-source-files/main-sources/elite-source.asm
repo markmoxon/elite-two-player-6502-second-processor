@@ -38445,9 +38445,45 @@ ENDIF
 
  LDA K4                 \ Set A = the y-coordinate of the dot
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL poin2
+
+ SEC                    \ Move dot into top half of screen by moving it up by a
+ SBC #Y/2               \ quarter screen
+
+ BCC nono               \ If it's now off the top of the screen, jump to nono
+
+ CMP #Y-2               \ If the y-coordinate is bigger than the y-coordinate of
+ BCS nono               \ the bottom of the screen, jump to nono as the ship's
+                        \ dot is off the bottom of the space view
+
+ BIT playerScreen       \ If this is player 2's view
+ BPL poin1
+
+ CLC                    \ Move dot to bottom half of the screen
+ ADC #Y
+
+.poin1
+
+ STA K4                 \ Store the updated y-coordinate
+
+ JMP poin3              \ Skip the normal checks
+
+.poin2
+
+                        \ --- End of added code ------------------------------->
+
  CMP #Y*2-2             \ If the y-coordinate is bigger than the y-coordinate of
  BCS nono               \ the bottom of the screen, jump to nono as the ship's
                         \ dot is off the bottom of the space view
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.poin3
+
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for flicker-free ships: ------->
 
