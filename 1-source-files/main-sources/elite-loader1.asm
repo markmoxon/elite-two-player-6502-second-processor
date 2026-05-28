@@ -516,9 +516,20 @@ ENDIF
                         \ was removed for the release version, as it doesn't
                         \ actually work properly
 
- LDA #16                \ Call OSBYTE with A = 16 and X = 3 to set the ADC to
- LDX #3                 \ sample 3 channels from the joystick/Bitstik
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #16                \ Call OSBYTE with A = 16 and X = 3 to set the ADC to
+\LDX #3                 \ sample 3 channels from the joystick/Bitstik
+\JSR OSBYTE
+
+                        \ --- And replaced by: -------------------------------->
+
+
+ LDA #16                \ Call OSBYTE with A = 16 and X = 4 to set the ADC to
+ LDX #4                 \ sample 4 channels from the joysticks
  JSR OSBYTE
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #190               \ Call OSBYTE with A = 190, X = 8 and Y = 0 to set the
  LDX #8                 \ ADC conversion type to 8 bits, for the joystick

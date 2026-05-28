@@ -4777,27 +4777,151 @@ ENDIF
  ORA BET2               \ Store A in BETA, but with the sign set to BET2 (so
  STA BETA               \ BETA has the same sign as the actual pitch rate)
 
- LDA BSTK               \ If BSTK = 0 then the Bitstik is not configured, so
- BEQ BS2                \ jump to BS2 to skip the following
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA KTRAN+10           \ Fetch the Bitstik rotation value (high byte) from the
-                        \ key logger buffer
+ LDX player2JSTX        \ Set X to the current rate of roll in JSTX
 
- LSR A                  \ Divide A by 4
+ JSR cntr               \ Apply keyboard damping twice (if enabled) so the roll
+ JSR cntr               \ rate in X creeps towards the centre by 2
+
+                        \ The roll rate in JSTX increases if we press ">" (and
+                        \ the RL indicator on the dashboard goes to the right)
+                        \
+                        \ This rolls our ship to the right (clockwise), but we
+                        \ actually implement this by rolling everything else
+                        \ to the left (anti-clockwise), so a positive roll rate
+                        \ in JSTX translates to a negative roll angle alpha
+
+ TXA                    \ Set A and Y to the roll rate but with the sign bit
+ EOR #%10000000         \ flipped (i.e. set them to the sign we want for alpha)
+ TAY
+
+ AND #%10000000         \ Extract the flipped sign of the roll rate and store
+ STA player2Alp2        \ in ALP2 (so ALP2 contains the sign of the roll angle
+                        \ alpha)
+
+ STX player2JSTX        \ Update JSTX with the damped value that's still in X
+
+ EOR #%10000000         \ Extract the correct sign of the roll rate and store
+ STA player2Alp2+1      \ in ALP2+1 (so ALP2+1 contains the flipped sign of the
+                        \ roll angle alpha)
+
+ TYA                    \ Set A to the roll rate but with the sign bit flipped
+
+ BPL P%+7               \ If the value of A is positive, skip the following
+                        \ three instructions
+
+ EOR #%11111111         \ A is negative, so change the sign of A using two's
+ CLC                    \ complement so that A is now positive and contains
+ ADC #1                 \ the absolute value of the roll rate, i.e. |JSTX|
+
+ LSR A                  \ Divide the (positive) roll rate in A by 4
  LSR A
 
- CMP #40                \ If A < 40, skip the following instruction
- BCC P%+4
+ CMP #8                 \ If A >= 8, skip the following instruction
+ BCS P%+3
 
- LDA #40                \ Set A = 40, which ensures a maximum speed of 40
+ LSR A                  \ A < 8, so halve A again
 
- STA DELTA              \ Update our speed in DELTA
+ STA player2Alp1        \ Store A in ALP1, so we now have:
+                        \
+                        \   ALP1 = |JSTX| / 8    if |JSTX| < 32
+                        \
+                        \   ALP1 = |JSTX| / 4    if |JSTX| >= 32
+                        \
+                        \ This means that at lower roll rates, the roll angle is
+                        \ reduced closer to zero than at higher roll rates,
+                        \ which gives us finer control over the ship's roll at
+                        \ lower roll rates
+                        \
+                        \ Because JSTX is in the range -127 to +127, ALP1 is
+                        \ in the range 0 to 31
 
- BNE MA4                \ If the speed we just set is non-zero, then jump to MA4
-                        \ to skip the following, as we don't need to check the
-                        \ keyboard for speed keys, otherwise do check the
-                        \ keyboard (so Bitstik users can still use the keyboard
-                        \ for speed adjustments if they twist the stick to zero)
+ ORA player2Alp2        \ Store A in ALPHA, but with the sign set to ALP2 (so
+ STA player2Alpha       \ ALPHA has a different sign to the actual roll rate)
+
+ LDX player2JSTY        \ Set X to the current rate of pitch in JSTY
+
+ JSR cntr               \ Apply keyboard damping so the pitch rate in X creeps
+                        \ towards the centre by 1
+
+ TXA                    \ Set A and Y to the pitch rate but with the sign bit
+ EOR #%10000000         \ flipped
+ TAY
+
+ AND #%10000000         \ Extract the flipped sign of the pitch rate into A
+
+ STX player2JSTY        \ Update JSTY with the damped value that's still in X
+
+ STA player2Bet2+1      \ Store the flipped sign of the pitch rate in BET2+1
+
+ EOR #%10000000         \ Extract the correct sign of the pitch rate and store
+ STA player2Bet2        \ it in BET2
+
+ TYA                    \ Set A to the pitch rate but with the sign bit flipped
+
+ BPL P%+4               \ If the value of A is positive, skip the following
+                        \ instruction
+
+ EOR #%11111111         \ A is negative, so flip the bits
+
+ ADC #4                 \ Add 4 to the (positive) pitch rate, so the maximum
+                        \ value is now up to 131 (rather than 127)
+
+ LSR A                  \ Divide the (positive) pitch rate in A by 16
+ LSR A
+ LSR A
+ LSR A
+
+ CMP #3                 \ If A >= 3, skip the following instruction
+ BCS P%+3
+
+ LSR A                  \ A < 3, so halve A again
+
+ STA player2Bet1        \ Store A in BET1, so we now have:
+                        \
+                        \   BET1 = |JSTY| / 32    if |JSTY| < 48
+                        \
+                        \   BET1 = |JSTY| / 16    if |JSTY| >= 48
+                        \
+                        \ This means that at lower pitch rates, the pitch angle
+                        \ is reduced closer to zero than at higher pitch rates,
+                        \ which gives us finer control over the ship's pitch at
+                        \ lower pitch rates
+                        \
+                        \ Because JSTY is in the range -131 to +131, BET1 is in
+                        \ the range 0 to 8
+
+ ORA player2Bet2        \ Store A in BETA, but with the sign set to BET2 (so
+ STA player2Beta        \ BETA has the same sign as the actual pitch rate)
+
+                        \ --- End of added code ------------------------------->
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA BSTK               \ If BSTK = 0 then the Bitstik is not configured, so
+\BEQ BS2                \ jump to BS2 to skip the following
+\
+\LDA KTRAN+10           \ Fetch the Bitstik rotation value (high byte) from the
+\                       \ key logger buffer
+\
+\LSR A                  \ Divide A by 4
+\LSR A
+\
+\CMP #40                \ If A < 40, skip the following instruction
+\BCC P%+4
+\
+\LDA #40                \ Set A = 40, which ensures a maximum speed of 40
+\
+\STA DELTA              \ Update our speed in DELTA
+\
+\BNE MA4                \ If the speed we just set is non-zero, then jump to MA4
+\                       \ to skip the following, as we don't need to check the
+\                       \ keyboard for speed keys, otherwise do check the
+\                       \ keyboard (so Bitstik users can still use the keyboard
+\                       \ for speed adjustments if they twist the stick to zero)
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -4852,153 +4976,177 @@ ENDIF
  DEC DELTA              \ The "slow down" key is being pressed, so we decrement
                         \ the current ship speed in DELTA
 
-                        \ --- Mod: Code removed for two-player Elite: --------->
-
-\BNE MA4                \ If the speed is still greater than zero, jump to MA4
-
-                        \ --- And replaced by: -------------------------------->
-
- BPL MA4                \ If the speed is positive, jump to MA4, so this allows
-                        \ for zero speed
-
-                        \ --- End of replacement ------------------------------>
+ BNE MA4                \ If the speed is still greater than zero, jump to MA4
 
  INC DELTA              \ Otherwise we just braked a little too hard, so bump
                         \ the speed back up to the minimum value of 1
 
 .MA4
 
- LDA KY15               \ If "U" is being pressed and the number of missiles
- AND NOMSL              \ in NOMSL is non-zero, keep going, otherwise jump down
- BEQ MA20               \ to MA20 to skip the following
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
- LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
- JSR ABORT              \ ABORT to disarm the missile and update the missile
-                        \ indicators on the dashboard to green (Y = &EE)
+{
 
- LDA #40                \ Call the NOISE routine with A = 40 to make a low,
- JSR NOISE              \ long beep to indicate the missile is now disarmed
+ LDA KY19               \ If RETURN is being pressed, keep going, otherwise jump
+ BEQ MA17               \ down to MA17 to skip the following
 
- LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
- STA MSAR               \ currently armed
+ LDA player2Delta       \ The "go faster" key is being pressed, so first we
+ CMP #40                \ fetch the current speed from DELTA into A, and if
+ BCS MA17               \ A >= 40, we are already going at full pelt, so jump
+                        \ down to MA17 to skip the following
 
-.MA20
+ INC player2Delta       \ We can go a bit faster, so increment the speed in
+                        \ location DELTA
 
- LDA MSTG               \ If MSTG is positive (i.e. it does not have bit 7 set),
- BPL MA25               \ then it indicates we already have a missile locked on
-                        \ a target (in which case MSTG contains the ship number
-                        \ of the target), so jump to MA25 to skip targeting. Or
-                        \ to put it another way, if MSTG = &FF, which means
-                        \ there is no current target lock, keep going
+.MA17
 
- LDA KY14               \ If "T" is being pressed, keep going, otherwise jump
- BEQ MA25               \ down to MA25 to skip the following
+ LDA KY20               \ If "]" is being pressed, keep going, otherwise jump
+ BEQ MA4                \ down to MA4 to skip the following
 
- LDX NOMSL              \ If the number of missiles in NOMSL is zero, jump down
- BEQ MA25               \ to MA25 to skip the following
+ DEC player2Delta       \ The "slow down" key is being pressed, so we decrement
+                        \ the current ship speed in DELTA
 
- STA MSAR               \ The "target missile" key is being pressed and we have
-                        \ at least one missile, so set MSAR = &FF to denote that
-                        \ our missile is currently armed (we know A has the
-                        \ value &FF, as we just loaded it from MSTG and checked
-                        \ that it was negative)
+ BNE MA4                \ If the speed is still greater than zero, jump to MA4
 
- LDY #YELLOW2           \ Change the leftmost missile indicator to yellow
- JSR MSBAR              \ on the missile bar (this call changes the leftmost
-                        \ indicator because we set X to the number of missiles
-                        \ in NOMSL above, and the indicators are numbered from
-                        \ right to left, so X is the number of the leftmost
-                        \ indicator)
+ INC player2Delta       \ Otherwise we just braked a little too hard, so bump
+                        \ the speed back up to the minimum value of 1
 
-.MA25
+.MA4
 
- LDA KY16               \ If "M" is being pressed, keep going, otherwise jump
- BEQ MA24               \ down to MA24 to skip the following
-
- LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
- BMI MA64               \ MA64 to skip the following (also skipping the checks
-                        \ for TAB, ESCAPE, "J" and "E")
-
- JSR FRMIS              \ The "fire missile" key is being pressed and we have
-                        \ a missile lock, so call the FRMIS routine to fire
-                        \ the missile
-
-.MA24
-
- LDA KY12               \ If TAB is being pressed, keep going, otherwise jump
- BEQ MA76               \ down to MA76 to skip the following
-
- ASL BOMB               \ The "energy bomb" key is being pressed, so double
-                        \ the value in BOMB. If we have an energy bomb fitted,
-                        \ BOMB will contain &7F (%01111111) before this shift
-                        \ and will contain &FE (%11111110) after the shift; if
-                        \ we don't have an energy bomb fitted, BOMB will still
-                        \ contain 0. The bomb explosion is dealt with in the
-                        \ MAL1 routine below - this just registers the fact that
-                        \ we've set the bomb ticking
-
-.MA76
-
- LDA KY20               \ If "P" is being pressed, keep going, otherwise skip
- BEQ MA78               \ the next two instructions
-
- LDA #0                 \ The "cancel docking computer" key is bring pressed,
- STA auto               \ so turn it off by setting auto to 0
-
-.MA78
-
- LDA KY13               \ If ESCAPE is being pressed and we have an escape pod
- AND ESCP               \ fitted, keep going, otherwise jump to noescp to skip
- BEQ noescp             \ the following instructions
-
- LDA MJ                 \ If we are in witchspace, we can't launch our escape
- BNE noescp             \ pod, so jump down to noescp
-
- JMP ESCAPE             \ The button is being pressed to launch an escape pod
-                        \ and we have an escape pod fitted, so jump to ESCAPE to
-                        \ launch it, and exit the main flight loop using a tail
-                        \ call
-
-.noescp
+}
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\LDA KY15               \ If "U" is being pressed and the number of missiles
+\AND NOMSL              \ in NOMSL is non-zero, keep going, otherwise jump down
+\BEQ MA20               \ to MA20 to skip the following
+\
+\LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
+\JSR ABORT              \ ABORT to disarm the missile and update the missile
+\                       \ indicators on the dashboard to green (Y = &EE)
+\
+\LDA #40                \ Call the NOISE routine with A = 40 to make a low,
+\JSR NOISE              \ long beep to indicate the missile is now disarmed
+\
+\LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
+\STA MSAR               \ currently armed
+\
+\.MA20
+\
+\LDA MSTG               \ If MSTG is positive (i.e. it does not have bit 7 set),
+\BPL MA25               \ then it indicates we already have a missile locked on
+\                       \ a target (in which case MSTG contains the ship number
+\                       \ of the target), so jump to MA25 to skip targeting. Or
+\                       \ to put it another way, if MSTG = &FF, which means
+\                       \ there is no current target lock, keep going
+\
+\LDA KY14               \ If "T" is being pressed, keep going, otherwise jump
+\BEQ MA25               \ down to MA25 to skip the following
+\
+\LDX NOMSL              \ If the number of missiles in NOMSL is zero, jump down
+\BEQ MA25               \ to MA25 to skip the following
+\
+\STA MSAR               \ The "target missile" key is being pressed and we have
+\                       \ at least one missile, so set MSAR = &FF to denote that
+\                       \ our missile is currently armed (we know A has the
+\                       \ value &FF, as we just loaded it from MSTG and checked
+\                       \ that it was negative)
+\
+\LDY #YELLOW2           \ Change the leftmost missile indicator to yellow
+\JSR MSBAR              \ on the missile bar (this call changes the leftmost
+\                       \ indicator because we set X to the number of missiles
+\                       \ in NOMSL above, and the indicators are numbered from
+\                       \ right to left, so X is the number of the leftmost
+\                       \ indicator)
+\
+\.MA25
+\
+\LDA KY16               \ If "M" is being pressed, keep going, otherwise jump
+\BEQ MA24               \ down to MA24 to skip the following
+\
+\LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
+\BMI MA64               \ MA64 to skip the following (also skipping the checks
+\                       \ for TAB, ESCAPE, "J" and "E")
+\
+\JSR FRMIS              \ The "fire missile" key is being pressed and we have
+\                       \ a missile lock, so call the FRMIS routine to fire
+\                       \ the missile
+\
+\.MA24
+\
+\LDA KY12               \ If TAB is being pressed, keep going, otherwise jump
+\BEQ MA76               \ down to MA76 to skip the following
+\
+\ASL BOMB               \ The "energy bomb" key is being pressed, so double
+\                       \ the value in BOMB. If we have an energy bomb fitted,
+\                       \ BOMB will contain &7F (%01111111) before this shift
+\                       \ and will contain &FE (%11111110) after the shift; if
+\                       \ we don't have an energy bomb fitted, BOMB will still
+\                       \ contain 0. The bomb explosion is dealt with in the
+\                       \ MAL1 routine below - this just registers the fact that
+\                       \ we've set the bomb ticking
+\
+\.MA76
+\
+\LDA KY20               \ If "P" is being pressed, keep going, otherwise skip
+\BEQ MA78               \ the next two instructions
+\
+\LDA #0                 \ The "cancel docking computer" key is bring pressed,
+\STA auto               \ so turn it off by setting auto to 0
+\
+\.MA78
+\
+\LDA KY13               \ If ESCAPE is being pressed and we have an escape pod
+\AND ESCP               \ fitted, keep going, otherwise jump to noescp to skip
+\BEQ noescp             \ the following instructions
+\
+\LDA MJ                 \ If we are in witchspace, we can't launch our escape
+\BNE noescp             \ pod, so jump down to noescp
+\
+\JMP ESCAPE             \ The button is being pressed to launch an escape pod
+\                       \ and we have an escape pod fitted, so jump to ESCAPE to
+\                       \ launch it, and exit the main flight loop using a tail
+\                       \ call
+\
+\.noescp
+\
 \LDA KY18               \ If "J" is being pressed, keep going, otherwise skip
 \BEQ P%+5               \ the next instruction
 \
 \JSR WARP               \ Call the WARP routine to do an in-system jump
+\
+\LDA KY17               \ If "E" is being pressed and we have an E.C.M. fitted,
+\AND ECM                \ keep going, otherwise jump down to MA64 to skip the
+\BEQ MA64               \ following
+\
+\LDA ECMA               \ If ECMA is non-zero, that means an E.C.M. is already
+\BNE MA64               \ operating and is counting down (this can be either
+\                       \ our E.C.M. or an opponent's), so jump down to MA64 to
+\                       \ skip the following (as we can't have two E.C.M.
+\                       \ systems operating at the same time)
+\
+\DEC ECMP               \ The E.C.M. button is being pressed and nobody else
+\                       \ is operating their E.C.M., so decrease the value of
+\                       \ ECMP to make it non-zero, to denote that our E.C.M.
+\                       \ is now on
+\
+\JSR ECBLB2             \ Call ECBLB2 to light up the E.C.M. indicator bulb on
+\                       \ the dashboard, set the E.C.M. countdown timer to 32,
+\                       \ and start making the E.C.M. sound
+\
+\.MA64
+\
+\LDA KY19               \ If "C" is being pressed, and we have a docking
+\AND DKCMP              \ computer fitted, keep going, otherwise jump down to
+\BEQ MA68               \ MA68 to skip the following
+\
+\STA auto               \ Set auto to the non-zero value of A, so the docking
+\                       \ computer is activated
+\
+\.MA68
 
                         \ --- End of removed code ----------------------------->
-
- LDA KY17               \ If "E" is being pressed and we have an E.C.M. fitted,
- AND ECM                \ keep going, otherwise jump down to MA64 to skip the
- BEQ MA64               \ following
-
- LDA ECMA               \ If ECMA is non-zero, that means an E.C.M. is already
- BNE MA64               \ operating and is counting down (this can be either
-                        \ our E.C.M. or an opponent's), so jump down to MA64 to
-                        \ skip the following (as we can't have two E.C.M.
-                        \ systems operating at the same time)
-
- DEC ECMP               \ The E.C.M. button is being pressed and nobody else
-                        \ is operating their E.C.M., so decrease the value of
-                        \ ECMP to make it non-zero, to denote that our E.C.M.
-                        \ is now on
-
- JSR ECBLB2             \ Call ECBLB2 to light up the E.C.M. indicator bulb on
-                        \ the dashboard, set the E.C.M. countdown timer to 32,
-                        \ and start making the E.C.M. sound
-
-.MA64
-
- LDA KY19               \ If "C" is being pressed, and we have a docking
- AND DKCMP              \ computer fitted, keep going, otherwise jump down to
- BEQ MA68               \ MA68 to skip the following
-
- STA auto               \ Set auto to the non-zero value of A, so the docking
-                        \ computer is activated
-
-.MA68
 
  LDA #0                 \ Set LAS = 0, to switch the laser off while we do the
  STA LAS                \ following logic
@@ -23662,8 +23810,8 @@ ENDIF
 
  JSR ZINF               \ Call ZINF to reset the INWK ship workspace
 
- LDA #96                \ Point ship in same direction as us, so rotatiogn work
- STA INWK+14
+ LDA #96                \ Give ship the same orientation as us, so rotations
+ STA INWK+14            \ work
 
  LDA #7                 \ Set z_hi = -7 (behind)
  STA INWK+7
@@ -31311,7 +31459,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Beta        \ Set player 2's movement variables
+ STA player2Beta        \ Zero player 2's movement variables
  STA player2Bet1
 
                         \ --- End of added code ------------------------------->
@@ -31386,8 +31534,16 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Alp2        \ Set player 2's movement variables
- STA player2Bet2
+ STA JSTX               \ Set the current roll rate to the mid-point, 128, to
+                        \ prevent random roll on launch
+
+ STA player2JSTY        \ Set player 2's pitch rate to the mid-point, 128
+
+ STA player2JSTX        \ Set player 2's roll rate to the mid-point, 128
+
+ STA player2Alp2        \ Reset player 2's roll sign to negative
+
+ STA player2Bet2        \ Reset player 2's roll pitch to negative
 
                         \ --- End of added code ------------------------------->
 
@@ -31402,10 +31558,13 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Beta        \ Set player 2's movement variables
- STA player2Bet1
- STA player2Alp2+1
- STA player2Bet2+1
+ STA player2Beta        \ Reset player 2's pitch angle to 0
+
+ STA player2Bet1        \ Reset player 2's pitch angle magnitude to 0
+
+ STA player2Alp2+1      \ Reset player 2's flipped roll sign to positive
+
+ STA player2Bet2+1      \ Reset player 2's flipped pitch sign to positive
 
                         \ --- End of added code ------------------------------->
 
@@ -31414,15 +31573,24 @@ ENDIF
  LDA #3                 \ Reset DELTA (speed) to 3
  STA DELTA
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA player2Delta       \ Reset player 2's speed to 3
+
+ LDA #0                 \ Set initial roll angles to zero, rather than 3, as we
+                        \ are not leaving the space station
+
+                        \ --- End of added code ------------------------------->
+
  STA ALPHA              \ Reset ALPHA (roll angle alpha) to 3
 
  STA ALP1               \ Reset ALP1 (magnitude of roll angle alpha) to 3
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Delta       \ Set player 2's movement variables
- STA player2Alpha
- STA player2Alp1
+ STA player2Alpha       \ Reset player 2's roll angle to 0
+
+ STA player2Alp1        \ Reset player 2's roll angle magnitude to 0
 
                         \ --- End of added code ------------------------------->
 
@@ -35955,9 +36123,20 @@ ENDIF
  EQUB &65               \ M         KYTB+12     Fire missile
  EQUB &22               \ E         KYTB+13     E.C.M.
  EQUB &45               \ J         KYTB+14     In-system jump
- EQUB &52               \ C         KYTB+15     Docking computer
 
- EQUB &37               \ P         KYTB+16     Cancel docking computer
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB &52               \ C         KYTB+15     Docking computer
+
+\EQUB &37               \ P         KYTB+16     Cancel docking computer
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB &49               \ RETURN    KYTB+15     Player 2 speed up
+
+ EQUB &58               \ ]         KYTB+16     Player 2 slow down
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -36189,9 +36368,13 @@ ENDIF
 
 .DKJ1
 
- LDA auto               \ If auto is non-zero, then the docking computer is
- BNE auton              \ currently activated, so jump to auton in DOKEY so the
-                        \ docking computer can "press" the flight keys for us
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA auto               \ If auto is non-zero, then the docking computer is
+\BNE auton              \ currently activated, so jump to auton in DOKEY so the
+\                       \ docking computer can "press" the flight keys for us
+
+                        \ --- End of removed code ----------------------------->
 
  LDA KTRAN+1            \ Copy the key press state for the "?" key from the
  STA KL+1               \ key logger buffer to the key logger
@@ -36347,6 +36530,23 @@ ENDIF
                         \ flight keys
 
  STA BSTK               \ Set BSTK = 0 to disable the Bitstik
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX #1                 \ Call DKS2 to fetch the value of ADC channel 1 (the
+ JSR DKS2               \ joystick 1 X value) into (A X), and OR A with 1. This
+ ORA #1                 \ ensures that the high byte is at least 1, and then we
+ STA player2JSTX        \ store the result in player2JSTX
+
+ LDX #2                 \ Call DKS2 to fetch the value of ADC channel 2 (the
+ JSR DKS2               \ joystick 1 Y value) into (A X), and EOR A with JSTGY.
+ EOR JSTGY              \ JSTGY will be &FF if the game is configured to
+ STA player2JSTY        \ reverse the joystick Y channel, so this EOR does
+                        \ exactly that, and then we store the result in
+                        \ player2JSTY
+
+                        \ --- End of added code ------------------------------->
+
 
  LDX #7                 \ We're now going to copy key press data for the primary
                         \ flight keys from the key logger buffer at KTRAN to the
@@ -42821,11 +43021,15 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA #%00001000         \ If bit 3 of the ship's byte #31 is set, then the ship
- BIT INWK+31            \ is currently being drawn on-screen, so skip the
- BNE P%+5               \ following instruction (so we only tidy ships when they
-                        \ are not visible on-screen)
+ LDA XSAV               \ If this is ship slot #2 (player 2's ship)
+ CMP #2
+ BNE move1
 
+ LDA #%00001000         \ If player 1 is visible in player 2's view, skip the
+ BIT player1Visible     \ following instruction to avoid making the ship jump
+ BNE P%+5
+
+.move1
                         \ --- End of added code ------------------------------->
 
  JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
@@ -42918,6 +43122,19 @@ ENDIF
 \     (x, y, z) += nosev_hi * speed / 64
 \
 \ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If we are moving player 2's ship
+ CMP #2
+ BNE move2
+
+ LDA player2Delta       \ Set the speed for player 2
+ STA INWK+27
+
+.move2
+
+                        \ --- End of added code ------------------------------->
 
  LDA INWK+27            \ Set Q = the ship's speed byte #27 * 4
  ASL A
@@ -43330,6 +43547,54 @@ ENDIF
 \     apply damping if required
 \
 \ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If we are moving player 2's ship
+ CMP #2
+ BNE move3
+
+                        \ Apply player 2's pitch and roll to player 2's ship
+                        \
+                        \   * player2Alpha = roll
+                        \
+                        \   * player2Beta = pitch
+
+ LDA ALPHA              \ Save current ship's pitch and roll angles (MVS4 only
+ STA storeData          \ uses ALPHA and BETA)
+ LDA BETA
+ STA storeData+4
+
+ LDA player2Alpha       \ Switch to player 2's pitch and roll angles
+ STA ALPHA
+ LDA player2Beta
+ STA BETA
+
+ JSR TransposeMatrix    \ Transpose the orientation matrix to move into player
+                        \ 2's frame of reference
+
+ LDY #9                 \ Apply player 2 pitch and roll rotations to the current
+ JSR MVS4               \ ship's nosev vector
+
+ LDY #15                \ Apply player 2 pitch and roll rotations to the current
+ JSR MVS4               \ ship's roofv vector
+
+ LDY #21                \ Apply player 2 pitch and roll rotations to the current
+ JSR MVS4               \ ship's sidev vector
+
+ JSR TransposeMatrix    \ Transpose the orientation matrix again to move back
+                        \ into player 1's frame of reference
+
+ LDA storeData          \ Restore pitch and roll angles to the current ship
+ STA ALPHA
+ LDA storeData+4
+ STA BETA
+
+ JMP MV5                \ Skip the following as this only applies to NPC ships
+
+.move3
+
+                        \ --- End of added code ------------------------------->
 
  LDA INWK+30            \ Fetch the ship's pitch counter and extract the sign
  AND #%10000000         \ into RAT2
@@ -55678,54 +55943,7 @@ ENDMACRO
  LDA newCoords+8
  STA INWK+8
 
-                        \ Step 3: Transpose orientation matrix
-
-\ Transpose matrix to rotate player 1 correctly for player 2 view
-\ Matrix is in INWK +9 through +26
-\
-\ Stored as lo/hi
-\
-\ sidev_x sidev_y sidev_z     21/22     23/24     25/26
-\ roofv_x roofv_y roofv_z  =  15/16     17/18     19/20
-\ nosev_x nosev_y nosev_z      9/10     11/12     13/14
-\
-\ sidev_x sidev_y sidev_z      sidev_x roofv_x nosev_x
-\ roofv_x roofv_y roofv_z  ->  sidev_y roofv_y nosev_y
-\ nosev_x nosev_y nosev_z      sidev_z roofv_z nosev_z
-\
-\ Swap nosev_x and sidev_z  ->   9/10 and 25/26
-\ Swap nosev_y and roofv_z  ->  11/12 and 19/20
-\ Swap roofv_x and sidev_y  ->  15/16 and 23/24
-
- LDA INWK+9             \ nosev_x_lo
- LDX INWK+25            \ sidev_z_lo
- STA INWK+25
- STX INWK+9
-
- LDA INWK+10            \ nosev_x_hi
- LDX INWK+26            \ sidev_z_hi
- STA INWK+26
- STX INWK+10
-
- LDA INWK+11            \ nosev_y_lo
- LDX INWK+19            \ roofv_z_lo
- STA INWK+19
- STX INWK+11
-
- LDA INWK+12            \ nosev_y_hi
- LDX INWK+20            \ roofv_z_hi
- STA INWK+20
- STX INWK+12
-
- LDA INWK+15            \ roofv_x_lo
- LDX INWK+23            \ sidev_y_lo
- STA INWK+23
- STX INWK+15
-
- LDA INWK+16            \ roofv_x_hi
- LDX INWK+24            \ sidev_y_hi
- STA INWK+24
- STX INWK+16
+ JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
 
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
@@ -55777,6 +55995,74 @@ ENDMACRO
  JSR GINF
 
 .dshp3
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: TransposeMatrix
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Transpose the current ship's rotation matrix (i.e. its orientation
+\             vectors)
+\
+\ ******************************************************************************
+\
+\ Transpose matrix to rotate player 1 correctly for player 2 view
+\
+\ Matrix is in INWK+9 through +26
+\
+\ Stored as lo/hi
+\
+\ sidev_x sidev_y sidev_z     21/22     23/24     25/26
+\ roofv_x roofv_y roofv_z  =  15/16     17/18     19/20
+\ nosev_x nosev_y nosev_z      9/10     11/12     13/14
+\
+\ sidev_x sidev_y sidev_z      sidev_x roofv_x nosev_x
+\ roofv_x roofv_y roofv_z  ->  sidev_y roofv_y nosev_y
+\ nosev_x nosev_y nosev_z      sidev_z roofv_z nosev_z
+\
+\ Swap nosev_x and sidev_z  ->   9/10 and 25/26
+\ Swap nosev_y and roofv_z  ->  11/12 and 19/20
+\ Swap roofv_x and sidev_y  ->  15/16 and 23/24
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.TransposeMatrix
+
+ LDA INWK+9             \ nosev_x_lo
+ LDX INWK+25            \ sidev_z_lo
+ STA INWK+25
+ STX INWK+9
+
+ LDA INWK+10            \ nosev_x_hi
+ LDX INWK+26            \ sidev_z_hi
+ STA INWK+26
+ STX INWK+10
+
+ LDA INWK+11            \ nosev_y_lo
+ LDX INWK+19            \ roofv_z_lo
+ STA INWK+19
+ STX INWK+11
+
+ LDA INWK+12            \ nosev_y_hi
+ LDX INWK+20            \ roofv_z_hi
+ STA INWK+20
+ STX INWK+12
+
+ LDA INWK+15            \ roofv_x_lo
+ LDX INWK+23            \ sidev_y_lo
+ STA INWK+23
+ STX INWK+15
+
+ LDA INWK+16            \ roofv_x_hi
+ LDX INWK+24            \ sidev_y_hi
+ STA INWK+24
+ STX INWK+16
 
  RTS                    \ Return from the subroutine
 
