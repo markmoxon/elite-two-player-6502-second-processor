@@ -154,7 +154,7 @@ ENDIF
 
  player1Ship = CYL      \ Ship type for player 1
 
- player2Ship = CYL      \ Ship type for player 2
+ player2Ship = COPS     \ Ship type for player 2
 
                         \ --- End of added code ------------------------------->
 
