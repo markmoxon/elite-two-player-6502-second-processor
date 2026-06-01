@@ -3607,9 +3607,10 @@ ENDIF
                         \   * Bit 7 set = draw into split-screen
                         \
                         \   * Bit 7 clear = full screen
-.playerScreen
+.drawPlayerView
 
- SKIP 1                 \ Determines which player to update in the split screen
+ SKIP 1                 \ Determines which player's view to draw in the split
+                        \ screen
                         \
                         \   * Bit 7 clear = draw player 1's view (top)
                         \
@@ -5896,7 +5897,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STZ playerScreen       \ Draw ship for player 1
+ STZ drawPlayerView     \ Draw ship for player 1
 
                         \ --- End of added code ------------------------------->
 
@@ -9083,7 +9084,7 @@ ENDIF
                         \ centre at y-coordinate Y/2, while a negative Y1 means
                         \ down from the centre
 
- BIT playerScreen       \ If we are drawing player 2's stars, draw them in the
+ BIT drawPlayerView     \ If we are drawing player 2's stars, draw them in the
  BPL P%+5               \ bottom half of the space view
  CLC
  ADC #Y
@@ -9721,7 +9722,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 2's stars
  BPL flip1
 
  TYA                    \ Then use the second half of the table
@@ -9753,7 +9754,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 2's stars
  BPL flip2
 
  DEY                    \ Decrement the counter to point to the next particle of
@@ -9805,7 +9806,7 @@ ENDIF
  JSR GetPlayer2Movement
 
  SEC                    \ Update player 2 stars
- ROR playerScreen
+ ROR drawPlayerView
 
  ASL NOSTM              \ Use star data from second half of table
 
@@ -9817,7 +9818,7 @@ ENDIF
 
  JSR LoadShipMovement   \ Switch to player 1's movement data
 
- STZ playerScreen       \ Update player 1 stars
+ STZ drawPlayerView     \ Update player 1 stars
 
                         \ --- End of added code ------------------------------->
 
@@ -10171,7 +10172,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 1's stars, jump to star1
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star1
  BPL star1
 
  DEY                    \ Decrement the loop counter to point to the next
@@ -10537,7 +10538,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 1's stars, jump to star2
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star2
  BPL star2
 
  DEY                    \ Decrement the loop counter to point to the next
@@ -16338,7 +16339,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 1's stars, jump to star1
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star1
  BPL star3
 
  DEY                    \ Decrement the loop counter to point to the next
@@ -23870,7 +23871,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STZ playerScreen       \ Redraw player 1's view
+ STZ drawPlayerView     \ Redraw player 1's view
 
  LDX #0                 \ Set player 1's view to the front view (as we only get
                         \ here by pressing f0)
@@ -26407,7 +26408,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 2's stars
  BPL news1
 
  TYA                    \ Then use the second half of the table
@@ -26456,7 +26457,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 2's stars
  BPL news2
 
  DEY                    \ Decrement the counter to point to the next particle of
@@ -26509,7 +26510,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If this is player 2
+ BIT drawPlayerView     \ If this is player 2
  BPL wipe1
 
  LDA player1Visible     \ Clear bits 3, 4 and 6 in the ship's byte #31 for the
@@ -32750,7 +32751,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STZ playerScreen       \ Apply f0-f3 to player 1's view only
+ STZ drawPlayerView     \ Apply f0-f3 to player 1's view only
 
                         \ --- End of added code ------------------------------->
 
@@ -32775,7 +32776,7 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  SEC                    \ Get ready for changing player 2's view
- ROR playerScreen
+ ROR drawPlayerView
 
  CMP #&39               \ Up arrow = front
  BNE keys1
@@ -38443,7 +38444,7 @@ ENDIF
  BCS nono               \ the bottom of the screen, jump to nono as the ship's
                         \ dot is off the bottom of the space view
 
- BIT playerScreen       \ If this is player 2's view
+ BIT drawPlayerView     \ If this is player 2's view
  BPL poin1
 
  CLC                    \ Move dot to bottom half of the screen
@@ -42434,7 +42435,7 @@ ENDIF
 
  LSR Y2                 \ Halve y2
 
- BIT playerScreen       \ If player 1, skip the following
+ BIT drawPlayerView     \ If player 1, skip the following
  BPL clip1
 
                         \ This is player 2, so move down to bottom half
@@ -44658,7 +44659,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If this is player 2
+ BIT drawPlayerView     \ If this is player 2
  BPL view1
 
  STX player2View        \ Set the current space view for player 2 to X
@@ -44677,10 +44678,10 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- STX playerScreen       \ Draw both views as we are setting up a new space view
+ STX drawPlayerView     \ Draw both views as we are setting up a new space view
  JSR view6
  SEC
- ROR playerScreen
+ ROR drawPlayerView
 
 .view6
 
@@ -44707,7 +44708,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If this is player 2
+ BIT drawPlayerView     \ If this is player 2
  BPL view3
 
  CPX player2View        \ If the current view is already of type X, jump to LO2
@@ -44789,7 +44790,7 @@ ENDIF
                         \ minus 24 (because TT15 will add 24 to the coordinate
                         \ when it draws the crosshairs)
 
- BIT playerScreen       \ If this is player 1, skip the following
+ BIT drawPlayerView     \ If this is player 1, skip the following
  BPL site1
 
  CLC                    \ This is player 2, so move down
@@ -44907,7 +44908,7 @@ ENDIF
  ROR splitScreen
 
  LDA #14                \ Set A to 14 or 15, for clearing the correct part of
- BIT playerScreen       \ the screen
+ BIT drawPlayerView     \ the screen
  BPL P%+4
  LDA #15
 
@@ -44958,7 +44959,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT playerScreen       \ If this is player 2
+ BIT drawPlayerView     \ If this is player 2
  BPL clsc3
 
  LDA #13                \ Move the text cursor to column 11, row 13
@@ -56037,7 +56038,7 @@ ENDMACRO
 \STZ INWK+36            \ Clear scooped state
 
  SEC                    \ Configure drawing for player 2
- ROR playerScreen
+ ROR drawPlayerView
 
  LDA XX21-2+2*player1Ship   \ Set XX0(1 0) to point to the ship blueprint for
  STA XX0                    \ player 1, as viewed from player 2
@@ -56058,7 +56059,7 @@ ENDMACRO
  LDA INWK+31            \ Copy "on-screen" state from INWK to player 2 ship
  STA player1Visible
 
- STZ playerScreen       \ Back to drawing the view for player 1
+ STZ drawPlayerView     \ Back to drawing the view for player 1
 
  JSR LoadShipData       \ Reload INWK state
 
