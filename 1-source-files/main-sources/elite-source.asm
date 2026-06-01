@@ -28926,6 +28926,10 @@ ENDIF
                         \ circle appears on-screen, and if it does, set P(2 1)
                         \ to the maximum y-coordinate of the new sun on-screen
 
+ CPX #Y-1               \ Perform a half-screen check instead of CHKON's default
+                        \ full-screen check, as sun coordinates are clipped to
+                        \ the player view (unlike circles)
+
  BCS PLF3-3             \ If CHKON set the C flag then the new sun's circle does
                         \ not appear on-screen, so jump to WPLS (via the JMP at
                         \ the top of this routine) to remove the sun from the
@@ -29483,12 +29487,6 @@ ENDIF
 .CIRCLE
 
  JSR CHKON              \ Call CHKON to check whether the circle fits on-screen
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- CPX #2*Y-1             \ Full screen check required, not sure why ???
-
-                        \ --- End of added code ------------------------------->
 
  BCS RTS2               \ If CHKON set the C flag then the circle does not fit
                         \ on-screen, so return from the subroutine (as RTS2
@@ -30217,34 +30215,26 @@ ENDIF
                         \ the C flag and return from the subroutine, as the
                         \ whole circle is off-screen to the bottom
 
-                        \ --- Mod: Code removed for two-player Elite: --------->
-
-\CPX #2*Y-1             \ If we get here then A is zero, which means the top
-\                       \ edge of the circle is within the screen boundary, so
-\                       \ now we need to check whether it is in the space view
-\                       \ (in which case it is on-screen) or the dashboard (in
-\                       \ which case the top of the circle is hidden by the
-\                       \ dashboard, so the circle isn't on-screen). We do this
-\                       \ by checking the low byte of the result in X against
-\                       \ 2 * #Y - 1, and returning the C flag from this
-\                       \ comparison. The constant #Y is the y-coordinate of the
-\                       \ mid-point of the space view, so 2 * #Y - 1, the
-\                       \ y-coordinate of the bottom pixel row of the space
-\                       \ view. So this does the following:
-\                       \
-\                       \   * The C flag is set if coordinate (A X) is below the
-\                       \     bottom row of the space view, i.e. the top edge of
-\                       \     the circle is hidden by the dashboard
-\                       \
-\                       \   * The C flag is clear if coordinate (A X) is above
-\                       \     the bottom row of the space view, i.e. the top
-\                       \     edge of the circle is on-screen
-
-                        \ --- And replaced by: -------------------------------->
-
- CPX #Y-1               \ Half-screen check instead
-
-                        \ --- End of replacement ------------------------------>
+ CPX #2*Y-1             \ If we get here then A is zero, which means the top
+                        \ edge of the circle is within the screen boundary, so
+                        \ now we need to check whether it is in the space view
+                        \ (in which case it is on-screen) or the dashboard (in
+                        \ which case the top of the circle is hidden by the
+                        \ dashboard, so the circle isn't on-screen). We do this
+                        \ by checking the low byte of the result in X against
+                        \ 2 * #Y - 1, and returning the C flag from this
+                        \ comparison. The constant #Y is the y-coordinate of the
+                        \ mid-point of the space view, so 2 * #Y - 1, the
+                        \ y-coordinate of the bottom pixel row of the space
+                        \ view. So this does the following:
+                        \
+                        \   * The C flag is set if coordinate (A X) is below the
+                        \     bottom row of the space view, i.e. the top edge of
+                        \     the circle is hidden by the dashboard
+                        \
+                        \   * The C flag is clear if coordinate (A X) is above
+                        \     the bottom row of the space view, i.e. the top
+                        \     edge of the circle is on-screen
 
  RTS                    \ Return from the subroutine
 
