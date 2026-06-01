@@ -43497,6 +43497,26 @@ ENDIF
 
 .MV45
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA TYPE               \ If the ship type is not the sun (129) then skip the
+ AND #%10000001         \ next instruction, otherwise return from the subroutine
+ CMP #129               \ as we don't need to rotate the sun around its origin
+ BNE P%+3               \ or apply player 1's speed (as we want the sun and
+                        \ planet to remain distant and unreachable)
+
+ RTS                    \ Return from the subroutine, as the ship we are moving
+                        \ is the sun and doesn't need any of the following
+
+ CMP #128               \ If the ship type is 128 or 130, then this is the
+ BEQ move3              \ planet, so skip the following so we don't apply player
+                        \ 1's speed to the planet's coordinate, but instead move
+                        \ on to the pitch and roll (as we still want the planet
+                        \ to rotate)
+
+                        \ --- End of added code ------------------------------->
+
+
  LDA DELTA              \ Set R to our speed in DELTA
  STA R
 
@@ -43508,15 +43528,23 @@ ENDIF
                         \ (z_sign z_hi z_lo) = (z_sign z_hi z_lo) + (A R)
                         \                    = (z_sign z_hi z_lo) - speed
 
- LDA TYPE               \ If the ship type is not the sun (129) then skip the
- AND #%10000001         \ next instruction, otherwise return from the subroutine
- CMP #129               \ as we don't need to rotate the sun around its origin.
- BNE P%+3               \ Having both the AND and the CMP is a little odd, as
-                        \ the sun is the only ship type with bits 0 and 7 set,
-                        \ so the AND has no effect and could be removed
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- RTS                    \ Return from the subroutine, as the ship we are moving
-                        \ is the sun and doesn't need any of the following
+\LDA TYPE               \ If the ship type is not the sun (129) then skip the
+\AND #%10000001         \ next instruction, otherwise return from the subroutine
+\CMP #129               \ as we don't need to rotate the sun around its origin.
+\BNE P%+3               \ Having both the AND and the CMP is a little odd, as
+\                       \ the sun is the only ship type with bits 0 and 7 set,
+\                       \ so the AND has no effect and could be removed
+\
+\RTS                    \ Return from the subroutine, as the ship we are moving
+\                       \ is the sun and doesn't need any of the following
+
+                        \ --- And replaced by: -------------------------------->
+
+.move3
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -43572,7 +43600,7 @@ ENDIF
 
  LDA XSAV               \ If we are moving player 2's ship
  CMP #2
- BNE move3
+ BNE move4
 
                         \ Apply player 2's pitch and roll to player 2's ship
                         \
@@ -43612,7 +43640,7 @@ ENDIF
 
  JMP MV5                \ Skip the following as this only applies to NPC ships
 
-.move3
+.move4
 
                         \ --- End of added code ------------------------------->
 
