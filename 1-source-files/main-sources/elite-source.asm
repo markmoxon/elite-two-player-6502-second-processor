@@ -152,9 +152,15 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- player1Ship = CYL      \ Ship type for player 1
+ PLAYER1SHIP = CYL      \ Ship type for player 1
 
- player2Ship = COPS     \ Ship type for player 2
+ PLAYER2SHIP = COPS     \ Ship type for player 2
+
+\PLAYER2AI = 0          \ AI flag for player 2
+ PLAYER2AI = %11111110  \ AI flag for player 2 (has AI, very hostile)
+
+\PLAYER2NB = 0          \ Additional NEWB flags for player 2
+ PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
 
                         \ --- End of added code ------------------------------->
 
@@ -3614,11 +3620,25 @@ ENDIF
                         \
                         \   * Bit 7 clear = draw player 1's view (top)
                         \
-                        \   * Bit 7 set =  draw player 2's view (bottom)
+                        \   * Bit 7 set = draw player 2's view (bottom)
 
 .player1Visible
 
- SKIP 1                 \ Storage for player 1 on-screen byte in player 2's view
+ SKIP 1                 \ Storage for player 1's INWK+31 (visibility) byte for
+                        \ player 2's view
+
+.player2HasAI
+
+ SKIP 1                 \ Storage for player 2's INWK+32 (AI) byte, which
+                        \ determines whether player 2 is an NPC:
+                        \
+                        \   * Bit 7 clear = player 2 is a human
+                        \
+                        \   * Bit 7 set = player 2 is an NPC with tactics AI
+
+.player2NEWB
+
+ SKIP 1                 \ Storage for player 2's NEWB byte
 
 .player2View
 
@@ -4779,6 +4799,9 @@ ENDIF
  STA BETA               \ BETA has the same sign as the actual pitch rate)
 
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT player2HasAI       \ If player 2 is an NPC then skip the joystick reading
+ BMI BS2
 
  LDX player2JSTX        \ Set X to the current rate of roll in JSTX
 
@@ -23814,12 +23837,20 @@ ENDIF
  LDA #%10000000
  STA INWK+8
 
- LDA #player2Ship       \ Spawn a ship for player 2 in slot 2
+ LDA player2HasAI       \ If player 2 is an NPC then set player 2's AI flag in
+ BPL laun1              \ INWK+32 to player2HasAI and NEWB flags to player2NEWB
+ STA INWK+32
+ LDA player2NEWB
+ STA NEWB
+
+.laun1
+
+ LDA #PLAYER2SHIP       \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
  STZ player1Visible     \ Reset "on-screen" state for player 1's ship in player
                         \ 2's view (bit 4 set = visible on scanner)
- 
+
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
  STZ player2View        \ Set player 2's view to front, as we are launching
@@ -31429,6 +31460,12 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  STZ splitScreen        \ Turn off split-screen drawing
+
+ LDX #PLAYER2AI         \ Set player 2's AI flag as defined in PLAYER2AI
+ STX player2HasAI
+
+ LDX #PLAYER2NB         \ Set player 2's NEWB flags as defined in PLAYER2NB
+ STX player2NEWB
 
                         \ --- End of added code ------------------------------->
 
@@ -43148,12 +43185,23 @@ ENDIF
 
  LDA XSAV               \ If we are moving player 2's ship
  CMP #2
- BNE move2
+ BNE move3
 
- LDA player2Delta       \ Set the speed for player 2
+ BIT player2HasAI       \ If player 2 is an NPC then jump to move2
+ BMI move2
+
+ LDA player2Delta       \ Set the speed for player 2's ship to player 2's speed
  STA INWK+27
 
+ BPL move3              \ Jump to move3 to skip the following (this BPL is
+                        \ effectively a JMP as we just passed through a BMI)
+
 .move2
+
+ LDA INWK+27            \ Player 2 is an NPC so set player2Delta to the NPC's
+ STA player2Delta       \ speed so the stardust field gets drawn correctly
+
+.move3
 
                         \ --- End of added code ------------------------------->
 
@@ -43510,7 +43558,7 @@ ENDIF
                         \ is the sun and doesn't need any of the following
 
  CMP #128               \ If the ship type is 128 or 130, then this is the
- BEQ move3              \ planet, so skip the following so we don't apply player
+ BEQ move4              \ planet, so skip the following so we don't apply player
                         \ 1's speed to the planet's coordinate, but instead move
                         \ on to the pitch and roll (as we still want the planet
                         \ to rotate)
@@ -43543,7 +43591,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
-.move3
+.move4
 
                         \ --- End of replacement ------------------------------>
 
@@ -43599,9 +43647,16 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If we are moving player 2's ship
- CMP #2
- BNE move4
+ LDA XSAV               \ If we are not moving player 2's ship, jump to move6 to
+ CMP #2                 \ skip the following
+ BNE move6
+
+ BIT player2HasAI       \ If player 2 is an NPC, jump to move5 to prepare player
+ BMI move5              \ 2's angles for any pitch counter rotations
+
+                        \ If we get here then we are moving player 2's ship and
+                        \ player 2 is human-controlled, so we need to rotate the
+                        \ ship according to player 2's pitch and roll 
 
                         \ Apply player 2's pitch and roll to player 2's ship
                         \
@@ -43641,7 +43696,22 @@ ENDIF
 
  JMP MV5                \ Skip the following as this only applies to NPC ships
 
-.move4
+.move5
+
+                        \ If we get here then we are moving player 2's ship and
+                        \ player 2 is an NPC
+
+ STZ player2Alpha       \ Zero the angles, as the following code only sets these
+ STZ player2Alp1        \ angles if the ship is rotating
+ STZ player2Alp2
+ STZ player2Beta
+ STZ player2Bet1
+ STZ player2Bet2
+ LDA #%10000000
+ STA player2Alp2+1
+ STA player2Bet2+1
+
+.move6
 
                         \ --- End of added code ------------------------------->
 
@@ -43679,6 +43749,31 @@ ENDIF
  LDY #13
  JSR MVS5
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If we are moving player 2's ship, then it must be an
+ CMP #2                 \ NPC, so keep going, otherwise jump to MV8
+ BNE MV8
+
+                        \ Set player 2's beta angles according to the roll, so
+                        \ the stardust field looks correct
+                        \
+                        \ The angle is 1/16 radians
+
+ LDA #16                \ Set BET1 to the magnitude
+ STA player2Bet1
+
+ ORA RAT2               \ Set BETA to the signed magnitude
+ STA player2Beta
+
+ LDA RAT2               \ Set BET2 to the sign of BETA
+ STA player2Bet2
+
+ EOR #%10000000         \ Set BET2+1 to the opposite sign to BETA
+ STA player2Bet2+1
+
+                        \ --- End of added code ------------------------------->
+
 .MV8
 
  LDA INWK+29            \ Fetch the ship's roll counter and extract the sign
@@ -43714,6 +43809,31 @@ ENDIF
  LDX #19                \ Rotate (roofv_z, sidev_z) by a small angle (roll)
  LDY #25
  JSR MVS5
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If we are moving player 2's ship, then it must be an
+ CMP #2                 \ NPC, so keep going, otherwise jump to part 9
+ BNE MV5
+
+                        \ Set player 2's beta angles according to the roll, so
+                        \ the stardust field looks correct
+                        \
+                        \ The angle is 1/16 radians
+
+ LDA #16                \ Set ALP1 to the magnitude
+ STA player2Alp1
+
+ ORA RAT2               \ Set ALPHA to the signed magnitude
+ STA player2Alpha
+
+ LDA RAT2               \ Set ALP2 to the sign of ALPHA
+ STA player2Alp2
+
+ EOR #%10000000         \ Set ALP2+1 to the opposite sign to ALPHA
+ STA player2Alp2+1
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -56040,12 +56160,12 @@ ENDMACRO
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
 
- LDA XX21-2+2*player1Ship   \ Set XX0(1 0) to point to the ship blueprint for
+ LDA XX21-2+2*PLAYER1SHIP   \ Set XX0(1 0) to point to the ship blueprint for
  STA XX0                    \ player 1, as viewed from player 2
- LDA XX21-1+2*player1Ship
+ LDA XX21-1+2*PLAYER1SHIP
  STA XX0+1
 
- LDA #player1Ship       \ We're drawing player 1, so switch to the correct ship
+ LDA #PLAYER1SHIP       \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
 
  LDA player1Visible     \ Copy "on-screen" state from slot #12 to INWK
@@ -56063,12 +56183,12 @@ ENDMACRO
 
  JSR LoadShipData       \ Reload INWK state
 
- LDA #player2Ship       \ Switch back to the ship for player 2
+ LDA #PLAYER2SHIP       \ Switch back to the ship for player 2
  STA TYPE
 
- LDA XX21-2+2*player2Ship   \ Set XX0(1 0) to point to the ship blueprint for
+ LDA XX21-2+2*PLAYER2SHIP   \ Set XX0(1 0) to point to the ship blueprint for
  STA XX0                    \ player 2, which we were processing from the point
- LDA XX21-1+2*player2Ship   \ of view of player 1
+ LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
  STA XX0+1
 
  LDX #2                 \ Set INF(1 0) for player's 2 ship once again
