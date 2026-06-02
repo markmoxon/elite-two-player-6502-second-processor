@@ -28958,9 +28958,13 @@ ENDIF
                         \ circle appears on-screen, and if it does, set P(2 1)
                         \ to the maximum y-coordinate of the new sun on-screen
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
  CPX #Y-1               \ Perform a half-screen check instead of CHKON's default
                         \ full-screen check, as sun coordinates are clipped to
                         \ the player view (unlike circles)
+
+                        \ --- End of added code ------------------------------->
 
  BCS PLF3-3             \ If CHKON set the C flag then the new sun's circle does
                         \ not appear on-screen, so jump to WPLS (via the JMP at
