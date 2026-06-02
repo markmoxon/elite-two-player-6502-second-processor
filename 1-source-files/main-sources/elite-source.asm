@@ -43210,6 +43210,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL move3
+
  LDA XSAV               \ If we are moving player 2's ship
  CMP #2
  BNE move3
@@ -43592,7 +43595,6 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
-
  LDA DELTA              \ Set R to our speed in DELTA
  STA R
 
@@ -43673,6 +43675,9 @@ ENDIF
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL move6
 
  LDA XSAV               \ If we are not moving player 2's ship, jump to move6 to
  CMP #2                 \ skip the following
@@ -43778,6 +43783,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL MV8
+
  LDA XSAV               \ If we are moving player 2's ship, then it must be an
  CMP #2                 \ NPC, so keep going, otherwise jump to MV8
  BNE MV8
@@ -43838,6 +43846,9 @@ ENDIF
  JSR MVS5
 
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL MV5
 
  LDA XSAV               \ If we are moving player 2's ship, then it must be an
  CMP #2                 \ NPC, so keep going, otherwise jump to part 9
