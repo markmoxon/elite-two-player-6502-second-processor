@@ -3606,6 +3606,12 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+.heightInCHKON
+
+ SKIP 1                 \ The height of the screen to check circles against in
+                        \ CHKON, which needs to be full height (#2*Y-1) for
+                        \ circles but half-height (#Y-1) for the sun
+
 .splitScreen
 
  SKIP 1                 \ Controls the split-screen effect
@@ -28954,17 +28960,17 @@ ENDIF
  LDA #1                 \ Set LSX = 1 to indicate the sun line heap is about to
  STA LSX                \ be filled up
 
- JSR CHKON              \ Call CHKON to check whether any part of the new sun's
-                        \ circle appears on-screen, and if it does, set P(2 1)
-                        \ to the maximum y-coordinate of the new sun on-screen
-
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- CPX #Y-1               \ Perform a half-screen check instead of CHKON's default
-                        \ full-screen check, as sun coordinates are clipped to
+ LDA #Y-1               \ Perform a half-screen check instead of CHKON's default
+ STA heightInCHKON      \ full-screen check, as sun coordinates are clipped to
                         \ the player view (unlike circles)
 
                         \ --- End of added code ------------------------------->
+
+ JSR CHKON              \ Call CHKON to check whether any part of the new sun's
+                        \ circle appears on-screen, and if it does, set P(2 1)
+                        \ to the maximum y-coordinate of the new sun on-screen
 
  BCS PLF3-3             \ If CHKON set the C flag then the new sun's circle does
                         \ not appear on-screen, so jump to WPLS (via the JMP at
@@ -29521,6 +29527,13 @@ ENDIF
 \ ******************************************************************************
 
 .CIRCLE
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #2*Y-1             \ Perform a full-screen check in CHKON's full-screen
+ STA heightInCHKON      \ check, as circles use full-screen coordinates
+
+                        \ --- End of added code ------------------------------->
 
  JSR CHKON              \ Call CHKON to check whether the circle fits on-screen
 
@@ -30251,26 +30264,36 @@ ENDIF
                         \ the C flag and return from the subroutine, as the
                         \ whole circle is off-screen to the bottom
 
- CPX #2*Y-1             \ If we get here then A is zero, which means the top
-                        \ edge of the circle is within the screen boundary, so
-                        \ now we need to check whether it is in the space view
-                        \ (in which case it is on-screen) or the dashboard (in
-                        \ which case the top of the circle is hidden by the
-                        \ dashboard, so the circle isn't on-screen). We do this
-                        \ by checking the low byte of the result in X against
-                        \ 2 * #Y - 1, and returning the C flag from this
-                        \ comparison. The constant #Y is the y-coordinate of the
-                        \ mid-point of the space view, so 2 * #Y - 1, the
-                        \ y-coordinate of the bottom pixel row of the space
-                        \ view. So this does the following:
-                        \
-                        \   * The C flag is set if coordinate (A X) is below the
-                        \     bottom row of the space view, i.e. the top edge of
-                        \     the circle is hidden by the dashboard
-                        \
-                        \   * The C flag is clear if coordinate (A X) is above
-                        \     the bottom row of the space view, i.e. the top
-                        \     edge of the circle is on-screen
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CPX #2*Y-1             \ If we get here then A is zero, which means the top
+\                       \ edge of the circle is within the screen boundary, so
+\                       \ now we need to check whether it is in the space view
+\                       \ (in which case it is on-screen) or the dashboard (in
+\                       \ which case the top of the circle is hidden by the
+\                       \ dashboard, so the circle isn't on-screen). We do this
+\                       \ by checking the low byte of the result in X against
+\                       \ 2 * #Y - 1, and returning the C flag from this
+\                       \ comparison. The constant #Y is the y-coordinate of the
+\                       \ mid-point of the space view, so 2 * #Y - 1, the
+\                       \ y-coordinate of the bottom pixel row of the space
+\                       \ view. So this does the following:
+\                       \
+\                       \   * The C flag is set if coordinate (A X) is below the
+\                       \     bottom row of the space view, i.e. the top edge of
+\                       \     the circle is hidden by the dashboard
+\                       \
+\                       \   * The C flag is clear if coordinate (A X) is above
+\                       \     the bottom row of the space view, i.e. the top
+\                       \     edge of the circle is on-screen
+
+                        \ --- And replaced by: -------------------------------->
+
+ CPX heightInCHKON      \ Compare the y-coordinate against the bottom of the
+                        \ screen, which will either be full height (#2*Y-1) for
+                        \ circles or half-height (#Y-1) for the sun
+
+                        \ --- End of replacement ------------------------------>
 
  RTS                    \ Return from the subroutine
 
