@@ -5934,7 +5934,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- JSR DrawShipPlayer2    \ Draw the same ship from the perspective of player 2
+ JSR DrawPlayer2View    \ Draw the same ship from the perspective of player 2
 
                         \ --- End of added code ------------------------------->
 
@@ -56024,7 +56024,7 @@ ENDMACRO
 
 \ ******************************************************************************
 \
-\       Name: DrawShipPlayer2
+\       Name: DrawPlayer2View
 \       Type: Subroutine
 \   Category: Two-player Elite
 \    Summary: Draw a ship in player 2's frame of reference
@@ -56033,7 +56033,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.DrawShipPlayer2
+.DrawPlayer2View
 
  LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 for the
  CMP #2                 \ next check
@@ -56206,7 +56206,7 @@ ENDMACRO
  LDA #PLAYER1SHIP       \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
 
- LDA player1Visible     \ Copy "on-screen" state from slot #12 to INWK
+ LDA player1Visible     \ Copy "on-screen" state from player1Visible to INWK
  STA INWK+31
 
  LDX player2View        \ Rotate everything into the correct view
@@ -56214,7 +56214,7 @@ ENDMACRO
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
- LDA INWK+31            \ Copy "on-screen" state from INWK to player 2 ship
+ LDA INWK+31            \ Copy "on-screen" state from INWK to player1Visible
  STA player1Visible
 
  STZ drawPlayerView     \ Back to drawing the view for player 1
