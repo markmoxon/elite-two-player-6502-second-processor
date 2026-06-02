@@ -156,11 +156,11 @@ ENDIF
 
  PLAYER2SHIP = COPS     \ Ship type for player 2
 
-\PLAYER2AI = 0          \ AI flag for player 2
- PLAYER2AI = %11111110  \ AI flag for player 2 (has AI, very hostile)
+ PLAYER2AI = 0          \ AI flag for player 2
+\PLAYER2AI = %11111110  \ AI flag for player 2 (has AI, very hostile)
 
-\PLAYER2NB = 0          \ Additional NEWB flags for player 2
- PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
+ PLAYER2NB = 0          \ Additional NEWB flags for player 2
+\PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
 
                         \ --- End of added code ------------------------------->
 
@@ -926,16 +926,37 @@ ENDIF
  SKIP 1                 \ Temporary storage, used to store the original argument
                         \ in A in the logarithmic FMLTU and LL28 routines
 
-.safehouse
+                        \ --- Mod: Code moved for two-player Elite: ----------->
 
- SKIP 6                 \ Backup storage for the seeds for the selected system
-                        \
-                        \ The seeds for the current system get stored here as
-                        \ soon as a hyperspace is initiated, so we can fetch
-                        \ them in the hyp1 routine. This fixes a bug in an
-                        \ earlier version where you could hyperspace while
-                        \ docking and magically appear in your destination
-                        \ station
+\.safehouse
+\
+\SKIP 6                 \ Backup storage for the seeds for the selected system
+\                       \
+\                       \ The seeds for the current system get stored here as
+\                       \ soon as a hyperspace is initiated, so we can fetch
+\                       \ them in the hyp1 routine. This fixes a bug in an
+\                       \ earlier version where you could hyperspace while
+\                       \ docking and magically appear in your destination
+\                       \ station
+
+                        \ --- And replaced by: -------------------------------->
+
+.LSX2S
+
+ SKIP 2                 \ The address of LSX2 or LSX2r, depending on which eye
+                        \ we are drawing
+
+.LSY2S
+
+ SKIP 2                 \ The address of LSY2 or LSY2r, depending on which eye
+                        \ we are drawing
+
+.LSPS
+
+ SKIP 2                 \ The address of LSP or LSPr, depending on which eye
+                        \ we are drawing
+
+                        \ --- End of moved code ------------------------------->
 
 .messXC
 
@@ -3471,6 +3492,39 @@ ENDIF
 .BUF
 
  SKIP 100               \ The line buffer used by DASC to print justified text
+
+                        \ --- Mod: Code moved for two-player Elite: ----------->
+
+.safehouse
+
+ SKIP 6                 \ Backup storage for the seeds for the selected system
+                        \
+                        \ The seeds for the current system get stored here as
+                        \ soon as a hyperspace is initiated, so we can fetch
+                        \ them in the hyp1 routine. This fixes a bug in an
+                        \ earlier version where you could hyperspace while
+                        \ docking and magically appear in your destination
+                        \ station
+
+                        \ --- End of moved code ------------------------------->
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.LSY2r
+
+ SKIP 78                \ The ball line heap for storing y-coordinates for the
+                        \ right eye
+
+.LSPr
+
+ SKIP 1                 \ The ball line heap pointer for the right eye
+
+.LSX2r
+
+ SKIP 78                \ The ball line heap for storing x-coordinates for the
+                        \ right eye
+
+                        \ --- End of added code ------------------------------->
 
  PRINT "UP workspace from ", ~UP, "to ", ~P%-1, "inclusive"
 
@@ -7830,120 +7884,129 @@ ENDIF
 
 .LSX2
 
-IF _MATCH_ORIGINAL_BINARIES
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- IF _SNG45
+\IF _MATCH_ORIGINAL_BINARIES
+\
+\IF _SNG45
+\
+\ EQUB &16, &01, &0E, &77, &1F, &16, &AD, &77   \ These bytes appear to be
+\ EQUB &A0, &A1, &77, &1C, &12, &12, &07, &94   \ unused and just contain random
+\ EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ workspace noise left over from
+\ EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ the BBC Micro assembly process
+\ EQUB &77, &16, &04, &04, &77, &8E, &03, &77
+\ EQUB &A7, &77, &13, &12, &12, &07, &77, &04
+\ EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
+\ EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
+\ EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
+\ EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
+\ EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
+\ EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
+\ EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
+\ EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
+\ EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
+\ EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
+\ EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
+\ EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
+\ EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
+\ EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
+\ EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
+\ EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
+\ EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
+\ EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
+\ EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
+\ EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
+\ EQUB &12, &70, &AD, &77, &10, &18, &03, &77
+\ EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
+\ EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
+\ EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
+\ EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
+\ EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
+\
+\ELIF _EXECUTIVE
+\
+\ EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ These bytes appear to be
+\ EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ unused and just contain random
+\ EQUB &77, &16, &04, &04, &77, &8E, &03, &77   \ workspace noise left over from
+\ EQUB &A7, &77, &13, &12, &12, &07, &77, &04   \ the BBC Micro assembly process
+\ EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
+\ EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
+\ EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
+\ EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
+\ EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
+\ EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
+\ EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
+\ EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
+\ EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
+\ EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
+\ EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
+\ EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
+\ EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
+\ EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
+\ EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
+\ EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
+\ EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
+\ EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
+\ EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
+\ EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
+\ EQUB &12, &70, &AD, &77, &10, &18, &03, &77
+\ EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
+\ EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
+\ EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
+\ EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
+\ EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
+\ EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF
+\ EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77
+\
+\ELIF _SOURCE_DISC
+\
+\ EQUB &16, &01, &0E, &77, &1F, &16, &AD, &77   \ These bytes appear to be
+\ EQUB &A0, &A1, &77, &1C, &12, &12, &07, &94   \ unused and just contain random
+\ EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ workspace noise left over from
+\ EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ the BBC Micro assembly process
+\ EQUB &77, &16, &04, &04, &77, &8E, &03, &77
+\ EQUB &A7, &77, &13, &12, &12, &07, &77, &04
+\ EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
+\ EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
+\ EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
+\ EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
+\ EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
+\ EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
+\ EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
+\ EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
+\ EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
+\ EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
+\ EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
+\ EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
+\ EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
+\ EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
+\ EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
+\ EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
+\ EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
+\ EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
+\ EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
+\ EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
+\ EQUB &12, &70, &AD, &77, &10, &18, &03, &77
+\ EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
+\ EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
+\ EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
+\ EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
+\ EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
+\
+\ENDIF
+\
+\ELSE
+\
+\SKIP 256               \ The ball line heap for storing x-coordinates (see the
+\                       \ deep dive on "The ball line heap" for details)
+\
+\ENDIF
 
-  EQUB &16, &01, &0E, &77, &1F, &16, &AD, &77   \ These bytes appear to be
-  EQUB &A0, &A1, &77, &1C, &12, &12, &07, &94   \ unused and just contain random
-  EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ workspace noise left over from
-  EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ the BBC Micro assembly process
-  EQUB &77, &16, &04, &04, &77, &8E, &03, &77
-  EQUB &A7, &77, &13, &12, &12, &07, &77, &04
-  EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
-  EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
-  EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
-  EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
-  EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
-  EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
-  EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
-  EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
-  EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
-  EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
-  EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
-  EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
-  EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
-  EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
-  EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
-  EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
-  EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
-  EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
-  EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
-  EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
-  EQUB &12, &70, &AD, &77, &10, &18, &03, &77
-  EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
-  EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
-  EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
-  EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
-  EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
+                        \ --- And replaced by: -------------------------------->
 
- ELIF _EXECUTIVE
+ SKIP 78                \ The ball line heap for storing x-coordinates
 
-  EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ These bytes appear to be
-  EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ unused and just contain random
-  EQUB &77, &16, &04, &04, &77, &8E, &03, &77   \ workspace noise left over from
-  EQUB &A7, &77, &13, &12, &12, &07, &77, &04   \ the BBC Micro assembly process
-  EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
-  EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
-  EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
-  EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
-  EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
-  EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
-  EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
-  EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
-  EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
-  EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
-  EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
-  EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
-  EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
-  EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
-  EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
-  EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
-  EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
-  EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
-  EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
-  EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
-  EQUB &12, &70, &AD, &77, &10, &18, &03, &77
-  EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
-  EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
-  EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
-  EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
-  EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
-  EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF
-  EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77
-
- ELIF _SOURCE_DISC
-
-  EQUB &16, &01, &0E, &77, &1F, &16, &AD, &77   \ These bytes appear to be
-  EQUB &A0, &A1, &77, &1C, &12, &12, &07, &94   \ unused and just contain random
-  EQUB &C4, &44, &B5, &B9, &10, &18, &1E, &13   \ workspace noise left over from
-  EQUB &04, &77, &18, &11, &11, &77, &E4, &05   \ the BBC Micro assembly process
-  EQUB &77, &16, &04, &04, &77, &8E, &03, &77
-  EQUB &A7, &77, &13, &12, &12, &07, &77, &04
-  EQUB &07, &16, &BE, &77, &11, &AA, &77, &B8
-  EQUB &19, &0E, &77, &0E, &12, &B9, &04, &77
-  EQUB &B4, &00, &79, &77, &44, &00, &12, &1B
-  EQUB &1B, &77, &C4, &04, &8C, &02, &16, &AC
-  EQUB &88, &77, &1F, &16, &04, &77, &14, &1F
-  EQUB &A8, &10, &AB, &9B, &8E, &05, &77, &15
-  EQUB &18, &0E, &04, &77, &B9, &12, &77, &A5
-  EQUB &16, &13, &0E, &77, &11, &AA, &87, &07
-  EQUB &02, &04, &1F, &77, &05, &1E, &10, &1F
-  EQUB &03, &9E, &C4, &1F, &18, &1A, &12, &77
-  EQUB &04, &0E, &04, &03, &12, &1A, &77, &18
-  EQUB &11, &77, &B5, &18, &8D, &77, &1A, &18
-  EQUB &B5, &A3, &04, &9B, &4F, &5E, &49, &4A
-  EQUB &1E, &5A, &77, &1F, &16, &AD, &77, &18
-  EQUB &15, &03, &16, &A7, &93, &C4, &13, &12
-  EQUB &11, &A1, &BE, &77, &07, &AE, &19, &04
-  EQUB &77, &11, &AA, &77, &B5, &12, &1E, &05
-  EQUB &77, &44, &1F, &1E, &AD, &77, &44, &00
-  EQUB &AA, &1B, &13, &04, &9B, &C4, &A0, &8A
-  EQUB &B2, &04, &77, &1C, &B4, &00, &77, &00
-  EQUB &12, &70, &AD, &77, &10, &18, &03, &77
-  EQUB &BC, &1A, &12, &B5, &94, &15, &02, &03
-  EQUB &77, &B4, &03, &77, &00, &1F, &A2, &9B
-  EQUB &1E, &11, &77, &44, &1E, &77, &03, &AF
-  EQUB &19, &04, &1A, &8C, &77, &C4, &07, &AE
-  EQUB &19, &04, &9E, &8E, &05, &77, &15, &16
-
- ENDIF
-
-ELSE
-
- SKIP 256               \ The ball line heap for storing x-coordinates
-
-ENDIF
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -7957,120 +8020,129 @@ ENDIF
 
 .LSY2
 
-IF _MATCH_ORIGINAL_BINARIES
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- IF _SNG45
+\IF _MATCH_ORIGINAL_BINARIES
+\
+\IF _SNG45
+\
+\ EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF   \ These bytes appear to be
+\ EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77   \ unused and just contain random
+\ EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ workspace noise left over from
+\ EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ the BBC Micro assembly process
+\ EQUB &1E, &88, &79, &77, &44, &1E, &77, &19
+\ EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12
+\ EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
+\ EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
+\ EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
+\ EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
+\ EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
+\ EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
+\ EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
+\ EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
+\ EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
+\ EQUB &44, &10, &18, &18, &13, &77, &1B, &02
+\ EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
+\ EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
+\ EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
+\ EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
+\ EQUB &8D, &05, &01, &93, &02, &04, &77, &00
+\ EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
+\ EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
+\ EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
+\ EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
+\ EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
+\ EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
+\ EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
+\ EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
+\ EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
+\ EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
+\ EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
+\
+\ELIF _EXECUTIVE
+\
+\ EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ These bytes appear to be
+\ EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ unused and just contain random
+\ EQUB &1E, &88, &79, &77, &44, &1E, &77, &19   \ workspace noise left over from
+\ EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12   \ the BBC Micro assembly process
+\ EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
+\ EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
+\ EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
+\ EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
+\ EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
+\ EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
+\ EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
+\ EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
+\ EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
+\ EQUB &44, &10, &18, &18, &13, &77, &1B, &02
+\ EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
+\ EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
+\ EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
+\ EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
+\ EQUB &8D, &05, &01, &93, &02, &04, &77, &00
+\ EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
+\ EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
+\ EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
+\ EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
+\ EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
+\ EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
+\ EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
+\ EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
+\ EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
+\ EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
+\ EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
+\ EQUB &51, &25, &52, &77, &16, &04, &77, &07
+\ EQUB &16, &0E, &1A, &A1, &03, &83, &4F, &57
+\
+\ELIF _SOURCE_DISC
+\
+\ EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF   \ These bytes appear to be
+\ EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77   \ unused and just contain random
+\ EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ workspace noise left over from
+\ EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ the BBC Micro assembly process
+\ EQUB &1E, &88, &79, &77, &44, &1E, &77, &19
+\ EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12
+\ EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
+\ EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
+\ EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
+\ EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
+\ EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
+\ EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
+\ EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
+\ EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
+\ EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
+\ EQUB &44, &10, &18, &18, &13, &77, &1B, &02
+\ EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
+\ EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
+\ EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
+\ EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
+\ EQUB &8D, &05, &01, &93, &02, &04, &77, &00
+\ EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
+\ EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
+\ EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
+\ EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
+\ EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
+\ EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
+\ EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
+\ EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
+\ EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
+\ EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
+\ EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
+\
+\ENDIF
+\
+\ELSE
+\
+\SKIP 256               \ The ball line heap for storing y-coordinates (see the
+\                       \ deep dive on "The ball line heap" for details)
+\
+\ENDIF
 
-  EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF   \ These bytes appear to be
-  EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77   \ unused and just contain random
-  EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ workspace noise left over from
-  EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ the BBC Micro assembly process
-  EQUB &1E, &88, &79, &77, &44, &1E, &77, &19
-  EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12
-  EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
-  EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
-  EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
-  EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
-  EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
-  EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
-  EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
-  EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
-  EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
-  EQUB &44, &10, &18, &18, &13, &77, &1B, &02
-  EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
-  EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
-  EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
-  EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
-  EQUB &8D, &05, &01, &93, &02, &04, &77, &00
-  EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
-  EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
-  EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
-  EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
-  EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
-  EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
-  EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
-  EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
-  EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
-  EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
-  EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
+                        \ --- And replaced by: -------------------------------->
 
- ELIF _EXECUTIVE
+ SKIP 78                \ The ball line heap for storing y-coordinates
 
-  EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ These bytes appear to be
-  EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ unused and just contain random
-  EQUB &1E, &88, &79, &77, &44, &1E, &77, &19   \ workspace noise left over from
-  EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12   \ the BBC Micro assembly process
-  EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
-  EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
-  EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
-  EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
-  EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
-  EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
-  EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
-  EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
-  EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
-  EQUB &44, &10, &18, &18, &13, &77, &1B, &02
-  EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
-  EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
-  EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
-  EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
-  EQUB &8D, &05, &01, &93, &02, &04, &77, &00
-  EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
-  EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
-  EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
-  EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
-  EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
-  EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
-  EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
-  EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
-  EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
-  EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
-  EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
-  EQUB &51, &25, &52, &77, &16, &04, &77, &07
-  EQUB &16, &0E, &1A, &A1, &03, &83, &4F, &57
-
- ELIF _SOURCE_DISC
-
-  EQUB &8D, &77, &88, &77, &44, &BD, &A5, &AF   \ These bytes appear to be
-  EQUB &77, &B5, &12, &0E, &70, &1B, &1B, &77   \ unused and just contain random
-  EQUB &A7, &03, &A3, &BE, &07, &03, &77, &C4   \ workspace noise left over from
-  EQUB &03, &05, &A8, &04, &1A, &1E, &04, &04   \ the BBC Micro assembly process
-  EQUB &1E, &88, &79, &77, &44, &1E, &77, &19
-  EQUB &12, &AB, &87, &98, &9E, &B8, &1C, &12
-  EQUB &77, &C4, &05, &02, &19, &9B, &E4, &70
-  EQUB &A5, &77, &12, &B2, &14, &03, &AB, &9B
-  EQUB &C4, &07, &AE, &19, &04, &77, &16, &A5
-  EQUB &77, &02, &19, &1E, &07, &02, &1B, &8D
-  EQUB &77, &14, &18, &13, &93, &00, &1E, &B5
-  EQUB &A7, &77, &C3, &03, &05, &A8, &04, &1A
-  EQUB &1E, &04, &04, &1E, &88, &9B, &5F, &E4
-  EQUB &77, &00, &8B, &1B, &77, &A0, &77, &07
-  EQUB &16, &1E, &13, &9B, &77, &77, &77, &77
-  EQUB &44, &10, &18, &18, &13, &77, &1B, &02
-  EQUB &14, &1C, &77, &CD, &83, &4F, &57, &4E
-  EQUB &5E, &4A, &49, &5F, &59, &5A, &44, &00
-  EQUB &12, &1B, &1B, &77, &13, &88, &12, &77
-  EQUB &CD, &9B, &E4, &77, &1F, &16, &AD, &77
-  EQUB &8D, &05, &01, &93, &02, &04, &77, &00
-  EQUB &12, &1B, &1B, &E5, &00, &12, &77, &04
-  EQUB &1F, &B3, &1B, &77, &A5, &1A, &12, &1A
-  EQUB &15, &A3, &9B, &00, &12, &77, &13, &1E
-  EQUB &13, &77, &B4, &03, &77, &12, &0F, &07
-  EQUB &12, &14, &03, &77, &C4, &44, &B5, &B9
-  EQUB &10, &18, &1E, &13, &04, &9E, &11, &A7
-  EQUB &13, &77, &8E, &03, &77, &16, &15, &8E
-  EQUB &03, &77, &E4, &9B, &11, &AA, &77, &C4
-  EQUB &1A, &18, &1A, &A1, &03, &77, &07, &B2
-  EQUB &16, &8D, &77, &16, &14, &BE, &07, &03
-  EQUB &77, &C3, &44, &19, &16, &01, &0E, &77
-
- ENDIF
-
-ELSE
-
- SKIP 256               \ The ball line heap for storing y-coordinates
-
-ENDIF
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -9565,18 +9637,43 @@ ENDIF
                         \ that segment, and we start a new segment with the next
                         \ call to BLINE that does fit on-screen
 
- LDY LSP                \ If byte LSP-1 of LSY2 = &FF, jump to BL7 to tidy up
- LDA #&FF               \ and return from the subroutine, as the point that has
- CMP LSY2-1,Y           \ been passed to BLINE is the start of a segment, so all
- BEQ BL7                \ we need to do is save the coordinate in K5, without
-                        \ moving the pointer in LSP
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STA LSY2,Y             \ Otherwise we just tried to plot a segment but it
-                        \ didn't fit on-screen, so put the &FF marker into the
+\LDY LSP                \ If byte LSP-1 of LSY2 = &FF, jump to BL7 to tidy up
+\LDA #&FF               \ and return from the subroutine, as the point that has
+\CMP LSY2-1,Y           \ been passed to BLINE is the start of a segment, so all
+\BEQ BL7                \ we need to do is save the coordinate in K5, without
+\                       \ moving the pointer in LSP
+\
+\STA LSY2,Y             \ Otherwise we just tried to plot a segment but it
+\                       \ didn't fit on-screen, so put the &FF marker into the
+\                       \ heap for this point, so the next call to BLINE starts
+\                       \ a new segment
+\
+\INC LSP                \ Increment LSP to point to the next point in the heap
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSPS)             \ If byte LSP-1 of LSY2 = &FF, jump to BL7 to tidy up
+ TAY                    \ and return from the subroutine, as the point that has
+ DEY                    \ been passed to BLINE is the start of a segment, so all
+ LDA #&FF               \ we need to do is save the coordinate in K5, without
+ CMP (LSY2S),Y          \ moving the pointer in LSP
+ BNE P%+6
+ INY
+ JMP BL7
+
+ INY                    \ Otherwise we just tried to plot a segment but it
+ STA (LSY2S),Y          \ didn't fit on-screen, so put the &FF marker into the
                         \ heap for this point, so the next call to BLINE starts
                         \ a new segment
-
- INC LSP                \ Increment LSP to point to the next point in the heap
+           
+ LDA (LSPS)             \ Increment LSP to point to the next point in the heap
+ CLC
+ ADC #1
+ STA (LSPS)
+ 
+                        \ --- End of replacement ------------------------------>
 
  BNE BL7                \ Jump to BL7 to tidy up and return from the subroutine
                         \ (this BNE is effectively a JMP, as LSP will never be
@@ -9637,13 +9734,36 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- LDY LSP                \ Set Y = LSP
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY LSP                \ Set Y = LSP
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSPS)             \ Set Y = LSP
+ TAY
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code added for flicker-free planets: ------->
 
- LDA LSY2-1,Y           \ If byte LSP-1 of LSY2 is not &FF, jump down to BL8
- CMP #&FF               \ to skip the following (X1, Y1) code
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSY2-1,Y           \ If byte LSP-1 of LSY2 is not &FF, jump down to BL8
+\CMP #&FF               \ to skip the following (X1, Y1) code
+\BNE BL8
+
+                        \ --- And replaced by: -------------------------------->
+
+ DEY                    \ If byte LSP-1 of LSY2 is not &FF, jump down to BL8
+ LDA (LSY2S),Y          \ to skip the following (X1, Y1) code
+ CMP #&FF
+ PHP
+ INY
+ PLP
  BNE BL8
+
+                        \ --- End of replacement ------------------------------>
 
                         \ Byte LSP-1 of LSY2 is &FF, which indicates that we
                         \ need to store (X1, Y1) in the heap
@@ -9652,11 +9772,23 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA X1                 \ Store X1 in the LSP-th byte of LSX2
+\STA LSX2,Y
+\
+\LDA Y1                 \ Store Y1 in the LSP-th byte of LSY2
+\STA LSY2,Y
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA X1                 \ Store X1 in the LSP-th byte of LSX2
- STA LSX2,Y
+ STA (LSX2S),Y
 
  LDA Y1                 \ Store Y1 in the LSP-th byte of LSY2
- STA LSY2,Y
+ STA (LSY2S),Y
+
+                        \ --- End of replacement ------------------------------>
 
  INY                    \ Increment Y to point to the next byte in LSX2/LSY2
 
@@ -9674,15 +9806,37 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- LDA X2                 \ Store X2 in the LSP-th byte of LSX2
- STA LSX2,Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA Y2                 \ Store Y2 in the LSP-th byte of LSX2
- STA LSY2,Y
+\LDA X2                 \ Store X2 in the LSP-th byte of LSX2
+\STA LSX2,Y
+\
+\LDA Y2                 \ Store Y2 in the LSP-th byte of LSX2
+\STA LSY2,Y
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA X2                 \ Store X2 in the LSP-th byte of LSX2
+ STA (LSX2S),Y
+
+ LDA Y2                 \ Store Y2 in the LSP-th byte of LSY2
+ STA (LSY2S),Y
+
+                        \ --- End of replacement ------------------------------>
 
  INY                    \ Increment Y to point to the next byte in LSX2/LSY2
 
- STY LSP                \ Update LSP to point to the same as Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STY LSP                \ Update LSP to point to the same as Y
+
+                        \ --- And replaced by: -------------------------------->
+
+ TYA                    \ Update LSP to point to the same as Y
+ STA (LSPS)
+ TAY
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code removed for flicker-free planets: ----->
 
@@ -9693,13 +9847,27 @@ ENDIF
  JSR DrawNewPlanetLine  \ Draw a line from (X1, Y1) to (X2, Y2), but only if it
                         \ is different to the old line in K3+4 to K3+7
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA XX13               \ If XX13 is non-zero, jump up to BL5 to add a &FF
+\BNE BL5                \ marker to the end of the line heap. XX13 is non-zero
+\                       \ after the call to the clipping routine LL145 above if
+\                       \ the end of the line was clipped, meaning the next line
+\                       \ sent to BLINE can't join onto the end but has to start
+\                       \ a new segment, and that's what inserting the &FF
+\                       \ marker does
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA XX13               \ If XX13 is non-zero, jump up to BL5 to add a &FF
- BNE BL5                \ marker to the end of the line heap. XX13 is non-zero
-                        \ after the call to the clipping routine LL145 above if
+ BEQ P%+5               \ marker to the end of the line heap. XX13 is non-zero
+ JMP BL5                \ after the call to the clipping routine LL145 above if
                         \ the end of the line was clipped, meaning the next line
                         \ sent to BLINE can't join onto the end but has to start
                         \ a new segment, and that's what inserting the &FF
                         \ marker does
+
+                        \ --- End of replacement ------------------------------>
 
 .BL7
 
@@ -9751,11 +9919,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 1's stars, skip the following
  BPL flip1
 
- TYA                    \ Then use the second half of the table
- CLC
+ TYA                    \ We are drawing player 2's stars, so use the second
+ CLC                    \ half of the table
  ADC #NOST/2
  TAY
 
@@ -9783,8 +9951,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 2's stars
- BPL flip2
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to flip2 to
+ BPL flip2              \ check against zero
+
+                        \ We are drawing player 2's stars, so check against the
+                        \ table's halfway point
 
  DEY                    \ Decrement the counter to point to the next particle of
                         \ stardust
@@ -10201,8 +10372,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star1
- BPL star1
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star1 to
+ BPL star1              \ check against zero
+
+                        \ We are drawing player 2's stars, so check against the
+                        \ table's halfway point
 
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
@@ -10567,8 +10741,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star2
- BPL star2
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star2 to
+ BPL star2              \ check against zero
+
+                        \ We are drawing player 2's stars, so check against the
+                        \ table's halfway point
 
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
@@ -15991,6 +16168,8 @@ ENDIF
  LDA #48                \ Call the NOISE routine with A = 48 to make the sound
  JSR NOISE              \ of the ship launching from the station
 
+ JSR ball1              \ Use the standard ball line heap
+
  LDA #8                 \ Set the step size for the launch tunnel rings to 8, so
                         \ there are fewer sections in the rings and they are
                         \ quite polygonal (compared to the step size of 4 used
@@ -16368,8 +16547,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star1
- BPL star3
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to star3 to
+ BPL star3              \ check against zero
+
+                        \ We are drawing player 2's stars, so check against the
+                        \ table's halfway point
 
  DEY                    \ Decrement the loop counter to point to the next
                         \ stardust particle
@@ -23855,7 +24037,7 @@ ENDIF
  JSR NWSHP
 
  STZ player1Visible     \ Reset "on-screen" state for player 1's ship in player
-                        \ 2's view (bit 4 set = visible on scanner)
+                        \ 2's view, so it is not visible on scanner or screen
 
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
@@ -26445,11 +26627,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 2's stars
+ BIT drawPlayerView     \ If we are drawing player 1's stars, skip the following
  BPL news1
 
- TYA                    \ Then use the second half of the table
- CLC
+ TYA                    \ We are drawing player 2's stars, so use the second
+ CLC                    \ half of the table
  ADC #NOST/2
  TAY
 
@@ -26494,8 +26676,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If we are drawing player 2's stars
- BPL news2
+ BIT drawPlayerView     \ If we are drawing player 1's stars, jump to news2 to
+ BPL news2              \ check against zero
+
+                        \ We are drawing player 2's stars, so check against the
+                        \ table's halfway point
 
  DEY                    \ Decrement the counter to point to the next particle of
                         \ stardust
@@ -26547,12 +26732,12 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If this is player 2
+ BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
  BPL wipe1
 
- LDA player1Visible     \ Clear bits 3, 4 and 6 in the ship's byte #31 for the
- AND #%10100111         \ player 1 ship as it appears in player 2's view
- STA player1Visible
+ LDA player1Visible     \ Clear bits 3 and 6 in the ship's byte #31 for the
+ AND #%10110111         \ player 1 ship as it appears in player 2's view
+ STA player1Visible     \ (bit 3 = on-screen, bit 6 = lasers)
 
  JMP WS2                \ Jump to WS2 to keep going
 
@@ -26615,8 +26800,17 @@ ENDIF
 
 .WS2
 
- STZ LSP                \ Reset the ball line heap by setting the ball line heap
-                        \ pointer to 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STZ LSP                \ Reset the ball line heap by setting the ball line heap
+\                       \ pointer to 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR ResetBallLine      \ Reset the ball line heap for the view we are currently
+                        \ drawing
+
+                        \ --- End of replacement ------------------------------>
 
  LDX #&FF               \ Set X = &FF (though this appears not to be used)
 
@@ -28132,6 +28326,9 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
+ JSR SetPlayerBallLine  \ Use the correct ball line for the player view we are
+                        \ drawing
+
  JSR CIRCLE             \ Call CIRCLE to draw the planet's new circle
 
  BCS PL20A              \ If the call to CIRCLE returned with the C flag set,
@@ -29543,8 +29740,17 @@ ENDIF
 
                         \ --- Mod: Code added for flicker-free planets: ------->
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #0                 \ Set LSX2 = 0 to indicate that the ball line heap is
+\STA LSX2               \ not empty, as we are about to fill it
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #0                 \ Set LSX2 = 0 to indicate that the ball line heap is
- STA LSX2               \ not empty, as we are about to fill it
+ STA (LSX2S)            \ not empty, as we are about to fill it
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- End of added code ------------------------------->
 
@@ -29632,11 +29838,25 @@ ENDIF
  STZ LSNUM              \ Set LSNUM = 0, to point to the offset before the first
                         \ set of circle coordinates in the ball line heap
 
- LDX LSP                \ Set LSNUM2 to the last byte of the ball line heap
- STX LSNUM2
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDX #1                 \ Set LSP = 1 to reset the ball line heap pointer
- STX LSP
+\LDX LSP                \ Set LSNUM2 to the last byte of the ball line heap
+\STX LSNUM2
+\
+\LDX #1                 \ Set LSP = 1 to reset the ball line heap pointer
+\STX LSP
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSPS)             \ Set LSNUM2 to the last byte of the ball line heap
+ STA LSNUM2
+
+ LDA #1                 \ Set LSP = 1 to reset the ball line heap pointer
+ STA (LSPS)
+
+.circ1
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- End of added code ------------------------------->
 
@@ -29751,8 +29971,17 @@ ENDIF
 
                         \ This is the entry point for this subroutine
 
- STZ LSP                \ Reset the ball line heap by setting the ball line heap
-                        \ pointer to 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STZ LSP                \ Reset the ball line heap by setting the ball line heap
+\                       \ pointer to 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR ResetBallLine      \ Reset the ball line heap for the view we are currently
+                        \ drawing
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code removed for flicker-free planets: ----->
 
@@ -29927,25 +30156,59 @@ ENDIF
 
 .WPLS2
 
- LDY LSX2               \ If LSX2 is non-zero (which indicates the ball line
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY LSX2               \ If LSX2 is non-zero (which indicates the ball line
+\BNE WP1                \ heap is empty), jump to WP1 to reset the line heap
+\                       \ without redrawing the planet
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR SetPlayerBallLine  \ Use the correct ball line for the player view we are
+                        \ drawing
+
+ LDA (LSX2S)            \ If LSX2 is non-zero (which indicates the ball line
  BNE WP1                \ heap is empty), jump to WP1 to reset the line heap
                         \ without redrawing the planet
+
+                        \ --- End of replacement ------------------------------>
 
  STY LSNUM              \ Reset LSNUM to the start of the ball line heap (we can
                         \ set this to 0 rather than 1 to take advantage of the
                         \ fact that Y is 0 - the effect is the same)
 
- LDA LSP                \ Set LSNUM2 to the end of the ball line heap
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSP                \ Set LSNUM2 to the end of the ball line heap
+\STA LSNUM2
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSPS)             \ Set LSNUM2 to the end of the ball line heap
  STA LSNUM2
+
+                        \ --- End of replacement ------------------------------>
 
  JSR EraseRestOfPlanet  \ Draw the contents of the ball line heap to erase the
                         \ old planet
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #1                 \ Set LSP = 1 to reset the ball line heap pointer
+\STA LSP
+\
+\LDA #&FF               \ Set LSX2 = &FF to indicate the ball line heap is empty
+\STA LSX2
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #1                 \ Set LSP = 1 to reset the ball line heap pointer
- STA LSP
+ STA (LSPS)
 
  LDA #&FF               \ Set LSX2 = &FF to indicate the ball line heap is empty
- STA LSX2
+ STA (LSX2S)
+
+                        \ --- End of replacement ------------------------------>
 
 .WP1
 
@@ -31572,6 +31835,14 @@ ENDIF
  LDX #&FF               \ Reset LSX2 and LSY2, the ball line heaps used by the
  STX LSX2               \ BLINE routine for drawing circles, to &FF, to set the
  STX LSY2               \ heap to empty
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STX LSX2r              \ Reset LSX2r and LSY2r, the ball line heaps used by the
+ STX LSY2r              \ BLINE routine for drawing circles, to &FF, to set the
+                        \ right eye ball line heap to empty
+
+                        \ --- End of added code ------------------------------->
 
  STX MSTG               \ Reset MSTG, the missile target, to &FF (no target)
 
@@ -38508,11 +38779,11 @@ ENDIF
  BCS nono               \ the bottom of the screen, jump to nono as the ship's
                         \ dot is off the bottom of the space view
 
- BIT drawPlayerView     \ If this is player 2's view
+ BIT drawPlayerView     \ If this is player 1's view, skip the following
  BPL poin1
 
- CLC                    \ Move dot to bottom half of the screen
- ADC #Y
+ CLC                    \ This is player 2's view, so move the dot to the bottom
+ ADC #Y                 \ half of the screen
 
 .poin1
 
@@ -42466,10 +42737,15 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT splitScreen        \ Skip if split screen disabled
- BPL LL145a
+ BIT splitScreen        \ Jump to LL145a if the split screen is disabled, so we
+ BPL LL145a             \ do the normal line-clipping for normal screens
 
- LDA XX15+2             \ Subtract #Y/2 from y1
+                        \ This is the sp[lit screen, so we clip to a half screen
+                        \ height by moving the y-coordinate up by a quarter
+                        \ screen height, doubling the y-coordinate, clipping the
+                        \ coordinates as normal, and halving the y-coordinate
+
+ LDA XX15+2             \ Subtract #Y/2 from y1 to move up a quarter screen
  SEC
  SBC #Y/2
  STA XX15+2
@@ -42477,10 +42753,10 @@ ENDIF
  SBC #0
  STA XX15+3
 
- ASL XX15+2             \ Double y1
+ ASL XX15+2             \ Double y1 so we clip to the correct range
  ROL XX15+3
 
- LDA XX12               \ Subtract #Y/2 from y2
+ LDA XX12               \ Subtract #Y/2 from y2 to move up a quarter screen
  SEC
  SBC #Y/2
  STA XX12
@@ -42488,35 +42764,37 @@ ENDIF
  SBC #0
  STA XX12+1
 
- ASL XX12               \ Double y2
+ ASL XX12               \ Double y2 so we clip to the correct range
  ROL XX12+1
 
- JSR LL145a             \ Clip
+ JSR LL145a             \ Clip the coordinates using the normal clipping routine
 
- PHP                    \ Store C flag
+ PHP                    \ Store the clipping result, which is in the C flag
 
- LSR Y1                 \ Halve y1
+ LSR Y1                 \ Halve y1 to move the coordinate back in range
 
- LSR Y2                 \ Halve y2
+ LSR Y2                 \ Halve y2 to move the coordinate back in range
 
- BIT drawPlayerView     \ If player 1, skip the following
+ BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
  BPL clip1
 
-                        \ This is player 2, so move down to bottom half
+                        \ We are drawing player 2's view, so move the clipped
+                        \ line down to the bottom half of the screen
 
- LDA Y1                 \ Move y1 down
+ LDA Y1                 \ Move y1 down into player 2's view
  CLC
  ADC #Y
  STA Y1
 
- LDA Y2                 \ Move y1 down
+ LDA Y2                 \ Move y1 down into player 2's view
  CLC
  ADC #Y
  STA Y2
 
 .clip1
 
- PLP                    \ Retrieve C flag
+ PLP                    \ Retrieve the clipping result from the stack into the
+                        \ C flag
 
  RTS                    \ Return from the subroutine
 
@@ -44817,10 +45095,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If this is player 2
- BPL view1
+ BIT drawPlayerView     \ If we are setting up player 1's view, jump to view1 to
+ BPL view1              \ store the space view number in VIEW
 
- STX player2View        \ Set the current space view for player 2 to X
+ STX player2View        \ We are setting up player 2's view, so store the space
+                        \ view number for player 2 in player2View
 
  JMP view2              \ Skip the following instruction
 
@@ -44834,14 +45113,14 @@ ENDIF
 
 .view2
 
-                        \ --- End of added code ------------------------------->
-
- STX drawPlayerView     \ Draw both views as we are setting up a new space view
+ STZ drawPlayerView     \ Draw both views as we are setting up a new space view
  JSR view6
  SEC
  ROR drawPlayerView
 
 .view6
+
+                        \ --- End of added code ------------------------------->
 
  JSR TT66               \ Clear the top part of the screen, draw a border box,
                         \ and set the current view type in QQ11 to 0 (space
@@ -44866,8 +45145,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If this is player 2
- BPL view3
+ BIT drawPlayerView     \ If we are setting up player 1's view, jump to view3 to
+ BPL view3              \ check the new view number against VIEW
+
+                        \ We are setting up player 2's view, so we need to check
+                        \ the new view number against player2View
 
  CPX player2View        \ If the current view is already of type X, jump to LO2
  BEQ LO2                \ to return from the subroutine (as LO2 contains an RTS)
@@ -44948,10 +45230,10 @@ ENDIF
                         \ minus 24 (because TT15 will add 24 to the coordinate
                         \ when it draws the crosshairs)
 
- BIT drawPlayerView     \ If this is player 1, skip the following
- BPL site1
+ BIT drawPlayerView     \ If we are drawing player 1's view, so draw the sights
+ BPL site1              \ in the bottom half of the screen
 
- CLC                    \ This is player 2, so move down
+ CLC                    \ We are drawing player 2's, so move down
  ADC #Y
 
 .site1
@@ -45036,7 +45318,16 @@ ENDIF
 
  STZ LBUP               \ Reset the line buffer size at LBUP
 
- STZ LSP                \ Reset the ball line heap pointer at LSP
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STZ LSP                \ Reset the ball line heap pointer at LSP
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR ResetBallLine      \ Reset the ball line heap for the view we are currently
+                        \ drawing
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #%10000000         \ Set bit 7 of QQ17 to switch to Sentence Case
  STA QQ17
@@ -45065,10 +45356,11 @@ ENDIF
  SEC
  ROR splitScreen
 
- LDA #14                \ Set A to 14 or 15, for clearing the correct part of
- BIT drawPlayerView     \ the screen
- BPL P%+4
- LDA #15
+ LDA #14                \ Set A to clear the correct part of the screen:
+ BIT drawPlayerView     \
+ BPL P%+4               \   * 14 = player 1
+ LDA #15                \
+                        \   * 15 = player 2
 
  JSR OSWRCH             \ Send control code 14 or 15 to OSWRCH, to instruct the
                         \ I/O processor to clear the top part of the screen
@@ -45117,8 +45409,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT drawPlayerView     \ If this is player 2
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc3
  BPL clsc3
+
+                        \ We are drawing player 2's view, so move the text
+                        \ cursor to the top of the bottom view
 
  LDA #13                \ Move the text cursor to column 11, row 13
  JSR DOYC
@@ -45784,6 +46079,42 @@ ENDIF
                         \ last byte from INWK back to INF
 
  RTS                    \ Return from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: RESTORE
+\       Type: Subroutine
+\   Category: Universe
+\    Summary: Copy a ship data block from K% workspace to INWK
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   INF                 The ship data block in the K% workspace to restore
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.RESTORE
+
+ LDY #NI%-1             \ Set a counter in Y so we can loop through the NI%
+                        \ bytes in the ship data block
+
+.DML2a
+
+ LDA (INF),Y            \ Load the Y-th byte of INF and store it in the Y-th
+ STA INWK  ,Y           \ byte of INWK
+
+ DEY                    \ Decrement the loop counter
+
+ BPL DML2a              \ Loop back for the next byte, until we have copied the
+                        \ last byte from INWK back to INF
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -55736,14 +56067,32 @@ ENDMACRO
  LDA K3+3               \ Set Y1 = K3+3 = screen y-coordinate of previous point
  STA Y1                 \ from the old heap
 
- LDA LSX2,Y             \ Set X2 to the y-coordinate from the LSNUM-th point in
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSX2,Y             \ Set X2 to the y-coordinate from the LSNUM-th point in
+\STA X2                 \ the heap
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSX2S),Y          \ Set X2 to the y-coordinate from the LSNUM-th point in
  STA X2                 \ the heap
+
+                        \ --- End of replacement ------------------------------>
 
  STA K3+2               \ Store the x-coordinate of the point we are overwriting
                         \ in K3+2, so we can use it on the next iteration
 
- LDA LSY2,Y             \ Set Y2 to the y-coordinate from the LSNUM-th point in
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSY2,Y             \ Set Y2 to the y-coordinate from the LSNUM-th point in
+\STA Y2                 \ the heap
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSY2S),Y          \ Set Y2 to the y-coordinate from the LSNUM-th point in
  STA Y2                 \ the heap
+
+                        \ --- End of replacement ------------------------------>
 
  STA K3+3               \ Store the y-coordinate of the point we are overwriting
                         \ in K3+3, so we can use it on the next iteration
@@ -55799,10 +56148,27 @@ ENDMACRO
 
 .plin3
 
- LDA LSX2+1             \ Store the heap's first coordinate in K3+2 and K3+3
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSX2+1             \ Store the heap's first coordinate in K3+2 and K3+3
+\STA K3+2
+\LDA LSY2+1
+\STA K3+3
+
+                        \ --- And replaced by: -------------------------------->
+
+ PHY                    \ Store the value of Y on the stack so we can preserve
+                        \ it
+
+ LDY #1                 \ Store the heap's first coordinate in K3+2 and K3+3
+ LDA (LSX2S),Y
  STA K3+2
- LDA LSY2+1
+ LDA (LSY2S),Y
  STA K3+3
+
+ PLY                    \ Retrieve Y from the stack
+
+                        \ --- End of replacement ------------------------------>
 
  INC LSNUM              \ Increment LSNUM to point to the next coordinate, so we
                         \ work our way through the current heap
@@ -55879,13 +56245,50 @@ ENDMACRO
 \   Category: Two-player Elite
 \    Summary: Rotate a coordinate by an orientation vector (24-bits)
 \
+\ ------------------------------------------------------------------------------
+\
+\ Rotate a coordinate (c1, c2, c3) by an orientation vector [ v1 v2 v3 ] and
+\ store the result in the coordinate c. The calculation is:
+\
+\   c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
+\     = v1 * c1 + v2 * c2 + v3 * c3
+\
+\ where c1, c2, c3 and v1, v2, v3 are INWK offsets, and c is an offset into the
+\ newCoords block.
+\
+\ So values of c1, c2, c3 mean:
+\
+\   * 0 = INWK+0 to INWK+2 (x_sign x_hi x_lo)
+\   * 3 = INWK+3 to INWK+5 (y_sign y_hi y_lo)
+\   * 6 = INWK+6 to INWK+8 (z_sign z_hi z_lo)
+\
+\ and values of v1, v2, v3 mean:
+\
+\   *  9 = (nosev_x_hi nosev_x_lo)
+\   * 11 = (nosev_y_hi nosev_y_lo)
+\   * 13 = (nosev_z_hi nosev_z_lo)
+\
+\   * 15 = (roofv_x_hi roofv_x_lo)
+\   * 17 = (roofv_y_hi roofv_y_lo)
+\   * 19 = (roofv_z_hi roofv_z_lo)
+\
+\   * 21 = (sidev_x_hi sidev_x_lo)
+\   * 23 = (sidev_y_hi sidev_y_lo)
+\   * 25 = (sidev_z_hi sidev_z_lo)
+\
+\ while values of c mean:
+\
+\   * 0 = store 24-bit x-coordinate in newCoords+0 to newCoords+2
+\   * 3 = store 24-bit y-coordinate in newCoords+3 to newCoords+5
+\   * 6 = store 24-bit z-coordinate in newCoords+6 to newCoords+8
+\
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 
-                        \ c = [v1 v2 v3] . [ c1 c2 c3 ]
+                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \     v1 * c1 + v2 * c2 + v3 * c3
                         \
                         \ Commentary has c = z-coordinate
@@ -56035,54 +56438,37 @@ ENDMACRO
 
 .DrawPlayer2View
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 for the
- CMP #2                 \ next check
- BEQ dshp1
- JMP dshp3
+ JSR SaveShipData       \ Save current INWK state so we can restore it later
 
-.dshp1
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp1 to skip
+ CMP #2                 \ the following scanner code
+ BNE dshp1
 
-                        \ This is player 2's ship
+                        \ We are drawing player 2's ship
 
- JSR SaveShipData       \ Save current INWK state for slot #2 so we can retrieve
-                        \ it later
+ LDX #12                \ Set INF(1 0) to slot #12
+ JSR GINF
 
- LDA newCoords          \ Copy player 1's ship coords into INWK (so they're the
- STA INWK               \ coordinates from the last time we did this calculation)
- LDA newCoords+1
- STA INWK+1
- LDA newCoords+2
- STA INWK+2
- LDA newCoords+3
- STA INWK+3
- LDA newCoords+4
- STA INWK+4
- LDA newCoords+5
- STA INWK+5
- LDA newCoords+6
- STA INWK+6
- LDA newCoords+7
- STA INWK+7
- LDA newCoords+8
- STA INWK+8
- LDA player1Visible
+ JSR RESTORE            \ Fetch the ship's coordinates in slot #12
+
+ LDA player1Visible     \ Set the scan visiblilty flag from player1Visible
  STA INWK+31
 
  LDA #1                 \ Set TYPE purely to control the colour on the scanner
- STA TYPE               \ (we set this to the correct type later)
+ STA TYPE               \ (we revert this to the correct type later)
 
  JSR SCAN               \ Remove the ship from the scanner, if it's there
 
- LDA player1Visible     \ From this point on we are definitely drawing the ship
- ORA #%00010000         \ on the scanner, so set bit 4 = visible on scanner
+ LDA player1Visible     \ From this point on we want to draw the ship on the
+ ORA #%00010000         \ scanner, so set bit 4 = visible on scanner
  STA player1Visible
 
- LDX #2                 \ Refetch the ship data from slot 2 so that it's the
- JSR GetShipDataToINWK  \ correct way around for the following calculation, even
-                        \ if player 1 has changed view (so this reverts any PLUT
-                        \ calls in the main loop)
+.dshp1
 
-.dshp2
+ LDX XSAV               \ Refetch the current ship data so that it's the correct
+ JSR GetShipDataToINWK  \ way around for the following calculation, even if
+                        \ player 1 has changed view (so this reverts any PLUT
+                        \ calls in the main loop)
 
                         \ If:
                         \
@@ -56095,7 +56481,8 @@ ENDMACRO
                         \ Then do the following:
                         \
                         \ 1. Negate [x y z] so it turns into the vector from
-                        \    player 2 to player 1
+                        \    player 2 to player 1 (do this for player 2's ship
+                        \    coordinates only)
                         \
                         \ 2. Multiply the result by player 2's orientation
                         \    vectors to move the vector into player 2's frame of
@@ -56140,7 +56527,11 @@ ENDMACRO
                         \
                         \ And then divide the result by 96
 
-                        \ Step 1: negate [x y z]
+                        \ Step 1: negate [x y z] (if this is player 2's ship)
+
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp2 to skip
+ CMP #2                 \ the negation
+ BNE dshp2
 
  LDA INWK+2             \ Negate x_sign
  EOR #%10000000
@@ -56154,11 +56545,27 @@ ENDMACRO
  EOR #%10000000
  STA INWK+8
 
- ROTATE_COORDINATE_24 0, 21, 0, 23, 3, 25, 6    \ Step 2: x-coordinate
+.dshp2
+                        \ Step 2: Rotate x-coordinate
+                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
+                        \ x = [ sidev_x sidev_y sidev_z ] . [ x y z ]
 
- ROTATE_COORDINATE_24 3, 15, 0, 17, 3, 19, 6    \ Step 2: y-coordinate
+                    \   c, v1, c1, v2, c2, v3, c3
+ ROTATE_COORDINATE_24   0, 21,  0, 23,  3, 25,  6
 
- ROTATE_COORDINATE_24 6, 9, 0, 11, 3, 13, 6     \ Step 2: z-coordinate
+                        \ Step 2: Rotate y-coordinate
+                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
+                        \ y = [ roofv_x roofv_y roofv_z ] . [ x y z ]
+
+                    \   c, v1, c1, v2, c2, v3, c3
+ ROTATE_COORDINATE_24   3, 15,  0, 17,  3, 19,  6
+
+                        \ Step 2: Rotate z-coordinate
+                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
+                        \ z = [ nosev_x nosev_y nosev_z ] . [ x y z ]
+
+                    \   c, v1, c1, v2, c2, v3, c3
+ ROTATE_COORDINATE_24   6,  9,  0, 11,  3, 13,  6
 
  LDA newCoords          \ Copy new coords back into INWK
  STA INWK
@@ -56198,6 +56605,10 @@ ENDMACRO
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
 
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 to skip
+ CMP #2                 \ the ship setup
+ BNE dshp3
+
  LDA XX21-2+2*PLAYER1SHIP   \ Set XX0(1 0) to point to the ship blueprint for
  STA XX0                    \ player 1, as viewed from player 2
  LDA XX21-1+2*PLAYER1SHIP
@@ -56209,17 +56620,27 @@ ENDMACRO
  LDA player1Visible     \ Copy "on-screen" state from player1Visible to INWK
  STA INWK+31
 
+.dshp3
+
+ LDA XSAV               \ Set INF(1 0) to slot #10 + XSAV
+ CLC
+ ADC #10
+ TAX
+ JSR GINF
+
+ JSR STORE              \ Save the new coordinates in slot #10 + XSAV
+
  LDX player2View        \ Rotate everything into the correct view
  JSR PLUT+3
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 to skip
+ CMP #2                 \ the ship setup
+ BNE dshp4
+
  LDA INWK+31            \ Copy "on-screen" state from INWK to player1Visible
  STA player1Visible
-
- STZ drawPlayerView     \ Back to drawing the view for player 1
-
- JSR LoadShipData       \ Reload INWK state
 
  LDA #PLAYER2SHIP       \ Switch back to the ship for player 2
  STA TYPE
@@ -56229,10 +56650,14 @@ ENDMACRO
  LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
  STA XX0+1
 
- LDX #2                 \ Set INF(1 0) for player's 2 ship once again
+.dshp4
+
+ LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
 
-.dshp3
+ STZ drawPlayerView     \ Back to drawing the view for player 1
+
+ JSR LoadShipData       \ Reload INWK state
 
  RTS                    \ Return from the subroutine
 
@@ -56246,7 +56671,7 @@ ENDMACRO
 \    Summary: Transpose the current ship's rotation matrix (i.e. its orientation
 \             vectors)
 \
-\ ******************************************************************************
+\ ------------------------------------------------------------------------------
 \
 \ Transpose matrix to rotate player 1 correctly for player 2 view
 \
@@ -56479,58 +56904,66 @@ ENDIF
 \       Name: Multiply8x24
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Multiply a coordinate by an orientation vector from ship #2
+\
+\ ------------------------------------------------------------------------------
+\
+\ Calculate:
+\
+\   K(3 2 1 0) = orientation vector * coordinate
+\
+\ So if X = 0 and Y = 9, for example, then we set K(3 2 1 0) to:
+\
+\   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The coordinate to multiply:
+\
+\                         * If X = 0, multiply coordinate (x_sign x_hi x_lo)
+\
+\                         * If X = 3, multiply coordinate (y_sign y_hi y_lo)
+\
+\                         * If X = 6, multiply coordinate (z_sign z_hi z_lo)
+\
+\   Y                   The orientation vector to multiply, fron ship #2:
+\
+\                         * If Y = 9,  multiply nosev_x
+\                                  11, multiply nosev_y
+\                                  13, multiply nosev_z
+\
+\                         * If Y = 15, multiply roofv_x
+\                                  17, multiply roofv_y
+\                                  19, multiply roofv_z
+\
+\                         * If Y = 21, multiply sidev_x
+\                                  23, multiply sidev_y
+\                                  25, multiply sidev_z
+\
+\ ------------------------------------------------------------------------------
+\
+\ Returns:
+\
+\   K(3 2 1 0)          The result
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-                        \ X = The coordinate to multiply:
-                        \
-                        \   * If X = 0, calculate x
-                        \
-                        \   * If X = 3, calculate y
-                        \
-                        \   * If X = 6, calculate z
-                        \
-                        \ Y = The orientation vector to multiply:
-                        \
-                        \   * If Y = 9,  calculate nosev_x
-                        \            11, calculate nosev_y
-                        \            13, calculate nosev_z
-                        \
-                        \   * If Y = 15, calculate roofv_x
-                        \            17, calculate roofv_y
-                        \            19, calculate roofv_z
-                        \
-                        \   * If Y = 21, calculate sidev_x
-                        \            23, calculate sidev_y
-                        \            25, calculate sidev_z
-                        \
-                        \ Calculate:
-                        \
-                        \   K(3 2 1 0) = orientation vector * coordinate
-                        \
-                        \ So if X = 0 and Y = 9, then we set K(3 2 1 0) to:
-                        \
-                        \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
-                        \
-                        \ for example
-
 .Multiply8x24
 
-                        \ We know the low byte of the orientation vector is zero
-                        \ as we just did a TIDY, so we can do the multiplication
-                        \ like this:
+                        \ We do the multiplication like this for now, pretending
+                        \ that the low byte is zero:
                         \
                         \     (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
                         \
                         \   = sidev_x_hi * (x_sign x_hi x_lo) << 8
                         \
-                        \ We know the low byte of the result will be zero, so we
-                        \ can just discard it
+                        \ We should include the low byte at some stage
 
- LDA INWK+1,Y           \ Q = sidev_x_hi, which includes the sign bit
+ LDA K%+NI%*2+1,Y       \ Q = sidev_x_hi for ship #2, which includes the sign bit
  STA Q
 
  LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
@@ -56551,7 +56984,7 @@ ENDIF
 \       Name: Add32
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Calculate P(2 1 0) = K(3 2 1) + XX15(3 2 1)
 \
 \ ******************************************************************************
 
@@ -56749,7 +57182,7 @@ ENDIF
 \       Name: DivideBy96
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Calculate K(3 2 1 0) = P(2 1 0) / 96
 \
 \ ******************************************************************************
 
@@ -56777,7 +57210,7 @@ ENDIF
 \       Name: SaveShipData
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Stash the current ship's data in storeData
 \
 \ ******************************************************************************
 
@@ -56808,7 +57241,7 @@ ENDIF
 \       Name: LoadShipData
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Retrieve the current ship's data from storeData
 \
 \ ******************************************************************************
 
@@ -56839,7 +57272,7 @@ ENDIF
 \       Name: GetShipDataToINWK
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
+\    Summary: Fetch ship data for ship X into INWK
 \
 \ ******************************************************************************
 
@@ -57033,7 +57466,7 @@ ENDIF
 \       Name: storeData
 \       Type: Variable
 \   Category: Two-player Elite
-\    Summary: Storage for INWK, ship movement etc.
+\    Summary: Storage area for INWK, ship movement etc.
 \
 \ ******************************************************************************
 
@@ -57042,6 +57475,94 @@ ENDIF
 .storeData
 
  SKIP NI%
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: SetPlayerBallLine
+\       Type: Subroutine
+\   Category: Drawing circles
+\    Summary: Set the pointers to use the correct view (player 1 or 2)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.SetPlayerBallLine
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to ball1 to
+ BPL ball1              \ set up the pointers for player 1's ball line heap
+
+                        \ Set the pointers for player 2's ball line heap
+
+ LDA #LO(LSX2r)         \ Set LSX2S to the address of LSX2r, so CIRCLE and BLINE
+ STA LSX2S              \ store the right-eye line y-coordinates in LSX2r
+ LDA #HI(LSX2r)
+ STA LSX2S+1
+
+ LDA #LO(LSY2r)         \ Set LSY2S to the address of LSY2r, so CIRCLE and BLINE
+ STA LSY2S              \ store the right-eye line y-coordinates in LSY2r
+ LDA #HI(LSY2r)
+ STA LSY2S+1
+
+ LDA #LO(LSPr)          \ Set LSPS to the address of LSPr, so CIRCLE and BLINE
+ STA LSPS               \ store the right-eye ball line heap pointer in LSPr
+ LDA #HI(LSPr)
+ STA LSPS+1
+
+ RTS                    \ Return from the subroutine
+
+.ball1
+
+                        \ Set the pointers for player 1's ball line heap
+
+ LDA #LO(LSX2)          \ Set LSX2S to the address of LSX2, so CIRCLE and BLINE
+ STA LSX2S              \ store the left-eye line y-coordinates in LSX2
+ LDA #HI(LSX2)
+ STA LSX2S+1
+
+ LDA #LO(LSY2)          \ Set LSY2S to the address of LSY2, so CIRCLE and BLINE
+ STA LSY2S              \ store the left-eye line y-coordinates in LSY2
+ LDA #HI(LSY2)
+ STA LSY2S+1
+
+ LDA #LO(LSP)           \ Set LSPS to the address of LSP, so CIRCLE and BLINE
+ STA LSPS               \ store the left-eye ball line heap pointer in LSP
+ LDA #HI(LSP)
+ STA LSPS+1
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: ResetBallLine
+\       Type: Subroutine
+\   Category: Drawing circles
+\    Summary: Reset the pointers for the correct view (player 1 or 2)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.ResetBallLine
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
+ BPL rest1
+
+ STZ LSPr               \ Reset the ball line heap by setting the ball line heap
+                        \ pointer to 0 for player 2's view
+
+ RTS                    \ Return from the subroutine
+
+.rest1
+
+ STZ LSP                \ Reset the ball line heap by setting the ball line heap
+                        \ pointer to 0 for player 1's view
+
+ RTS                    \ Return from the subroutine
 
                         \ --- End of added code ------------------------------->
 
