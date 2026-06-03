@@ -428,10 +428,21 @@ ENDIF
  SKIP 2                 \ Temporary storage, typically used for storing a 16-bit
                         \ y-coordinate
 
-.SUNX
+                        \ --- Mod: Code moved for two-player Elite: ----------->
 
- SKIP 2                 \ The 16-bit x-coordinate of the vertical centre axis
-                        \ of the sun (which might be off-screen)
+\.SUNX
+\
+\SKIP 2                 \ The 16-bit x-coordinate of the vertical centre axis
+\                       \ of the sun (which might be off-screen)
+
+                        \ --- And replaced by: -------------------------------->
+
+.SUNXS
+
+ SKIP 2                 \ The address of SUNX or SUNXa, depending on which
+                        \ player view we are drawing
+
+                        \ --- End of replacement ------------------------------>
 
 .BETA
 
@@ -475,25 +486,43 @@ ENDIF
                         \ top part of the screen has a border box that clashes
                         \ with row 0, text is always shown at row 1 or greater
 
-.QQ22
+                        \ --- Mod: Code moved for two-player Elite: ----------->
 
- SKIP 2                 \ The two hyperspace countdown counters
-                        \
-                        \ Before a hyperspace jump, both QQ22 and QQ22+1 are
-                        \ set to 15
-                        \
-                        \ QQ22 is an internal counter that counts down by 1
-                        \ each time TT102 is called, which happens every
-                        \ iteration of the main game loop. When it reaches
-                        \ zero, the on-screen counter in QQ22+1 gets
-                        \ decremented, and QQ22 gets set to 5 and the countdown
-                        \ continues (so the first tick of the hyperspace counter
-                        \ takes 15 iterations to happen, but subsequent ticks
-                        \ take 5 iterations each)
-                        \
-                        \ QQ22+1 contains the number that's shown on-screen
-                        \ during the countdown. It counts down from 15 to 1, and
-                        \ when it hits 0, the hyperspace engines kick in
+\.QQ22
+\
+\SKIP 2                 \ The two hyperspace countdown counters
+\                       \
+\                       \ Before a hyperspace jump, both QQ22 and QQ22+1 are
+\                       \ set to 15
+\                       \
+\                       \ QQ22 is an internal counter that counts down by 1
+\                       \ each time TT102 is called, which happens every
+\                       \ iteration of the main game loop. When it reaches
+\                       \ zero, the on-screen counter in QQ22+1 gets
+\                       \ decremented, and QQ22 gets set to 5 and the countdown
+\                       \ continues (so the first tick of the hyperspace counter
+\                       \ takes 15 iterations to happen, but subsequent ticks
+\                       \ take 5 iterations each)
+\                       \
+\                       \ QQ22+1 contains the number that's shown on-screen
+\                       \ during the countdown. It counts down from 15 to 1, and
+\                       \ when it hits 0, the hyperspace engines kick in
+
+                        \ --- And replaced by: -------------------------------->
+
+.LSOS
+
+ SKIP 0                 \ The address of LSO or LSOa, depending on which
+                        \ player view we are drawing (LSO is an alias of LSX,
+                        \ so the address is the same as LSXS)
+
+.LSXS
+
+ SKIP 2                 \ The address of LSX or LSXa, depending on which
+                        \ player view we are drawing (LSX is an alias of LSO,
+                        \ so the address is the same as LSOS)
+
+                        \ --- End of replacement ------------------------------>
 
 .ECMA
 
@@ -940,21 +969,20 @@ ENDIF
 \                       \ station
 
                         \ --- And replaced by: -------------------------------->
-
 .LSX2S
 
- SKIP 2                 \ The address of LSX2 or LSX2r, depending on which eye
-                        \ we are drawing
+ SKIP 2                 \ The address of LSX2 or LSX2a, depending on which
+                        \ player view we are drawing
 
 .LSY2S
 
- SKIP 2                 \ The address of LSY2 or LSY2r, depending on which eye
-                        \ we are drawing
+ SKIP 2                 \ The address of LSY2 or LSY2a, depending on which
+                        \ player view we are drawing
 
 .LSPS
 
- SKIP 2                 \ The address of LSP or LSPr, depending on which eye
-                        \ we are drawing
+ SKIP 2                 \ The address of LSP or LSPa, depending on which player
+                        \ view we are drawing
 
                         \ --- End of moved code ------------------------------->
 
@@ -3506,23 +3534,53 @@ ENDIF
                         \ docking and magically appear in your destination
                         \ station
 
+.QQ22
+
+ SKIP 2                 \ The two hyperspace countdown counters
+                        \
+                        \ Before a hyperspace jump, both QQ22 and QQ22+1 are
+                        \ set to 15
+                        \
+                        \ QQ22 is an internal counter that counts down by 1
+                        \ each time TT102 is called, which happens every
+                        \ iteration of the main game loop. When it reaches
+                        \ zero, the on-screen counter in QQ22+1 gets
+                        \ decremented, and QQ22 gets set to 5 and the countdown
+                        \ continues (so the first tick of the hyperspace counter
+                        \ takes 15 iterations to happen, but subsequent ticks
+                        \ take 5 iterations each)
+                        \
+                        \ QQ22+1 contains the number that's shown on-screen
+                        \ during the countdown. It counts down from 15 to 1, and
+                        \ when it hits 0, the hyperspace engines kick in
+
+.SUNX
+
+ SKIP 2                 \ The 16-bit x-coordinate of the vertical centre axis
+                        \ of the sun (which might be off-screen)
+
                         \ --- End of moved code ------------------------------->
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.LSY2r
+.SUNXa
 
- SKIP 78                \ The ball line heap for storing y-coordinates for the
-                        \ right eye
+ SKIP 2                 \ The 16-bit x-coordinate of the vertical centre axis
+                        \ of the sun for player 2 (which might be off-screen)
 
-.LSPr
+.LSY2a
 
- SKIP 1                 \ The ball line heap pointer for the right eye
+ SKIP 78                \ The ball line heap for storing y-coordinates for
+                        \ player 2
 
-.LSX2r
+.LSPa
 
- SKIP 78                \ The ball line heap for storing x-coordinates for the
-                        \ right eye
+ SKIP 1                 \ The ball line heap pointer for player 2
+
+.LSX2a
+
+ SKIP 78                \ The ball line heap for storing x-coordinates for
+                        \ player 2
 
                         \ --- End of added code ------------------------------->
 
@@ -3556,12 +3614,34 @@ ENDIF
 
 .LSO
 
- SKIP 192               \ The ship line heap for the space station (see NWSPS)
-                        \ and the sun line heap (see SUN)
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\SKIP 192               \ The ship line heap for the space station (see NWSPS)
+\                       \ and the sun line heap (see SUN)
+\                       \
+\                       \ The spaces can be shared as our local bubble of
+\                       \ universe can support either the sun or a space
+\                       \ station, but not both
+
+                        \ --- And replaced by: -------------------------------->
+
+ SKIP 96                \ The ship line heap for player 1's sun
+
+.LSXa
+
+ SKIP 0                 \ LSX is an alias that points to the first byte of the
+                        \ sun line heap at LSO
                         \
-                        \ The spaces can be shared as our local bubble of
-                        \ universe can support either the sun or a space
-                        \ station, but not both
+                        \   * &FF indicates the sun line heap is empty
+                        \
+                        \   * Otherwise the LSO heap contains the line data for
+                        \     the sun
+
+.LSOa
+
+ SKIP 96                \ The ship line heap for player 1's sun
+
+                        \ --- End of replacement ------------------------------>
 
 .SX
 
@@ -8743,8 +8823,17 @@ ENDIF
 
  STY Y1                 \ Set Y1 = Y
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #0                 \ Set the Y-th byte of the LSO block to 0
+\STA LSO,Y
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #0                 \ Set the Y-th byte of the LSO block to 0
- STA LSO,Y
+ STA (LSOS),Y
+
+                        \ --- End of replacement ------------------------------>
 
                         \ Fall through into HLOIN to draw a horizontal line from
                         \ (X1, Y) to (X2, Y)
@@ -8781,12 +8870,39 @@ ENDIF
 
  LDY HBUP               \ Set Y to the size of the horizontal line buffer
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT drawPlayerView     \ If this is player 1's view, skip the following
+ BPL hlin1
+
+ LDA X1                 \ Store X1, X2 and Y1 in the Y-th to Y+2-th bytes of
+ STA HBUF,Y             \ the horizontal line buffer at HBUF
+ LDA X2
+ STA HBUF+1,Y
+
+ LDA Y1                 \ This is player 2's view, so move the line to the bottom
+ CLC                    \ half of the screen
+ ADC #Y 
+ STA HBUF+2,Y
+
+ JMP hlin2              \ Jump to hlin2 to draw the line
+
+.hlin1
+
+                        \ --- End of added code ------------------------------->
+
  LDA X1                 \ Store X1, X2 and Y1 in the Y-th to Y+2-th bytes of
  STA HBUF,Y             \ the horizontal line buffer at HBUF
  LDA X2
  STA HBUF+1,Y
  LDA Y1
  STA HBUF+2,Y
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.hlin2
+
+                        \ --- End of added code ------------------------------->
 
  TYA                    \ Set A = Y + 3
  CLC                    \       = HBUP + 3
@@ -26838,16 +26954,36 @@ ENDIF
 
 .FLFLLS
 
- LDY #2*Y-1             \ #Y is the y-coordinate of the centre of the space
-                        \ view, so this sets Y as a counter for the number of
-                        \ lines in the space view (i.e. 191), which is also the
-                        \ number of lines in the LSO block
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #2*Y-1             \ #Y is the y-coordinate of the centre of the space
+\                       \ view, so this sets Y as a counter for the number of
+\                       \ lines in the space view (i.e. 191), which is also the
+\                       \ number of lines in the LSO block
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR SetPlayerSunHeap   \ Set up the sun line heap pointers for the current
+                        \ player
+
+ LDY #Y-1               \ Set Y = y-coordinate of the bottom of the screen,
+                        \ so we only reset one sun buffer
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #0                 \ Set A to 0 so we can zero-fill the LSO block
 
 .SAL6
 
- STA LSO,Y              \ Set the Y-th byte of the LSO block to 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STA LSO,Y              \ Set the Y-th byte of the LSO block to 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ STA (LSOS),Y           \ Set the Y-th byte of the LSO block to 0
+
+                        \ --- End of replacement ------------------------------>
 
  DEY                    \ Decrement the counter
 
@@ -26856,9 +26992,21 @@ ENDIF
  DEY                    \ Decrement Y to value of &FF (as we exit the above loop
                         \ with Y = 0)
 
- STY LSX                \ Set the first byte of the LSO block, which has its own
-                        \ label LSX, to &FF, to indicate that the sun line heap
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STY LSX                \ Set the first byte of the LSO block, which has its own
+\                       \ label LSX, to &FF, to indicate that the sun line heap
+\                       \ is empty
+
+                        \ --- And replaced by: -------------------------------->
+
+ TYA                    \ Set the first byte of the LSO block, which has its own
+ STA (LSXS)             \ label LSX, to &FF, to indicate that the sun line heap
                         \ is empty
+
+ LDA #0                 \ Set A = 0 as FLFLLS needs to return that value
+
+                        \ --- End of replacement ------------------------------>
 
  RTS                    \ Return from the subroutine
 
@@ -29154,8 +29302,24 @@ ENDIF
 
 .SUN
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ JSR SetPlayerSunHeap   \ Set up the sun line heap pointers for the current
+                        \ player
+
+                        \ --- End of added code ------------------------------->
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #1                 \ Set LSX = 1 to indicate the sun line heap is about to
+\STA LSX                \ be filled up
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #1                 \ Set LSX = 1 to indicate the sun line heap is about to
- STA LSX                \ be filled up
+ STA (LSXS)             \ be filled up
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
@@ -29220,7 +29384,7 @@ ENDIF
 
  LDA #Y-1               \ #Y is the y-coordinate of the centre of the space
                         \ view, so this sets Y to the y-coordinate of the bottom
-                        \ of the space view
+                        \ of the player view
 
                         \ --- End of replacement ------------------------------>
 
@@ -29334,8 +29498,19 @@ ENDIF
 \LDY #2*Y-1             \ Set Y = y-coordinate of the bottom of the screen,
 \                       \ which we use as a counter in the following routine to
 \                       \ redraw the old sun
+\
+\LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+\STA YY                 \ vertical centre axis of the old sun that's currently
+\LDA SUNX+1             \ on-screen
+\STA YY+1
 
                         \ --- And replaced by: -------------------------------->
+
+ LDA (SUNXS)            \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+ STA YY                 \ vertical centre axis of the old sun that's currently
+ LDY #1                 \ on-screen
+ LDA (SUNXS),Y
+ STA YY+1
 
  LDY #Y-1               \ Set Y = y-coordinate of the bottom of the screen,
                         \ which we use as a counter in the following routine to
@@ -29343,20 +29518,25 @@ ENDIF
 
                         \ --- End of replacement ------------------------------>
 
- LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
- STA YY                 \ vertical centre axis of the old sun that's currently
- LDA SUNX+1             \ on-screen
- STA YY+1
-
 .PLFL2
 
  CPY TGT                \ If Y = TGT, we have reached the line where we will
  BEQ PLFL               \ start drawing the new sun, so there is no need to
                         \ keep erasing the old one, so jump down to PLFL
 
- LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+\                       \ gives us the half-width of the old sun's line on this
+\                       \ line of the screen
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSOS),Y           \ Fetch the Y-th point from the sun line heap, which
                         \ gives us the half-width of the old sun's line on this
                         \ line of the screen
+
+                        \ --- End of replacement ------------------------------>
 
  BEQ PLF13              \ If A = 0, skip the following call to HLOIN2 as there
                         \ is no sun line on this line of the screen
@@ -29470,19 +29650,52 @@ ENDIF
 
 .PLF44
 
- LDX LSO,Y              \ Set X to the line heap value for the old sun's line
-                        \ at row Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STA LSO,Y              \ Store the half-width of the new row Y line in the line
+\LDX LSO,Y              \ Set X to the line heap value for the old sun's line
+\                       \ at row Y
+\
+\STA LSO,Y              \ Store the half-width of the new row Y line in the line
+\                       \ heap
+
+                        \ --- And replaced by: -------------------------------->
+
+ PHA                    \ Store A on the stack
+
+ LDA (LSOS),Y           \ Set X to the line heap value for the old sun's line
+ TAX                    \ at row Y
+
+ PLA                    \ Retrieve A from the stack
+
+ STA (LSOS),Y           \ Store the half-width of the new row Y line in the line
                         \ heap
+
+ INX                    \ Set the flags depending on the value of X, for the
+ DEX                    \ next instruction
+
+                        \ --- End of replacement ------------------------------>
 
  BEQ PLF11              \ If X = 0 then there was no sun line on pixel row Y, so
                         \ jump to PLF11
 
- LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+\STA YY                 \ vertical centre axis of the old sun that's currently
+\LDA SUNX+1             \ on-screen
+\STA YY+1
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (SUNXS)            \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
  STA YY                 \ vertical centre axis of the old sun that's currently
- LDA SUNX+1             \ on-screen
+ PHY                    \ on-screen
+ LDY #1
+ LDA (SUNXS),Y
  STA YY+1
+ PLY
+
+                        \ --- End of replacement ------------------------------>
 
  TXA                    \ Transfer the line heap value for the old sun's line
                         \ from X into A
@@ -29501,8 +29714,17 @@ ENDIF
  LDA K3+1
  STA YY+1
 
- LDA LSO,Y              \ Fetch the half-width of the new row Y line from the
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSO,Y              \ Fetch the half-width of the new row Y line from the
+\                       \ line heap (which we stored above)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSOS),Y           \ Fetch the half-width of the new row Y line from the
                         \ line heap (which we stored above)
+
+                        \ --- End of replacement ------------------------------>
 
  JSR EDGES              \ Call EDGES to calculate X1 and X2 for the horizontal
                         \ line centred on YY(1 0) and with half-width A, i.e.
@@ -29613,8 +29835,17 @@ ENDIF
  BCC PLF16              \ If the line is on-screen, jump up to PLF16 to draw the
                         \ line and loop round for the next line up
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #0                 \ The line is not on-screen, so set the line heap for
+\STA LSO,Y              \ line Y to 0, which means there is no sun line here
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #0                 \ The line is not on-screen, so set the line heap for
- STA LSO,Y              \ line Y to 0, which means there is no sun line here
+ STA (LSOS),Y           \ line Y to 0, which means there is no sun line here
+
+                        \ --- End of replacement ------------------------------>
 
  BEQ PLF6               \ Jump up to PLF6 to loop round for the next line up
                         \ (this BEQ is effectively a JMP as A is always zero)
@@ -29651,16 +29882,40 @@ ENDIF
 \
 \ ******************************************************************************
 
- LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+\STA YY                 \ vertical centre axis of the old sun that's currently
+\LDA SUNX+1             \ on-screen
+\STA YY+1
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (SUNXS)            \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
  STA YY                 \ vertical centre axis of the old sun that's currently
- LDA SUNX+1             \ on-screen
+ PHY                    \ on-screen
+ LDY #1
+ LDA (SUNXS),Y
  STA YY+1
+ PLY
+
+                        \ --- End of replacement ------------------------------>
 
 .PLFL3
 
- LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+\                       \ gives us the half-width of the old sun's line on this
+\                       \ line of the screen
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSOS),Y           \ Fetch the Y-th point from the sun line heap, which
                         \ gives us the half-width of the old sun's line on this
                         \ line of the screen
+
+                        \ --- End of replacement ------------------------------>
 
  BEQ PLF9               \ If A = 0, skip the following call to HLOIN2 as there
                         \ is no sun line on this line of the screen
@@ -29686,10 +29941,22 @@ ENDIF
  CLC                    \ Clear the C flag to indicate success in drawing the
                         \ sun
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA K3                 \ Set SUNX(1 0) = K3(1 0)
+\STA SUNX
+\LDA K3+1
+\STA SUNX+1
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA K3                 \ Set SUNX(1 0) = K3(1 0)
- STA SUNX
+ STA (SUNXS)
  LDA K3+1
- STA SUNX+1
+ LDY #1
+ STA (SUNXS),Y
+
+                        \ --- End of replacement ------------------------------>
 
  JSR HBFL               \ Call HBFL to send the contents of the horizontal line
                         \ buffer to the I/O processor for drawing on-screen
@@ -30239,13 +30506,30 @@ ENDIF
 
 .WPLS
 
- LDA LSX                \ If LSX < 0, the sun line heap is empty, so return from
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSX                \ If LSX < 0, the sun line heap is empty, so return from
+\BMI WP1                \ the subroutine (as WP1 contains an RTS)
+\
+\LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+\STA YY                 \ vertical centre axis of the sun that's currently on
+\LDA SUNX+1             \ screen
+\STA YY+1
+                        \ --- And replaced by: -------------------------------->
+
+ JSR SetPlayerSunHeap   \ Set up the sun line heap pointers for the current
+                        \ player
+
+ LDA (LSXS)             \ If LSX < 0, the sun line heap is empty, so return from
  BMI WP1                \ the subroutine (as WP1 contains an RTS)
 
- LDA SUNX               \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
- STA YY                 \ vertical centre axis of the sun that's currently on
- LDA SUNX+1             \ screen
+ LDA (SUNXS)            \ Set YY(1 0) = SUNX(1 0), the x-coordinate of the
+ STA YY                 \ vertical centre axis of the old sun that's currently
+ LDY #1                 \ on-screen
+ LDA (SUNXS),Y
  STA YY+1
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
@@ -30265,9 +30549,19 @@ ENDIF
 
 .WPL2
 
- LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA LSO,Y              \ Fetch the Y-th point from the sun line heap, which
+\                       \ gives us the half-width of the sun's line on this line
+\                       \ of the screen
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA (LSOS),Y           \ Fetch the Y-th point from the sun line heap, which
                         \ gives us the half-width of the sun's line on this line
                         \ of the screen
+
+                        \ --- End of replacement ------------------------------>
 
  BEQ P%+5               \ If A = 0, skip the following call to HLOIN2 as there
                         \ is no sun line on this line of the screen
@@ -30283,7 +30577,16 @@ ENDIF
 
  DEY                    \ This sets Y to &FF, as we end the loop with Y = 0
 
- STY LSX                \ Set LSX to &FF to indicate the sun line heap is empty
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STY LSX                \ Set LSX to &FF to indicate the sun line heap is empty
+
+                        \ --- And replaced by: -------------------------------->
+
+ TYA                    \ Set LSX to &FF to indicate the sun line heap is empty
+ STA (LSXS)
+
+                        \ --- End of replacement ------------------------------>
 
  JMP HBFL               \ Call HBFL to send the contents of the horizontal line
                         \ buffer to the I/O processor for drawing on-screen,
@@ -30392,8 +30695,17 @@ ENDIF
 
 .ED1
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #0                 \ Set the Y-th byte of the LSO block to 0
+\STA LSO,Y
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA #0                 \ Set the Y-th byte of the LSO block to 0
- STA LSO,Y
+ STA (LSOS),Y
+
+                        \ --- End of replacement ------------------------------>
 
  SEC                    \ The line does not fit on the screen, so set the C flag
                         \ to indicate this result
@@ -31838,9 +32150,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STX LSX2r              \ Reset LSX2r and LSY2r, the ball line heaps used by the
- STX LSY2r              \ BLINE routine for drawing circles, to &FF, to set the
-                        \ right eye ball line heap to empty
+ STX LSX2a              \ Reset LSX2a and LSY2a, the ball line heaps used by the
+ STX LSY2a              \ BLINE routine for drawing circles, to &FF, to set the
+                        \ player 2 ball line heap to empty
 
                         \ --- End of added code ------------------------------->
 
@@ -31925,6 +32237,17 @@ ENDIF
  JSR ECMOF              \ Turn off the E.C.M. sound
 
 .yu
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ SEC                    \ Wipe player 2 ships and reset sun block
+ ROR drawPlayerView
+
+ JSR WPSHPS             \ Wipe all ships from the scanner
+
+ STZ drawPlayerView     \ Wipe player 1 ships and reset sun block
+
+                        \ --- End of added code ------------------------------->
 
  JSR WPSHPS             \ Wipe all ships from the scanner
 
@@ -56588,6 +56911,10 @@ ENDMACRO
 
  JSR SCAN               \ Draw the ship on the scanner
 
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp4 to skip
+ CMP #2                 \ the transpose and ship setup
+ BNE dshp3
+
  JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
 
                         \ Set heap for player 2's view to be &2000 below player
@@ -56602,13 +56929,6 @@ ENDMACRO
 
 \STZ INWK+36            \ Clear scooped state
 
- SEC                    \ Configure drawing for player 2
- ROR drawPlayerView
-
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 to skip
- CMP #2                 \ the ship setup
- BNE dshp3
-
  LDA XX21-2+2*PLAYER1SHIP   \ Set XX0(1 0) to point to the ship blueprint for
  STA XX0                    \ player 1, as viewed from player 2
  LDA XX21-1+2*PLAYER1SHIP
@@ -56621,6 +56941,9 @@ ENDMACRO
  STA INWK+31
 
 .dshp3
+
+ SEC                    \ Configure drawing for player 2
+ ROR drawPlayerView
 
  LDA XSAV               \ Set INF(1 0) to slot #10 + XSAV
  CLC
@@ -56635,9 +56958,9 @@ ENDMACRO
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp3 to skip
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp4 to skip
  CMP #2                 \ the ship setup
- BNE dshp4
+ BNE dshp5
 
  LDA INWK+31            \ Copy "on-screen" state from INWK to player1Visible
  STA player1Visible
@@ -56650,7 +56973,7 @@ ENDMACRO
  LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
  STA XX0+1
 
-.dshp4
+.dshp5
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
@@ -57496,19 +57819,19 @@ ENDIF
 
                         \ Set the pointers for player 2's ball line heap
 
- LDA #LO(LSX2r)         \ Set LSX2S to the address of LSX2r, so CIRCLE and BLINE
- STA LSX2S              \ store the right-eye line y-coordinates in LSX2r
- LDA #HI(LSX2r)
+ LDA #LO(LSX2a)         \ Set LSX2S to the address of LSX2a, so CIRCLE and BLINE
+ STA LSX2S              \ store the player 2 line y-coordinates in LSX2a
+ LDA #HI(LSX2a)
  STA LSX2S+1
 
- LDA #LO(LSY2r)         \ Set LSY2S to the address of LSY2r, so CIRCLE and BLINE
- STA LSY2S              \ store the right-eye line y-coordinates in LSY2r
- LDA #HI(LSY2r)
+ LDA #LO(LSY2a)         \ Set LSY2S to the address of LSY2a, so CIRCLE and BLINE
+ STA LSY2S              \ store the player 2 line y-coordinates in LSY2a
+ LDA #HI(LSY2a)
  STA LSY2S+1
 
- LDA #LO(LSPr)          \ Set LSPS to the address of LSPr, so CIRCLE and BLINE
- STA LSPS               \ store the right-eye ball line heap pointer in LSPr
- LDA #HI(LSPr)
+ LDA #LO(LSPa)          \ Set LSPS to the address of LSPa, so CIRCLE and BLINE
+ STA LSPS               \ store the player 2 ball line heap pointer in LSPa
+ LDA #HI(LSPa)
  STA LSPS+1
 
  RTS                    \ Return from the subroutine
@@ -57518,17 +57841,17 @@ ENDIF
                         \ Set the pointers for player 1's ball line heap
 
  LDA #LO(LSX2)          \ Set LSX2S to the address of LSX2, so CIRCLE and BLINE
- STA LSX2S              \ store the left-eye line y-coordinates in LSX2
+ STA LSX2S              \ store the player 1 line y-coordinates in LSX2
  LDA #HI(LSX2)
  STA LSX2S+1
 
  LDA #LO(LSY2)          \ Set LSY2S to the address of LSY2, so CIRCLE and BLINE
- STA LSY2S              \ store the left-eye line y-coordinates in LSY2
+ STA LSY2S              \ store the player 1 line y-coordinates in LSY2
  LDA #HI(LSY2)
  STA LSY2S+1
 
  LDA #LO(LSP)           \ Set LSPS to the address of LSP, so CIRCLE and BLINE
- STA LSPS               \ store the left-eye ball line heap pointer in LSP
+ STA LSPS               \ store the player 1 ball line heap pointer in LSP
  LDA #HI(LSP)
  STA LSPS+1
 
@@ -57552,7 +57875,7 @@ ENDIF
  BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
  BPL rest1
 
- STZ LSPr               \ Reset the ball line heap by setting the ball line heap
+ STZ LSPa               \ Reset the ball line heap by setting the ball line heap
                         \ pointer to 0 for player 2's view
 
  RTS                    \ Return from the subroutine
@@ -57561,6 +57884,54 @@ ENDIF
 
  STZ LSP                \ Reset the ball line heap by setting the ball line heap
                         \ pointer to 0 for player 1's view
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: SetPlayerBallLine
+\       Type: Subroutine
+\   Category: Drawing circles
+\    Summary: Set the pointers to use the correct view (player 1 or 2)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.SetPlayerSunHeap
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to sunh1 to
+ BPL sunh1              \ set up the pointers for player 1's sun line heap
+
+                        \ Set the pointers for player 2's sun line heap
+
+ LDA #LO(LSOa)          \ Set LSOS to the address of LSOa, so SUN stores the
+ STA LSOS               \ sun line heap in LSOa
+ LDA #HI(LSOa)
+ STA LSOS+1
+
+ LDA #LO(SUNXa)         \ Set SUNXS to the address of SUNXa, so SUN stores the
+ STA SUNXS              \ sun centre x-coordinate in SUNXa
+ LDA #HI(SUNXa)
+ STA SUNXS+1
+
+ RTS                    \ Return from the subroutine
+
+.sunh1
+
+                        \ Set the pointers for player 1's sun line heap
+
+ LDA #LO(LSO)           \ Set LSOS to the address of LSO, so SUN stores the
+ STA LSOS               \ sun line heap in LSO
+ LDA #HI(LSO)
+ STA LSOS+1
+
+ LDA #LO(SUNX)          \ Set SUNXS to the address of SUNX, so SUN stores the
+ STA SUNXS              \ sun centre x-coordinate in SUNX
+ LDA #HI(SUNX)
+ STA SUNXS+1
 
  RTS                    \ Return from the subroutine
 
