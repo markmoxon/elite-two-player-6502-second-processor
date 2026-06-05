@@ -3824,6 +3824,10 @@ ENDIF
 
  SKIP 1                 \ Player 2's current pitch rate
 
+.coordinateIndex
+
+ SKIP 1                 \ The coordinate index in Multiply16x24
+
                         \ --- End of added code ------------------------------->
 
  PRINT "WP workspace from ", ~WP, "to ", ~P%-1, "inclusive"
@@ -56622,10 +56626,9 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
                         \                c2 = y
                         \                c3 = z
 
- LDY #v1                \ First do nosev_x * x, so call Multiply8x24 to
- LDX #c1                \ calculate:
- JSR Multiply8x24       \
-                        \   K(3 2 1 0) = nosev_x * x
+ LDY #v1                \ First do nosev_x * x, so calculate:
+ LDX #c1                \ 
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_x * x
                         \
                         \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
 
@@ -56637,19 +56640,18 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  STA XX12+2
 
  BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL over1
+ BPL rotc1
  INC XX12
- BNE over1
+ BNE rotc1
  INC XX12+1
- BNE over1
+ BNE rotc1
  INC XX12+2
 
-.over1
+.rotc1
 
- LDY #v2                \ Next do nosev_y * y, so call Multiply8x24 to
- LDX #c2                \ calculate:
- JSR Multiply8x24       \
-                        \   K(3 2 1 0) = nosev_y * y
+ LDY #v2                \ Next do nosev_y * y, so calculate:
+ LDX #c2                \ 
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_y * y
                         \
                         \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
 
@@ -56661,31 +56663,30 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
  STA XX12+5
 
  BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL over2
+ BPL rotc2
  INC XX12+3
- BNE over2
+ BNE rotc2
  INC XX12+4
- BNE over2
+ BNE rotc2
  INC XX12+5
 
-.over2
+.rotc2
 
- LDY #v3                \ Then do nosev_z * z, so call Multiply8x24 to
- LDX #c3                \ calculate:
- JSR Multiply8x24       \
-                        \   K(3 2 1 0) = nosev_z * z
+ LDY #v3                \ Then do nosev_z * z, so calculate
+ LDX #c3                \
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_z * z
                         \
                         \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
 
  BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL over3
+ BPL rotc3
  INC K+1
- BNE over3
+ BNE rotc3
  INC K+2
- BNE over3
+ BNE rotc3
  INC K+3
 
-.over3
+.rotc3
 
                         \ By this point we have:
                         \
@@ -57079,155 +57080,8 @@ ENDMACRO
 \       Name: Multiply16x24
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: xxx
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-                        \ X = The coordinate to multiply:
-                        \
-                        \   * If X = 0, calculate x
-                        \
-                        \   * If X = 3, calculate y
-                        \
-                        \   * If X = 6, calculate z
-                        \
-                        \ Y = The orientation vector to multiply:
-                        \
-                        \   * If Y = 9,  calculate nosev_x
-                        \            11, calculate nosev_y
-                        \            13, calculate nosev_z
-                        \
-                        \   * If Y = 15, calculate roofv_x
-                        \            17, calculate roofv_y
-                        \            19, calculate roofv_z
-                        \
-                        \   * If Y = 21, calculate sidev_x
-                        \            23, calculate sidev_y
-                        \            25, calculate sidev_z
-                        \
-                        \ Calculate:
-                        \
-                        \   K(3 2 1 0) = orientation vector * coordinate / 96
-                        \
-                        \ So if X = 0 and Y = 9, then we set K(3 2 1 0) to:
-                        \
-                        \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo) / 96
-                        \
-                        \ for example
-
-.Multiply16x24
-
-IF FALSE
-
-                        \ We do the multiplication like this:
-                        \
-                        \     (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
-                        \
-                        \   = sidev_x_hi * (x_sign x_hi x_lo) << 8 +
-                        \     sidev_x_lo * (x_sign x_hi x_lo)
-
- STX cIndex             \ Store coordinate index
-
- STY vIndex             \ Store orientation vector index
-
- LDA INWK,Y             \ Q = sidev_x_lo, shifted right to clear the sign bit
- LSR A                  \ (we discard the lowest bit)
- STA Q
-
- LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
- STA P
- LDA INWK+1,X
- STA P+1
- LDA INWK+2,X
-
- JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
-                        \            = (x_sign x_hi x_lo) * sidev_x_lo
-                        \
-                        \ Y, P and P+1 are unchanged
-
- LDA K                  \ Copy result to XX15(3 2 1 0)
- STA XX15               \
- LDA K+1                \ We will drop the bottom byte in the following
- STA XX15+1
- LDA K+2
- STA XX15+2
- LDA K+3
- STA XX15+3
- 
- LDY vIndex             \ Retrieve orientation vector index
-
- LDA INWK+1,Y           \ Q = sidev_x_hi, which includes the sign bit
- STA Q
-
- LDX cIndex             \ Retrieve coordinate index
-
- LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
- STA P
- LDA INWK+1,X
- STA P+1
- LDA INWK+2,X
-
-\LDA INWK+2,X           \ (A P+1 P) = (x_sign x_hi x_lo)
-
- JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
-                        \            = (x_sign x_hi x_lo) * sidev_x_hi
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
-
- JSR DivideBy96         \ Calculate:
-                        \
-                        \   K(3 2 1 0) = P(2 1 0) / 96
-
- RTS                    \ Return from the subroutine
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: vIndex
-\       Type: Variable
-\   Category: Two-player Elite
-\    Summary: Storage for coordinate offset
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.cIndex
-
- EQUB 0
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: vIndex
-\       Type: Variable
-\   Category: Two-player Elite
-\    Summary: Storage for vector offset
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.vIndex
-
- EQUB 0
-
-ENDIF
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: Multiply8x24
-\       Type: Subroutine
-\   Category: Two-player Elite
-\    Summary: Multiply a coordinate by an orientation vector from ship #2
+\    Summary: Multiply a 24-bit coordinate by a 16-bit orientation vector from
+\             ship #2
 \
 \ ------------------------------------------------------------------------------
 \
@@ -57238,6 +57092,56 @@ ENDIF
 \ So if X = 0 and Y = 9, for example, then we set K(3 2 1 0) to:
 \
 \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
+\
+\ We are multiplying two sign-magnitude numbers, so we multiply the absolute
+\ values of the operands, and only apply the sign at the end.
+\
+\ Specifically, we do this calculation:
+\
+\    |sidev_x_hi sidev_x_lo| * |x_sign x_hi x_lo|
+\
+\    =   |sidev_x_hi| * |x_sign x_hi x_lo|
+\      + |sidev_x_lo| * (x_sign x_hi x_lo) >> 8
+\
+\ and then we apply the sign bit of x_sign EOR sidev_x_hi to the result.
+\ 
+\ We do each multiplication using MULT3, which calculates the following:
+\
+\   K(3 2 1 0) = (A P+1 P) * Q
+\
+\ where both (A P+1 P) and Q are sign-magnitude numbers.
+\
+\ We therefore do the calculation in steps, like this:
+\
+\   1. XX15(3 2 1 0) = |x_sign x_hi x_lo| * |sidev_x_lo >> 1| << 1
+\
+\   2. K(3 2 1 0) = |x_sign x_hi x_lo| * |sidev_x_hi|
+\
+\   3. Round up XX15+1 if bit 7 of XX15 is set
+\
+\   4. Calculate K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+\
+\   5. Apply the sign bit of sidev_x_hi EOR x_sign to the result
+\
+\ Step 1 includes right and left shifts because MULT3 expects sign-magnitude
+\ arguments, but sidev_x_lo doesn't have a sign bit as it is the low byte of the
+\ 16-bit sign-magnitude number (sidev_x_hi sidev_x_lo). So we shift right to
+\ insert a sign bit of zero into bit 7 (thus keeping it positive), do the call
+\ to MULT3, and then shift the result back. We lose some accuracy by ignoring
+\ bit 0 of the orientation vector in this process, but as we don't use the low
+\ byte of the result in XX15+0, this isn't a huge issue.
+\
+\ So in essence, step 1 does this:
+\
+\   XX15(3 2 1 0) = |x_sign x_hi x_lo| * |sidev_x_lo|
+\
+\ which means step 4 does this:
+\
+\   K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+\              =   |x_sign x_hi x_lo| * |sidev_x_hi|
+\                + |x_sign x_hi x_lo| * |sidev_x_lo| >> 8
+\
+\ which is what we want to calculate.
 \
 \ ------------------------------------------------------------------------------
 \
@@ -57275,28 +57179,88 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.Multiply8x24
+.Multiply16x24
 
-                        \ We do the multiplication like this for now, pretending
-                        \ that the low byte is zero:
-                        \
-                        \     (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
-                        \
-                        \   = sidev_x_hi * (x_sign x_hi x_lo) << 8
-                        \
-                        \ We should include the low byte at some stage
+ STX coordinateIndex    \ Store the coordinate index in coordinateIndex so we
+                        \ can retrieve it later
 
- LDA K%+NI%*2+1,Y       \ Q = sidev_x_hi for ship #2, which includes the sign bit
- STA Q
+ LDA K%+NI%*2,Y         \ Q = |sidev_x_lo >> 1| for ship #2
+ LSR A                  \
+ STA Q                  \ We shift right to create a sign bit (which we discard)
 
- LDA INWK+0,X           \ (A P+1 P) = (x_sign x_hi x_lo)
+ LDA INWK+0,X           \ (A P+1 P) = |x_sign x_hi x_lo|
  STA P
  LDA INWK+1,X
  STA P+1
  LDA INWK+2,X
+ AND #%01111111
 
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
-                        \            = (x_sign x_hi x_lo) * sidev_x_hi
+                        \            = |x_sign x_hi x_lo| * |sidev_x_lo >> 1|
+                        \
+                        \ Y, P and P+1 are unchanged
+
+ LDA K                  \ Set XX15(3 2 1 0) = K(3 2 1 0) << 1
+ ASL A                  \
+ STA XX15               \ So XX15(3 2 1 0) = |x_sign x_hi x_lo| * |sidev_x_lo|
+ LDA K+1                \
+ ROL A                  \ We know the sign bit is positive so we can ignore it
+ STA XX15+1
+ LDA K+2
+ ROL A
+ STA XX15+2
+ LDA K+3
+ ROL A
+ STA XX15+3
+
+ BIT XX15               \ Round up the second-lowest byte in XX15+1 as we are
+ BPL mult1              \ going to drop the bottom byte in XX15
+ INC XX15+1
+ BNE mult1
+ INC XX15+2
+ BNE mult1
+ INC XX15+3
+
+.mult1
+
+ LDA K%+NI%*2+1,Y       \ Q = |sidev_x_hi| for ship #2
+ AND #%01111111
+ STA Q
+
+ LDX coordinateIndex    \ Retrieve the coordinate index
+
+ LDA INWK+0,X           \ (A P+1 P) = |x_sign x_hi x_lo|
+ STA P
+ LDA INWK+1,X
+ STA P+1
+ LDA INWK+2,X
+ AND #%01111111
+
+ JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
+                        \            = |x_sign x_hi x_lo| * |sidev_x_hi|
+
+ CLC                    \ Calculate:
+ LDA K                  \
+ ADC XX15+1             \   K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+ STA K
+ LDA K+1
+ ADC XX15+2
+ STA K+1
+ LDA K+2
+ ADC XX15+3
+ STA K+2
+ LDA K+3
+ ADC #0
+ STA K+3
+
+ LDX coordinateIndex    \ Retrieve the coordinate index
+
+ LDA INWK+2,X           \ Calculate the sign of the result:
+ EOR K%+NI%*2+1,Y       \
+ AND #%10000000         \   x_sign EOR sidev_x_hi
+
+ ORA K+3                \ Apply the sign to the result
+ STA K+3
 
  RTS                    \ Return from the subroutine
 
@@ -57413,8 +57377,9 @@ ENDIF
                         \   |K(3 2 1)| - |XX15(3 2 1)|
 
                         \ If we get here then the magnitudes are equal but the
-                        \ signs are different, so the result of the subtraction
-                        \ will be zero, so return that
+                        \ signs are different, so the result of the addition
+                        \ will be zero and we return that value without having
+                        \ to do the calculation
 
  STZ P                  \ Set P(2 1 0) = 0
  STZ P+1
@@ -57451,8 +57416,8 @@ ENDIF
  AND #%01111111
  SBC T
 
-                        \ No need to check for underflow as we know subtraction
-                        \ work
+                        \ There's no need to check for an underflow as we know
+                        \ the subtraction will work
 
  ORA S                  \ Apply correct sign to result
 
@@ -57489,8 +57454,8 @@ ENDIF
  AND #%01111111
  SBC T
 
-                        \ No need to check for underflow as we know subtraction
-                        \ work
+                        \ There's no need to check for an underflow as we know
+                        \ the subtraction will work
 
  ORA S                  \ Apply correct sign to result
 
