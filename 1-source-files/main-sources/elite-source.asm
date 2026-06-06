@@ -28398,6 +28398,17 @@ ENDIF
                         \ from the screen, returning from the subroutine using
                         \ a tail call
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA K4                 \ We know that the planet's radius is 19 pixels (as it
+ CMP #Y/2-20            \ is a fixed size), so we can add an extra check to
+ BCC PL2                \ make sure the centre of the planet is within the
+ CMP #Y+Y/2+20          \ height of the player's view and, say, 20 pixels either
+ BCS PL2                \ side, and if it isn't jump to PL2 to remove it from
+                        \ the screen
+
+                        \ --- End of added code ------------------------------->
+
  LDA #96                \ Set (A P+1 P) = (0 96 0) = 24576
  STA P+1                \
  LDA #0                 \ This represents the planet/sun's radius at a distance
