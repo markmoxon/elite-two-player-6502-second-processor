@@ -28294,7 +28294,7 @@ ENDIF
 
  TXA                    \ And then the high bytes. #Y is the y-coordinate of
  ADC #0                 \ the centre of the space view, so this converts the
- STA K4+1               \ space x-coordinate into a screen y-coordinate
+ STA K4+1               \ space y-coordinate into a screen y-coordinate
 
  CLC                    \ Clear the C flag to indicate success
 
@@ -29310,6 +29310,19 @@ ENDIF
 
  JSR SetPlayerSunHeap   \ Set up the sun line heap pointers for the current
                         \ player
+
+ BIT splitScreen        \ Skip the following if split screen is disabled
+ BPL dsun1
+
+ LDA K4                 \ Move the sun into the top half of the screen by moving
+ SEC                    \ it up by a quarter screen:
+ SBC #Y/2               \
+ STA K4                 \   K4(1 0) = K4(1 0) - #Y/2
+ LDA K4+1
+ SBC #0
+ STA K4+1
+
+.dsun1
 
                         \ --- End of added code ------------------------------->
 
