@@ -56823,6 +56823,71 @@ ENDMACRO
 
 .dshp1
 
+ LDX XSAV               \ If this isn't the planet or sun, jump to dshp4 to skip
+ CPX #2                 \ the following planet/sun-specific code
+ BCS dshp4
+
+ LDA INWK+5             \ If the planet/sun is within |y_sign| < 2 then it is
+ AND #%01111111         \ close to the player's view, so apply player 2's
+ CMP #2                 \ movement to the current position of the planet by
+ BCC dshp3              \ jumping to dshp3 (to prevent it jumping back onto the
+                        \ screen when we start using the correct position again)
+
+ CPX #1                 \ If we are drawing the sun, jump to dshp2
+ BEQ dshp2
+
+ LDA LSX2a              \ If LSX2a is non-zero then the ball line heap for
+ BNE dshp4              \ player 2's view is empty, so the planet is not
+                        \ currently visible to player 2, so jump to dshp4 to
+                        \ move the planet to the correct position in space
+
+ BEQ dshp3              \ If we get here then the planet is visible in player
+                        \ 2's view, so instead of calculating its correct
+                        \ position in space (which will make it jump around
+                        \ due to the approximate maths used in rotations), we
+                        \ instead apply player 2's movement to the current
+                        \ position of the planet by jumping to dshp3
+
+.dshp2
+
+ LDA LSXa               \ If LSXa < 0 then the sun line heap for player 2's view
+ BMI dshp4              \ is empty, so the sun is not currently visible to
+                        \ player 2, so jump to dshp4 to move the sun to the
+                        \ correct position in space
+
+.dshp3
+
+                        \ If we get here then the planet/sun is visible in
+                        \ player 2's view, so instead of calculating its correct
+                        \ position in space (which will make it jump around
+                        \ due to the approximate maths used in rotations), we
+                        \ instead apply player 2's movement to the current
+                        \ position of the planet/sun
+
+ LDA XSAV               \ Fetch the ship data for the planet/sun from slot #10
+ CLC                    \ or #11, which contains the coordinates for player 2's
+ ADC #10                \ view
+ TAX
+ JSR GetShipDataToINWK
+
+ JSR SaveShipMovement   \ Switch to player 2's movement data
+ JSR GetPlayer2Movement
+
+ LDA #&60               \ Change the JMP at the end of MV40 to an RTS so it
+ STA Checksum-3         \ returns here rather than jumpint into MVEIT
+
+ JSR MV40               \ Rotate the planet/sun by player 2's alpha and beta
+
+ LDA #&4C               \ Change the end of MV40 back to a JMP instruction
+ STA Checksum-3
+
+ JSR LoadShipMovement   \ Switch back to the previous movement data
+
+ JMP dshp6              \ Jump to dshp6 to draw the planet/sun and save the new
+                        \ position to slot #10 or #11
+
+.dshp4
+
  LDX XSAV               \ Refetch the current ship data so that it's the correct
  JSR GetShipDataToINWK  \ way around for the following calculation, even if
                         \ player 1 has changed view (so this reverts any PLUT
@@ -56887,9 +56952,9 @@ ENDMACRO
 
                         \ Step 1: negate [x y z] (if this is player 2's ship)
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp2 to skip
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp5 to skip
  CMP #2                 \ the negation
- BNE dshp2
+ BNE dshp5
 
  LDA INWK+2             \ Negate x_sign
  EOR #%10000000
@@ -56903,7 +56968,7 @@ ENDMACRO
  EOR #%10000000
  STA INWK+8
 
-.dshp2
+.dshp5
                         \ Step 2: Rotate x-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \ x = [ sidev_x sidev_y sidev_z ] . [ x y z ]
@@ -56946,9 +57011,9 @@ ENDMACRO
 
  JSR SCAN               \ Draw the ship on the scanner
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp4 to skip
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
  CMP #2                 \ the transpose and ship setup
- BNE dshp3
+ BNE dshp6
 
  JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
 
@@ -56975,27 +57040,25 @@ ENDMACRO
  LDA player1Visible     \ Copy "on-screen" state from player1Visible to INWK
  STA INWK+31
 
-.dshp3
+.dshp6
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
 
- LDA XSAV               \ Set INF(1 0) to slot #10 + XSAV
+ LDA XSAV               \ Save the new coordinates into slot #10 + XSAV
  CLC
  ADC #10
  TAX
- JSR GINF
-
- JSR STORE              \ Save the new coordinates in slot #10 + XSAV
+ JSR SaveShipDataInSlot 
 
  LDX player2View        \ Rotate everything into the correct view
  JSR PLUT+3
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp4 to skip
+ LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
  CMP #2                 \ the ship setup
- BNE dshp5
+ BNE dshp7
 
  LDA INWK+31            \ Copy "on-screen" state from INWK to player1Visible
  STA player1Visible
@@ -57008,7 +57071,7 @@ ENDMACRO
  LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
  STA XX0+1
 
-.dshp5
+.dshp7
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
@@ -57625,6 +57688,27 @@ ENDMACRO
 
 \ ******************************************************************************
 \
+\       Name: SaveShipDataInSlot
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Save the ship data in INWK into slot #X
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.SaveShipDataInSlot
+
+ JSR GINF               \ Call GINF to fetch the address of the ship data block
+                        \ for slot X
+
+ JMP STORE              \ Copy the data to INF(1 0) and return from the
+                        \ subroutine using a tail call
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: SaveShipMovement
 \       Type: Subroutine
 \   Category: Two-player Elite
@@ -57668,7 +57752,7 @@ ENDMACRO
 \       Name: LoadShipMovement
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: Save current ship movement data
+\    Summary: Restore current ship movement data
 \
 \ ******************************************************************************
 
