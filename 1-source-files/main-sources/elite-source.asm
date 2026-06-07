@@ -56906,13 +56906,18 @@ ENDMACRO
  JSR SaveShipMovement   \ Switch to player 2's movement data
  JSR GetPlayer2Movement
 
- LDA #&60               \ Change the JMP at the end of MV40 to an RTS so it
- STA Checksum-3         \ returns here rather than jumpint into MVEIT
+ LDA #&60               \ Change the first instruction in part 9 of MVEIT to an
+ STA MV5                \ RTS to the following call to MV40 will run MV40 and
+                        \ parts 6 to 8 of MVEIT before returning here (so we
+                        \ apply player 2's movement to the planet/sun as well as
+                        \ rotating the planet's orientation vectors to make it
+                        \ spin)
 
- JSR MV40               \ Rotate the planet/sun by player 2's alpha and beta
+ JSR MV40               \ Rotate the planet/sun by player 2's alpha and beta and
+                        \ make the planet spin
 
- LDA #&4C               \ Change the end of MV40 back to a JMP instruction
- STA Checksum-3
+ LDA #&A5               \ Change the first instruction in part 9 of MVEIT back
+ STA MV5                \ to an LDA instruction
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
