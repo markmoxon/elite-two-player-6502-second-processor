@@ -43735,15 +43735,48 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If this is ship slot #2 (player 2's ship)
- CMP #2
- BNE move1
+ LDA XSAV               \ If this is not the planet, jump to move1 to keep
+ BNE move1              \ checking
 
- LDA #%00001000         \ If player 1 is visible in player 2's view, skip the
- BIT player1Visible     \ following instruction to avoid making the ship jump
- BNE P%+5
+                        \ If we get here then this is the planet
+
+ LDA LSX2a              \ If LSX2a is non-zero then the ball line heap for
+ BNE move3              \ player 2's view is empty, so the planet is not
+                        \ currently visible to player 2, so jump to move3 to
+                        \ tidy the planet
+
+ BEQ MV3                \ Otherwise the planet is visible in player 2's view,
+                        \ so jump to MV3 to skip tidying it, as otherwise it
+                        \ will jump around in player 2's view
 
 .move1
+
+ CMP #1                 \ If this is not the planet, jump to move2 to keep
+ BNE move2              \ checking
+
+                        \ If we get here then this is the sun
+
+ LDA LSXa               \ If LSXa < 0 then the sun line heap for player 2's view
+ BMI move3              \ is empty, so the sun is not currently visible to
+                        \ player 2, so jump to move3 to tidy the sun
+
+ BPL MV3                \ Otherwise the sun is visible in player 2's view,
+                        \ so jump to MV3 to skip tidying it, as otherwise it
+                        \ will jump around in player 2's view
+
+.move2
+
+ CMP #2                 \ If this is not player 2's ship, jump to move3 to tidy
+ BNE move3              \ the ship
+
+                        \ If we get here then this is player 2's ship
+
+ LDA #%00001000         \ If player 1 is visible in player 2's view, jump to
+ BIT player1Visible     \ MV3 to skip tidying it, to avoid making the ship jump
+ BNE MV3                \ around (as tidying player 2's ship will make player
+                        \ 2's view jump around)
+
+.move3
                         \ --- End of added code ------------------------------->
 
  JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
@@ -43843,27 +43876,27 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  BIT splitScreen        \ Skip the following if split screen is disabled
- BPL move3
+ BPL move5
 
  LDA XSAV               \ If we are moving player 2's ship
  CMP #2
- BNE move3
+ BNE move5
 
- BIT player2HasAI       \ If player 2 is an NPC then jump to move2
- BMI move2
+ BIT player2HasAI       \ If player 2 is an NPC then jump to move4
+ BMI move4
 
  LDA player2Delta       \ Set the speed for player 2's ship to player 2's speed
  STA INWK+27
 
- BPL move3              \ Jump to move3 to skip the following (this BPL is
+ BPL move5              \ Jump to move5 to skip the following (this BPL is
                         \ effectively a JMP as we just passed through a BMI)
 
-.move2
+.move4
 
  LDA INWK+27            \ Player 2 is an NPC so set player2Delta to the NPC's
  STA player2Delta       \ speed so the stardust field gets drawn correctly
 
-.move3
+.move5
 
                         \ --- End of added code ------------------------------->
 
@@ -44227,7 +44260,7 @@ ENDIF
                         \ is the sun and doesn't need any of the following
 
  CMP #128               \ If the ship type is 128 or 130, then this is the
- BEQ move4              \ planet, so skip the following so we don't apply player
+ BEQ move6              \ planet, so skip the following so we don't apply player
                         \ 1's speed to the planet's coordinate, but instead move
                         \ on to the pitch and roll (as we still want the planet
                         \ to rotate)
@@ -44259,7 +44292,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
-.move4
+.move6
 
                         \ --- End of replacement ------------------------------>
 
@@ -44316,14 +44349,14 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  BIT splitScreen        \ Skip the following if split screen is disabled
- BPL move6
+ BPL move8
 
- LDA XSAV               \ If we are not moving player 2's ship, jump to move6 to
+ LDA XSAV               \ If we are not moving player 2's ship, jump to move8 to
  CMP #2                 \ skip the following
- BNE move6
+ BNE move8
 
- BIT player2HasAI       \ If player 2 is an NPC, jump to move5 to prepare player
- BMI move5              \ 2's angles for any pitch counter rotations
+ BIT player2HasAI       \ If player 2 is an NPC, jump to move7 to prepare player
+ BMI move7              \ 2's angles for any pitch counter rotations
 
                         \ If we get here then we are moving player 2's ship and
                         \ player 2 is human-controlled, so we need to rotate the
@@ -44367,7 +44400,7 @@ ENDIF
 
  JMP MV5                \ Skip the following as this only applies to NPC ships
 
-.move5
+.move7
 
                         \ If we get here then we are moving player 2's ship and
                         \ player 2 is an NPC
@@ -44382,7 +44415,7 @@ ENDIF
  STA player2Alp2+1
  STA player2Bet2+1
 
-.move6
+.move8
 
                         \ --- End of added code ------------------------------->
 
@@ -57049,7 +57082,7 @@ ENDMACRO
  CLC
  ADC #10
  TAX
- JSR SaveShipDataInSlot 
+ JSR SaveShipDataInSlot
 
  LDX player2View        \ Rotate everything into the correct view
  JSR PLUT+3
