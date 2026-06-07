@@ -43747,6 +43747,9 @@ ENDIF
                         \ --- End of added code ------------------------------->
 
  JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
+                        \ prevent the ship from getting elongated and out of
+                        \ shape due to the imprecise nature of trigonometry
+                        \ in assembly language
 
 \ ******************************************************************************
 \
@@ -43977,7 +43980,14 @@ ENDIF
 \ This routine has multiple stages. This stage does the following:
 \
 \   * Rotate the ship's location in space by the amount of pitch and roll of
-\     our ship. See below for a deeper explanation of this routine
+\     our ship
+\
+\ We implement this as follows:
+\
+\   1. K2 = y - alpha * x
+\   2. z = z + beta * K2
+\   3. y = K2 - beta * z
+\   4. x = x + alpha * y
 \
 \ ******************************************************************************
 
