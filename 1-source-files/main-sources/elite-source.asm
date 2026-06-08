@@ -5470,6 +5470,10 @@ ENDIF
 
  JSR Player2LASLI       \ Call LASLI to draw the laser lines
 
+ LDA K%+NI%*2+31        \ Set bit 6 of player 2's INWK+31 byte in slot #2 so we
+ ORA #%001000000        \ draw a laser line for player 2
+ STA K%+NI%*2+31
+
  PLA                    \ Restore the current view's laser power into A
 
  BPL ma1                \ If the laser power has bit 7 set, then it's an "always
@@ -5527,6 +5531,10 @@ ENDIF
  JSR NOISE              \ of our laser firing
 
  JSR LASLI              \ Call LASLI to draw the laser lines
+
+ LDA player1INWK31      \ Set bit 6 of player 1's INWK+31 byte so we draw a
+ ORA #%001000000        \ laser line for player 1
+ STA player1INWK31
 
  PLA                    \ Restore the current view's laser power into A
 
@@ -33675,6 +33683,12 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 {
+
+ LDX player2GNTMP       \ If the laser temperature in GNTMP is non-zero,
+ BEQ EE20               \ decrement it (i.e. cool it down a bit)
+ DEC player2GNTMP
+
+.EE20
 
  LDX player2LASCT       \ Set X to the value of LASCT, the laser pulse count
 
