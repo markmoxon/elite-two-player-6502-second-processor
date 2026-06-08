@@ -33902,31 +33902,35 @@ ENDIF
  BNE P%+5               \ Status Mode screen, returning from the subroutine
  JMP STATUS             \ using a tail call
 
- CMP #f4                \ If red key f4 was pressed, jump to TT22 to show the
- BNE P%+5               \ Long-range Chart, returning from the subroutine using
- JMP TT22               \ a tail call
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP #f5                \ If red key f5 was pressed, jump to TT23 to show the
- BNE P%+5               \ Short-range Chart, returning from the subroutine using
- JMP TT23               \ a tail call
+\CMP #f4                \ If red key f4 was pressed, jump to TT22 to show the
+\BNE P%+5               \ Long-range Chart, returning from the subroutine using
+\JMP TT22               \ a tail call
+\
+\CMP #f5                \ If red key f5 was pressed, jump to TT23 to show the
+\BNE P%+5               \ Short-range Chart, returning from the subroutine using
+\JMP TT23               \ a tail call
+\
+\CMP #f6                \ If red key f6 was pressed, call TT111 to select the
+\BNE TT92               \ system nearest to galactic coordinates (QQ9, QQ10)
+\JSR TT111              \ (the location of the chart crosshairs) and set ZZ to
+\JMP TT25               \ the system number, and then jump to TT25 to show the
+\                       \ Data on System screen (along with an extended system
+\                       \ description for the system in ZZ if we're docked),
+\                       \ returning from the subroutine using a tail call
+\
+\.TT92
+\
+\CMP #f9                \ If red key f9 was pressed, jump to TT213 to show the
+\BNE P%+5               \ Inventory screen, returning from the subroutine
+\JMP TT213              \ using a tail call
+\
+\CMP #f7                \ If red key f7 was pressed, jump to TT167 to show the
+\BNE P%+5               \ Market Price screen, returning from the subroutine
+\JMP TT167              \ using a tail call
 
- CMP #f6                \ If red key f6 was pressed, call TT111 to select the
- BNE TT92               \ system nearest to galactic coordinates (QQ9, QQ10)
- JSR TT111              \ (the location of the chart crosshairs) and set ZZ to
- JMP TT25               \ the system number, and then jump to TT25 to show the
-                        \ Data on System screen (along with an extended system
-                        \ description for the system in ZZ if we're docked),
-                        \ returning from the subroutine using a tail call
-
-.TT92
-
- CMP #f9                \ If red key f9 was pressed, jump to TT213 to show the
- BNE P%+5               \ Inventory screen, returning from the subroutine
- JMP TT213              \ using a tail call
-
- CMP #f7                \ If red key f7 was pressed, jump to TT167 to show the
- BNE P%+5               \ Market Price screen, returning from the subroutine
- JMP TT167              \ using a tail call
+                        \ --- End of removed code ----------------------------->
 
  CMP #f0                \ If red key f0 was pressed, jump to TT110 to launch our
  BNE fvw                \ ship (if docked), returning from the subroutine using
@@ -33938,32 +33942,40 @@ ENDIF
  BPL INSP               \ in space), jump to INSP to skip the following checks
                         \ for f1-f3 and "@" (save commander file) key presses
 
- CMP #f3                \ If red key f3 was pressed, jump to EQSHP to show the
- BNE P%+5               \ Equip Ship screen, returning from the subroutine using
- JMP EQSHP              \ a tail call
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP #f1                \ If red key f1 was pressed, jump to TT219 to show the
- BNE P%+5               \ Buy Cargo screen, returning from the subroutine using
- JMP TT219              \ a tail call
+\CMP #f3                \ If red key f3 was pressed, jump to EQSHP to show the
+\BNE P%+5               \ Equip Ship screen, returning from the subroutine using
+\JMP EQSHP              \ a tail call
+\
+\CMP #f1                \ If red key f1 was pressed, jump to TT219 to show the
+\BNE P%+5               \ Buy Cargo screen, returning from the subroutine using
+\JMP TT219              \ a tail call
+\
+\CMP #&47               \ If "@" was not pressed, skip to nosave
+\BNE nosave
+\
+\JSR SVE                \ "@" was pressed, so call SVE to show the disc access
+\                       \ menu
+\
+\BCC P%+5               \ If the C flag was set by SVE, then we loaded a new
+\JMP QU5                \ commander file, so jump to QU5 to restart the game
+\                       \ with the newly loaded commander
+\
+\JMP BAY                \ Otherwise the C flag was clear, so jump to BAY to go
+\                       \ to the docking bay (i.e. show the Status Mode screen)
+\
+\.nosave
+\
+\CMP #f2                \ If red key f2 was pressed, jump to TT208 to show the
+\BNE LABEL_3            \ Sell Cargo screen, returning from the subroutine using
+\JMP TT208              \ a tail call
 
- CMP #&47               \ If "@" was not pressed, skip to nosave
- BNE nosave
+                        \ --- And replaced by: -------------------------------->
 
- JSR SVE                \ "@" was pressed, so call SVE to show the disc access
-                        \ menu
+ RTS                    \ Return from the subroutine
 
- BCC P%+5               \ If the C flag was set by SVE, then we loaded a new
- JMP QU5                \ commander file, so jump to QU5 to restart the game
-                        \ with the newly loaded commander
-
- JMP BAY                \ Otherwise the C flag was clear, so jump to BAY to go
-                        \ to the docking bay (i.e. show the Status Mode screen)
-
-.nosave
-
- CMP #f2                \ If red key f2 was pressed, jump to TT208 to show the
- BNE LABEL_3            \ Sell Cargo screen, returning from the subroutine using
- JMP TT208              \ a tail call
+                        \ --- End of replacement ------------------------------>
 
 .INSP
 
