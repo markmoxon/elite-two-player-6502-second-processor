@@ -3918,6 +3918,14 @@ ENDIF
 
  SKIP 1                 \ Player 2's player2ASH value
 
+.player1Score
+
+ SKIP 1                 \ Player 1's score
+
+.player2Score
+
+ SKIP 1                 \ Player 2's score
+
 .coordinateIndex
 
  SKIP 1                 \ The coordinate index in Multiply16x24
@@ -6141,29 +6149,41 @@ ENDIF
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
                         \ us making a laser strike on another ship
 
- LDA TYPE               \ Did we just hit the space station? If so, jump to
- CMP #SST               \ MA14+2 to make the station hostile, skipping the
- BEQ MA14+2             \ following as we can't destroy a space station
+ LDX player1Score       \ Print player 2's score to remove it from the screen
+ JSR ee3
 
- CMP #CON               \ If the ship we hit is less than #CON - i.e. it's not
- BCC BURN               \ a Constrictor, Cougar, Dodo station or the Elite logo,
-                        \ jump to BURN to skip the following
+ INC player1Score       \ Increment player 2's score
 
- LDA LAS                \ Set A to the power of the laser we just used to hit
-                        \ the ship (i.e. the laser in the current view)
+ LDX player1Score       \ Print player 2's score
+ JSR ee3
 
- CMP #(Armlas AND 127)  \ If the laser is not a military laser, jump to MA14+2
- BNE MA14+2             \ to skip the following, as only military lasers have
-                        \ any effect on the Constrictor or Cougar (or the Elite
-                        \ logo, should you ever bump into one of those out there
-                        \ in the black...)
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LSR LAS                \ Divide the laser power of the current view by 4, so
- LSR LAS                \ the damage inflicted on the super-ship is a quarter of
-                        \ the damage our military lasers would inflict on a
-                        \ normal ship
+\LDA TYPE               \ Did we just hit the space station? If so, jump to
+\CMP #SST               \ MA14+2 to make the station hostile, skipping the
+\BEQ MA14+2             \ following as we can't destroy a space station
+\
+\CMP #CON               \ If the ship we hit is less than #CON - i.e. it's not
+\BCC BURN               \ a Constrictor, Cougar, Dodo station or the Elite logo,
+\                       \ jump to BURN to skip the following
+\
+\LDA LAS                \ Set A to the power of the laser we just used to hit
+\                       \ the ship (i.e. the laser in the current view)
+\
+\CMP #(Armlas AND 127)  \ If the laser is not a military laser, jump to MA14+2
+\BNE MA14+2             \ to skip the following, as only military lasers have
+\                       \ any effect on the Constrictor or Cougar (or the Elite
+\                       \ logo, should you ever bump into one of those out there
+\                       \ in the black...)
+\
+\LSR LAS                \ Divide the laser power of the current view by 4, so
+\LSR LAS                \ the damage inflicted on the super-ship is a quarter of
+\                       \ the damage our military lasers would inflict on a
+\                       \ normal ship
+\
+\.BURN
 
-.BURN
+                        \ --- End of removed code ----------------------------->
 
  LDA INWK+35            \ Fetch the hit ship's energy from byte #35 and subtract
  SEC                    \ our current laser power, and if the result is greater
@@ -23497,6 +23517,42 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2ee3
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Print the hyperspace countdown in the top-left of the screen
+\
+\ ------------------------------------------------------------------------------
+\
+\ Print the 8-bit number in X at text location (1, 1). Print the number to
+\ 5 digits, left-padding with spaces for numbers with fewer than 3 digits (so
+\ numbers < 10000 are right-aligned), with no decimal point.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The number to print
+\
+\ ******************************************************************************
+
+.Player2ee3
+
+ LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
+ JSR DOCOL              \ switch to colour 2, which is red in the space view
+
+ LDA #26                 \ Move the text cursor to column 26 on row 13
+ JSR DOXC
+ LDA #13
+ JSR DOYC
+
+ LDY #0                 \ Set Y = 0 for the high byte in pr6
+
+ BEQ pr6                \ Jump to pr6 to print X to 5 digits, as the high byte
+                        \ in Y is 0
+
+\ ******************************************************************************
+\
 \       Name: ee3
 \       Type: Subroutine
 \   Category: Flight
@@ -23521,9 +23577,21 @@ ENDIF
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is red in the space view
 
- LDA #1                 \ Move the text cursor to column 1 on row 1
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #1                 \ Move the text cursor to column 1 on row 1
+\JSR DOXC
+\JSR DOYC
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #26                 \ Move the text cursor to column 26 on row 1
  JSR DOXC
+ LDA #1
  JSR DOYC
+
+                        \ --- End of replacement ------------------------------>
+
 
  LDY #0                 \ Set Y = 0 for the high byte in pr6
 
@@ -46366,6 +46434,26 @@ ENDIF
  LDA #175               \ Print recursive token 15 ("VIEW ")
  JSR TT27
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc5
+ BPL clsc5
+
+                        \ We are drawing player 2's view, so move the text
+                        \ cursor to the top of the bottom view
+
+ LDX player2Score       \ Print player 2's score
+ JSR Player2ee3
+
+ JMP tt66               \ Skip the following
+
+.clsc5
+
+ LDX player1Score       \ Print player 1's score
+ JSR ee3
+
+                        \ --- End of added code ------------------------------->
+
 .tt66
 
  LDA #1                 \ Move the text cursor to column 1, row 1
@@ -57619,10 +57707,33 @@ ENDMACRO
 
  LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
  CMP #2                 \ the ship setup
- BNE dshp7
+ BNE dshp8
 
  LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31  
  STA player1INWK31  
+
+ LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
+ BEQ dshp7              \ the laser power, so if this is zero, jump down to
+                        \ dshp7 to skip the following
+
+ JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
+ BCC dshp7              \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp7 to skip the
+                        \ following)
+
+ LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
+ JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
+                        \ us making a laser strike on another ship
+
+ LDX player2Score       \ Print player 2's score to remove it from the screen
+ JSR Player2ee3
+
+ INC player2Score       \ Increment player 2's score
+
+ LDX player2Score       \ Print player 2's score
+ JSR Player2ee3
+
+.dshp7
 
  LDA #PLAYER2SHIP       \ Switch back to the ship for player 2
  STA TYPE
@@ -57632,7 +57743,7 @@ ENDMACRO
  LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
  STA XX0+1
 
-.dshp7
+.dshp8
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
