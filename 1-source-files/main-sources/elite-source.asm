@@ -2782,9 +2782,37 @@ ENDIF
                         \
                         \   * Non-zero = yes
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\.KY18
+\
+\SKIP 1                 \ "J" is being pressed (in-system jump)
+\                       \
+\                       \   * 0 = no
+\                       \
+\                       \   * Non-zero = yes
+\
+\.KY19
+\
+\SKIP 1                 \ "C" is being pressed (activate docking computer)
+\                       \
+\                       \   * 0 = no
+\                       \
+\                       \   * Non-zero = yes
+\
+\.KY20
+\
+\SKIP 1                 \ "P" is being pressed (deactivate docking computer)
+\                       \
+\                       \   * 0 = no
+\                       \
+\                       \   * Non-zero = yes
+
+                        \ --- And replaced by: -------------------------------->
+
 .KY18
 
- SKIP 1                 \ "J" is being pressed (in-system jump)
+ SKIP 1                 \ Player 2 fire button is being pressed
                         \
                         \   * 0 = no
                         \
@@ -2792,7 +2820,7 @@ ENDIF
 
 .KY19
 
- SKIP 1                 \ "C" is being pressed (activate docking computer)
+ SKIP 1                 \ RETURN is being pressed (player 2 speed up)
                         \
                         \   * 0 = no
                         \
@@ -2800,11 +2828,13 @@ ENDIF
 
 .KY20
 
- SKIP 1                 \ "P" is being pressed (deactivate docking computer)
+ SKIP 1                 \ "]" is being pressed (player 2 slow down)
                         \
                         \   * 0 = no
                         \
                         \   * Non-zero = yes
+
+                        \ --- End of replacement ------------------------------>
 
 .FRIN
 
@@ -3762,57 +3792,81 @@ ENDIF
                         \
                         \   * Bit 7 set = draw player 2's view (bottom)
 
-.player1Visible
+.player1INWK31  
 
- SKIP 1                 \ Storage for player 1's INWK+31 (visibility) byte for
-                        \ player 2's view
+ SKIP 1                 \ Storage for player 1's INWK+31 byte for in player 2's
+                        \ view
+                        \
+                        \  * Bits 0-2: %nnn = number of missiles
+                        \
+                        \  * Bit 3: 0 = isn't currently being drawn on-screen
+                        \           1 = is currently being drawn on-screen
+                        \
+                        \  * Bit 4: 0 = don't show on scanner
+                        \           1 = do show on scanner
+                        \
+                        \  * Bit 5: 0 = ship is not exploding
+                        \           1 = ship is exploding
+                        \
+                        \  * Bit 6: 0 = ship is not firing lasers
+                        \           1 = ship is firing lasers
+                        \           0 = explosion has not been drawn
+                        \           1 = explosion has been drawn
+                        \
+                        \  * Bit 7: 0 = ship has not been killed
+                        \           1 = ship has been killed 
 
-.player2HasAI
+.player2INWK32
 
  SKIP 1                 \ Storage for player 2's INWK+32 (AI) byte, which
                         \ determines whether player 2 is an NPC:
                         \
-                        \   * Bit 7 clear = player 2 is a human
+                        \  * Bit 0: 0 = no E.C.M.
+                        \           1 = has E.C.M.
                         \
-                        \   * Bit 7 set = player 2 is an NPC with tactics AI
+                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
+                        \                        (see TACTICS part 7)
+                        \
+                        \  * Bit 7: 0 = dumb
+                        \           1 = AI enabled (apply TACTICS to ship)
 
 .player2NEWB
 
  SKIP 1                 \ Storage for player 2's NEWB byte
 
-.player2View
+.player2VIEW
 
  SKIP 1                 \ Storage for player 2's VIEW setting
 
-.player2Alpha
+.player2ALPHA
 
  SKIP 1                 \ Storage for player 2's ALPHA setting
 
-.player2Alp1
+.player2ALP1
 
  SKIP 1                 \ Storage for player 2's ALP1 setting
 
-.player2Alp2
+.player2ALP2
 
  SKIP 2                 \ Storage for player 2's ALP2 and APL2+1 settings
 
-.player2Beta
+.player2BETA
 
  SKIP 1                 \ Storage for player 2's BETA setting
 
-.player2Bet1
+.player2BET1
 
  SKIP 1                 \ Storage for player 2's BET1 setting
 
-.player2Bet2
+.player2BET2
 
  SKIP 2                 \ Storage for player 2's BET2 and BET2+1 settings
 
-.player2Delta
+.player2DELTA
 
  SKIP 1                 \ Storage for player 2's DELTA setting
 
-.player2Delt4
+.player2DELT4
 
  SKIP 2                 \ Storage for player 2's DELT4(1 0) setting
 
@@ -3823,6 +3877,46 @@ ENDIF
 .player2JSTY
 
  SKIP 1                 \ Player 2's current pitch rate
+
+.player2LASER
+
+ SKIP 4                 \ Player 2's fitted lasers
+
+.player2LAS
+
+ SKIP 1                 \ Player 2's LAS value
+
+.player2LAS2
+
+ SKIP 1                 \ Player 2's LAS2 value
+
+.player2LASX
+
+ SKIP 1                 \ Player 2's LASX value
+
+.player2LASY
+
+ SKIP 1                 \ Player 2's LASY value
+
+.player2LASCT
+
+ SKIP 1                 \ Player 2's LASCT value
+
+.player2GNTMP
+
+ SKIP 1                 \ Player 2's GNTMP value
+
+.player2ENERGY
+
+ SKIP 1                 \ Player 2's ENERGY value
+
+.player2FSH
+
+ SKIP 1                 \ Player 2's player2FSH value
+
+.player2ASH
+
+ SKIP 1                 \ Player 2's player2ASH value
 
 .coordinateIndex
 
@@ -4944,7 +5038,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT player2HasAI       \ If player 2 is an NPC then skip the joystick reading
+ BIT player2INWK32      \ If player 2 is an NPC then skip the joystick reading
  BMI BS2
 
  LDX player2JSTX        \ Set X to the current rate of roll in JSTX
@@ -4965,13 +5059,13 @@ ENDIF
  TAY
 
  AND #%10000000         \ Extract the flipped sign of the roll rate and store
- STA player2Alp2        \ in ALP2 (so ALP2 contains the sign of the roll angle
+ STA player2ALP2        \ in ALP2 (so ALP2 contains the sign of the roll angle
                         \ alpha)
 
  STX player2JSTX        \ Update JSTX with the damped value that's still in X
 
  EOR #%10000000         \ Extract the correct sign of the roll rate and store
- STA player2Alp2+1      \ in ALP2+1 (so ALP2+1 contains the flipped sign of the
+ STA player2ALP2+1      \ in ALP2+1 (so ALP2+1 contains the flipped sign of the
                         \ roll angle alpha)
 
  TYA                    \ Set A to the roll rate but with the sign bit flipped
@@ -4991,7 +5085,7 @@ ENDIF
 
  LSR A                  \ A < 8, so halve A again
 
- STA player2Alp1        \ Store A in ALP1, so we now have:
+ STA player2ALP1        \ Store A in ALP1, so we now have:
                         \
                         \   ALP1 = |JSTX| / 8    if |JSTX| < 32
                         \
@@ -5005,8 +5099,8 @@ ENDIF
                         \ Because JSTX is in the range -127 to +127, ALP1 is
                         \ in the range 0 to 31
 
- ORA player2Alp2        \ Store A in ALPHA, but with the sign set to ALP2 (so
- STA player2Alpha       \ ALPHA has a different sign to the actual roll rate)
+ ORA player2ALP2        \ Store A in ALPHA, but with the sign set to ALP2 (so
+ STA player2ALPHA       \ ALPHA has a different sign to the actual roll rate)
 
  LDX player2JSTY        \ Set X to the current rate of pitch in JSTY
 
@@ -5021,10 +5115,10 @@ ENDIF
 
  STX player2JSTY        \ Update JSTY with the damped value that's still in X
 
- STA player2Bet2+1      \ Store the flipped sign of the pitch rate in BET2+1
+ STA player2BET2+1      \ Store the flipped sign of the pitch rate in BET2+1
 
  EOR #%10000000         \ Extract the correct sign of the pitch rate and store
- STA player2Bet2        \ it in BET2
+ STA player2BET2        \ it in BET2
 
  TYA                    \ Set A to the pitch rate but with the sign bit flipped
 
@@ -5046,7 +5140,7 @@ ENDIF
 
  LSR A                  \ A < 3, so halve A again
 
- STA player2Bet1        \ Store A in BET1, so we now have:
+ STA player2BET1        \ Store A in BET1, so we now have:
                         \
                         \   BET1 = |JSTY| / 32    if |JSTY| < 48
                         \
@@ -5060,8 +5154,8 @@ ENDIF
                         \ Because JSTY is in the range -131 to +131, BET1 is in
                         \ the range 0 to 8
 
- ORA player2Bet2        \ Store A in BETA, but with the sign set to BET2 (so
- STA player2Beta        \ BETA has the same sign as the actual pitch rate)
+ ORA player2BET2        \ Store A in BETA, but with the sign set to BET2 (so
+ STA player2BETA        \ BETA has the same sign as the actual pitch rate)
 
                         \ --- End of added code ------------------------------->
 
@@ -5158,12 +5252,12 @@ ENDIF
  LDA KY19               \ If RETURN is being pressed, keep going, otherwise jump
  BEQ MA17               \ down to MA17 to skip the following
 
- LDA player2Delta       \ The "go faster" key is being pressed, so first we
+ LDA player2DELTA       \ The "go faster" key is being pressed, so first we
  CMP #40                \ fetch the current speed from DELTA into A, and if
  BCS MA17               \ A >= 40, we are already going at full pelt, so jump
                         \ down to MA17 to skip the following
 
- INC player2Delta       \ We can go a bit faster, so increment the speed in
+ INC player2DELTA       \ We can go a bit faster, so increment the speed in
                         \ location DELTA
 
 .MA17
@@ -5171,12 +5265,12 @@ ENDIF
  LDA KY20               \ If "]" is being pressed, keep going, otherwise jump
  BEQ MA4                \ down to MA4 to skip the following
 
- DEC player2Delta       \ The "slow down" key is being pressed, so we decrement
+ DEC player2DELTA       \ The "slow down" key is being pressed, so we decrement
                         \ the current ship speed in DELTA
 
  BNE MA4                \ If the speed is still greater than zero, jump to MA4
 
- INC player2Delta       \ Otherwise we just braked a little too hard, so bump
+ INC player2DELTA       \ Otherwise we just braked a little too hard, so bump
                         \ the speed back up to the minimum value of 1
 
 .MA4
@@ -5326,6 +5420,80 @@ ENDIF
  LSR A                  \ current speed * 64 in the 16-bit location DELT4(1 0)
  ROR DELT4
  STA DELT4+1
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA #0                 \ Set LAS = 0, to switch the laser off while we do the
+ STA player2LAS         \ following logic
+
+ STA player2DELT4       \ Take the 16-bit value (DELTA 0) - i.e. a two-byte
+ LDA player2DELTA       \ number with DELTA as the high byte and 0 as the low
+ LSR A                  \ byte - and divide it by 4, storing the 16-bit result
+ ROR player2DELT4       \ in DELT4(1 0). This has the effect of storing the
+ LSR A                  \ current speed * 64 in the 16-bit location DELT4(1 0)
+ ROR player2DELT4
+ STA player2DELT4+1
+
+ LDA player2LASCT       \ If LASCT is zero, keep going, otherwise the laser is
+ BNE MA3                \ a pulse laser that is between pulses, so jump down to
+                        \ MA3 to skip the following
+
+ LDA KY18               \ If the player 2 fire button is being pressed, keep
+ BEQ MA3                \ going, otherwise jump down to MA3 to skip the
+                        \ following
+
+ LDA player2GNTMP       \ If the laser temperature >= 242 then the laser has
+ CMP #242               \ overheated, so jump down to MA3 to skip the following
+ BCS MA3
+
+ LDX player2VIEW        \ If the current space view has a laser fitted (i.e. the
+ LDA player2LASER,X     \ laser power for this view is greater than zero), then
+ BEQ MA3                \ keep going, otherwise jump down to MA3 to skip the
+                        \ following
+
+                        \ If we get here, then the "fire" button is being
+                        \ pressed, our laser hasn't overheated and isn't already
+                        \ being fired, and we actually have a laser fitted to
+                        \ the current space view, so it's time to hit me with
+                        \ those laser beams
+
+ PHA                    \ Store the current view's laser power on the stack
+
+ AND #%01111111         \ Set LAS and LAS2 to bits 0-6 of the laser power
+ STA player2LAS
+ STA player2LAS2
+
+ LDA #0                 \ Call the NOISE routine with A = 0 to make the sound
+ JSR NOISE              \ of our laser firing
+
+ JSR Player2LASLI       \ Call LASLI to draw the laser lines
+
+ PLA                    \ Restore the current view's laser power into A
+
+ BPL ma1                \ If the laser power has bit 7 set, then it's an "always
+                        \ on" laser rather than a pulsing laser, so keep going,
+                        \ otherwise jump down to ma1 to skip the following
+                        \ instruction
+
+ LDA #0                 \ This is an "always on" laser (i.e. a beam laser or a
+                        \ military laser), so set A = 0, which will be stored in
+                        \ LASCT to denote that this is not a pulsing laser
+
+.ma1
+
+ AND #%11111010         \ LASCT will be set to 0 for beam lasers, and to the
+ STA player2LASCT       \ laser power AND %11111010 for pulse lasers, which
+                        \ comes to 10 for pulse lasers (as pulse lasers have a
+                        \ power of 15) or 50 for mining lasers (as mining
+                        \ lasers hava a power of 50). See MA23 in part 16 for
+                        \ more on laser pulsing and LASCT
+
+.MA3
+
+}
+                        \ --- End of added code ------------------------------->
 
  LDA LASCT              \ If LASCT is zero, keep going, otherwise the laser is
  BNE MA3                \ a pulse laser that is between pulses, so jump down to
@@ -6222,6 +6390,19 @@ ENDIF
  JSR SHD                \ the shield status in FSH
  STX FSH
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX player2ASH         \ Call SHD to recharge our aft shield and update the
+ JSR Player2SHD         \ shield status in ASH
+ STX player2ASH
+
+ LDX player2FSH         \ Call SHD to recharge our forward shield and update
+ JSR Player2SHD         \ the shield status in FSH
+ STX player2FSH
+
+                        \ --- End of added code ------------------------------->
+
+
 .b
 
  SEC                    \ Set A = ENERGY + ENGY + 1, so our ship's energy
@@ -6672,6 +6853,45 @@ ENDIF
                         \ effect if this is a beam laser)
 
 .MA16
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA player2LAS2        \ If the current view has no laser, jump to MA16 to skip
+ BEQ MA16               \ the following
+
+ LDA player2LASCT       \ If LASCT >= 8, jump to MA16 to skip the following, so
+ CMP #8                 \ for a pulse laser with a LASCT between 8 and 10, the
+ BCS MA16               \ laser stays on, but for a LASCT of 7 or less it gets
+                        \ turned off and stays off until LASCT reaches zero and
+                        \ the next pulse can start (if the fire button is still
+                        \ being pressed)
+                        \
+                        \ For pulse lasers, LASCT gets set to 10 in ma1 above,
+                        \ and it decrements every vertical sync (50 times a
+                        \ second), so this means it pulses five times a second,
+                        \ with the laser being on for the first 3/10 of each
+                        \ pulse and off for the rest of the pulse
+                        \
+                        \ If this is a beam laser, LASCT is 0 so we always keep
+                        \ going here. This means the laser doesn't pulse, but it
+                        \ does get drawn and removed every cycle, in a slightly
+                        \ different place each time, so the beams still flicker
+                        \ around the screen
+
+ JSR Player2LASLI2      \ Redraw the existing laser lines, which has the effect
+                        \ of removing them from the screen
+
+ LDA #0                 \ Set LAS2 to 0 so if this is a pulse laser, it will
+ STA player2LAS2        \ skip over the above until the next pulse (this has no
+                        \ effect if this is a beam laser)
+
+.MA16
+
+}
+
+                        \ --- End of added code ------------------------------->
 
  LDA ECMP               \ If our E.C.M is not on, skip to MA69, otherwise keep
  BEQ MA69               \ going to drain some energy
@@ -10130,7 +10350,7 @@ ENDIF
 
  ASL NOSTM              \ Use star data from second half of table
 
- LDX player2View        \ Fetch player 2's view
+ LDX player2VIEW        \ Fetch player 2's view
 
  JSR dstr1              \ Update stars
 
@@ -19072,6 +19292,132 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2LASLI
+\       Type: Subroutine
+\   Category: Drawing lines
+\    Summary: Draw the laser lines for when we fire our lasers
+\
+\ ------------------------------------------------------------------------------
+\
+\ Draw the laser lines, aiming them to slightly different place each time so
+\ they appear to flicker and dance. Also heat up the laser temperature and drain
+\ some energy.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   Player2LASLI2       Just draw the current laser lines without moving the
+\                       centre point, draining energy or heating up. This has
+\                       the effect of removing the lines from the screen
+\
+\ ******************************************************************************
+
+.Player2LASLI
+
+ JSR DORND              \ Set A and X to random numbers
+
+ AND #7                 \ Restrict A to a random value in the range 0 to 7
+
+ ADC #Y+(Y/2)-4         \ Set LASY to four pixels above the centre of the
+ STA player2LASY        \ screen, plus our random number, so the laser
+                        \ dances above and below the centre point
+
+ JSR DORND              \ Set A and X to random numbers
+
+ AND #7                 \ Restrict A to a random value in the range 0 to 7
+
+ ADC #X-4               \ Set LASX to four pixels left of the centre of the
+ STA player2LASX        \ screen (#X), plus our random number, so the laser
+                        \ dances to the left and right of the centre point
+
+ LDA player2GNTMP       \ Add 8 to the laser temperature in GNTMP
+ ADC #8
+ STA player2GNTMP
+
+ JSR Player2DENGY       \ Call DENGY to deplete player 2's energy banks by 1
+
+.Player2LASLI2
+
+{
+
+ LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
+ BNE lasi1              \ then jump to MA9 to return from the main flight loop
+                        \ (as lasi1 is an RTS)
+
+ LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
+ JSR DOCOL              \ switch to colour 2, which is red in the space view
+
+ LDA #32                \ Set A = 32 and Y = 224 for the first set of laser
+ LDY #224               \ lines (the wider pair of lines)
+
+IF _SNG45
+
+ DEC player2LASY        \ Decrement the y-coordinate of the centre point to move
+                        \ it up the screen by a pixel for the top set of lines,
+                        \ so the wider set of lines aim slightly higher than the
+                        \ narrower set
+
+ENDIF
+
+ JSR las                \ Call las below to draw the first set of laser lines
+
+IF _SNG45
+
+ INC player2LASY        \ Increment the y-coordinate of the centre point to put
+                        \ it back to the original position
+
+ENDIF
+
+ LDA #48                \ Fall through into las with A = 48 and Y = 208 to draw
+ LDY #208               \ a second set of lines (the narrower pair)
+
+                        \ The following routine draws two laser lines, one from
+                        \ the centre point down to point A on the bottom row,
+                        \ and the other from the centre point down to point Y
+                        \ on the bottom row. We therefore get lines from the
+                        \ centre point to points 32, 48, 208 and 224 along the
+                        \ bottom row, giving us the triangular laser effect
+                        \ we're after
+
+.las
+
+ STA X2                 \ Set X2 = A
+
+ LDA player2LASX        \ Set (X1, Y1) to the random centre point we set above
+ STA X1
+ LDA player2LASY
+ STA Y1
+
+ LDA #2*Y-1             \ Set Y2 = 2 * #Y - 1. The constant #Y is 96, the
+ STA Y2                 \ y-coordinate of the mid-point of the space view, so
+                        \ this sets Y2 to 191, the y-coordinate of the bottom
+                        \ pixel row of the space view
+
+ JSR LL30               \ Draw a line from (X1, Y1) to (X2, Y2), so that's from
+                        \ the centre point to (A, 191)
+
+ LDA player2LASX        \ Set (X1, Y1) to the random centre point we set above
+ STA X1
+ LDA player2LASY
+ STA Y1
+
+ STY X2                 \ Set X2 = Y
+
+ LDA #2*Y-1             \ Set Y2 = 2 * #Y - 1, the y-coordinate of the bottom
+ STA Y2                 \ pixel row of the space view (as before)
+
+ JMP LL30               \ Draw a line from (X1, Y1) to (X2, Y2), so that's from
+                        \ the centre point to (Y, 191), and return from
+                        \ the subroutine using a tail call
+
+.lasi1
+
+ RTS                    \ Return from the subroutine
+}
+
+\ ******************************************************************************
+\
 \       Name: PDESC
 \       Type: Subroutine
 \   Category: Universe
@@ -24145,8 +24491,8 @@ ENDIF
  LDA #%10000000
  STA INWK+8
 
- LDA player2HasAI       \ If player 2 is an NPC then set player 2's AI flag in
- BPL laun1              \ INWK+32 to player2HasAI and NEWB flags to player2NEWB
+ LDA player2INWK32      \ If player 2 is an NPC then set player 2's AI flag in
+ BPL laun1              \ INWK+32 to player2INWK32 and NEWB flags to player2NEWB
  STA INWK+32
  LDA player2NEWB
  STA NEWB
@@ -24156,12 +24502,12 @@ ENDIF
  LDA #PLAYER2SHIP       \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
- STZ player1Visible     \ Reset "on-screen" state for player 1's ship in player
-                        \ 2's view, so it is not visible on scanner or screen
+ STZ player1INWK31      \ Reset byte #31 for player 1's ship in player 2's view,
+                        \ so it is not visible on the scanner or thescreen
 
  JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
 
- STZ player2View        \ Set player 2's view to front, as we are launching
+ STZ player2VIEW        \ Set player 2's view to front, as we are launching
 
                         \ --- End of added code ------------------------------->
 
@@ -26855,9 +27201,9 @@ ENDIF
  BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
  BPL wipe1
 
- LDA player1Visible     \ Clear bits 3 and 6 in the ship's byte #31 for the
+ LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
  AND #%10110111         \ player 1 ship as it appears in player 2's view
- STA player1Visible     \ (bit 3 = on-screen, bit 6 = lasers)
+ STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
 
  JMP WS2                \ Jump to WS2 to keep going
 
@@ -27041,6 +27387,38 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2SHD
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Charge a shield and drain some energy from the energy banks
+\
+\ ------------------------------------------------------------------------------
+\
+\ Charge up a shield, and if it needs charging, drain some energy from the
+\ energy banks.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The value of the shield to recharge
+\
+\ ******************************************************************************
+
+.Player2SHD
+
+ INX                    \ Increment the shield value
+
+ BNE Player2DENGY       \ If the shield is non-zero then jump to Player2DENGY
+                        \ to drain our energy to pay for all this shield
+                        \ charging
+
+                        \ If the shield value is 0 then this means it was 255
+                        \ before, which is the maximum value, so keep going to
+                        \ bring it back down to 255 and return without draining
+
+\ ******************************************************************************
+\
 \       Name: SHD
 \       Type: Subroutine
 \   Category: Flight
@@ -27108,6 +27486,43 @@ ENDIF
                         \ the Z flag from the DEC instruction above
 
  RTS                    \ Return from the subroutine
+
+
+\ ******************************************************************************
+\
+\       Name: Player2DENGY
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Drain some energy from the energy banks for player 2
+\
+\ ------------------------------------------------------------------------------
+\
+\ Returns:
+\
+\   Z flag              Set if we have no energy left, clear otherwise
+\
+\ ******************************************************************************
+
+.Player2DENGY
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ DEC player2ENERGY      \ Decrement the energy banks in ENERGY
+
+ PHP                    \ Save the flags on the stack
+
+ BNE P%+5               \ If the energy levels are not yet zero, skip the
+                        \ following instruction
+
+ INC player2ENERGY      \ The minimum allowed energy level is 1, and we just
+                        \ reached 0, so increment ENERGY back to 1
+
+ PLP                    \ Restore the flags from the stack, so we return with
+                        \ the Z flag from the DEC instruction above
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -32092,10 +32507,26 @@ ENDIF
  STZ splitScreen        \ Turn off split-screen drawing
 
  LDX #PLAYER2AI         \ Set player 2's AI flag as defined in PLAYER2AI
- STX player2HasAI
+ STX player2INWK32
 
  LDX #PLAYER2NB         \ Set player 2's NEWB flags as defined in PLAYER2NB
  STX player2NEWB
+
+ LDX #POW               \ Give both players front and rear pulse lasers for now
+ STX LASER
+ STX LASER+1
+ STX player2LASER
+ STX player2LASER+1
+ STZ player2LASER+2
+ STZ player2LASER+3
+
+ STZ player2GNTMP       \ Cool down the lasers completely
+
+ LDX #&FF               \ Recharge the forward and aft shields
+ STX player2FSH
+ STX player2ASH
+
+ STX player2ENERGY      \ Recharge the energy banks
 
                         \ --- End of added code ------------------------------->
 
@@ -32111,8 +32542,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Beta        \ Zero player 2's movement variables
- STA player2Bet1
+ STA player2BETA        \ Zero player 2's movement variables
+ STA player2BET1
 
                         \ --- End of added code ------------------------------->
 
@@ -32201,9 +32632,9 @@ ENDIF
 
  STA player2JSTX        \ Set player 2's roll rate to the mid-point, 128
 
- STA player2Alp2        \ Reset player 2's roll sign to negative
+ STA player2ALP2        \ Reset player 2's roll sign to negative
 
- STA player2Bet2        \ Reset player 2's roll pitch to negative
+ STA player2BET2        \ Reset player 2's roll pitch to negative
 
                         \ --- End of added code ------------------------------->
 
@@ -32218,13 +32649,13 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Beta        \ Reset player 2's pitch angle to 0
+ STA player2BETA        \ Reset player 2's pitch angle to 0
 
- STA player2Bet1        \ Reset player 2's pitch angle magnitude to 0
+ STA player2BET1        \ Reset player 2's pitch angle magnitude to 0
 
- STA player2Alp2+1      \ Reset player 2's flipped roll sign to positive
+ STA player2ALP2+1      \ Reset player 2's flipped roll sign to positive
 
- STA player2Bet2+1      \ Reset player 2's flipped pitch sign to positive
+ STA player2BET2+1      \ Reset player 2's flipped pitch sign to positive
 
                         \ --- End of added code ------------------------------->
 
@@ -32235,7 +32666,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Delta       \ Reset player 2's speed to 3
+ STA player2DELTA       \ Reset player 2's speed to 3
 
  LDA #0                 \ Set initial roll angles to zero, rather than 3, as we
                         \ are not leaving the space station
@@ -32248,9 +32679,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STA player2Alpha       \ Reset player 2's roll angle to 0
+ STA player2ALPHA       \ Reset player 2's roll angle to 0
 
- STA player2Alp1        \ Reset player 2's roll angle magnitude to 0
+ STA player2ALP1        \ Reset player 2's roll angle magnitude to 0
 
                         \ --- End of added code ------------------------------->
 
@@ -33240,6 +33671,30 @@ ENDIF
                         \ gets reduced by 2, but not into negative territory
 
 .NOLASCT
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDX player2LASCT       \ Set X to the value of LASCT, the laser pulse count
+
+ BEQ NOLASCT            \ If X = 0 then jump to NOLASCT to skip reducing LASCT,
+                        \ as it can't be reduced any further
+
+ DEX                    \ Decrement the value of LASCT in X
+
+ BEQ P%+3               \ If X = 0, skip the next instruction
+
+ DEX                    \ Decrement the value of LASCT in X again
+
+ STX player2LASCT       \ Store the decremented value of X in LASCT, so LASCT
+                        \ gets reduced by 2, but not into negative territory
+
+.NOLASCT
+
+}
+                        \ --- End of added code ------------------------------->
+
 
  JSR DIALS              \ Call DIALS to update the dashboard
 
@@ -37085,6 +37540,22 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
+                        \ button from the key logger buffer, which contains
+                        \ the value of the 6522 System VIA input register IRB
+                        \ (SHEILA &40)
+
+ TAX                    \ This instruction doesn't seem to have any effect, as
+                        \ X is overwritten in a few instructions
+
+ AND #%00100000         \ Bit 5 of IRB (PB5) is clear if joystick 2's fire
+                        \ button is pressed, otherwise it is set, so AND'ing
+                        \ the value of IRB with %100000 extracts this bit
+
+ EOR #%00100000         \ Flip bit 5 so that it's set if the fire button has
+ STA KY18               \ been pressed, and store the result in the keyboard
+                        \ logger at location KY18
+
  LDX #3                 \ Call DKS2 to fetch the value of ADC channel 3 (the
  JSR DKS2               \ joystick 2 X value) into (A X), and OR A with 1. This
  ORA #1                 \ ensures that the high byte is at least 1, and then we
@@ -37204,6 +37675,22 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
+                        \ button from the key logger buffer, which contains
+                        \ the value of the 6522 System VIA input register IRB
+                        \ (SHEILA &40)
+
+ TAX                    \ This instruction doesn't seem to have any effect, as
+                        \ X is overwritten in a few instructions
+
+ AND #%00010000         \ Bit 4 of IRB (PB4) is clear if joystick 1's fire
+                        \ button is pressed, otherwise it is set, so AND'ing
+                        \ the value of IRB with %10000 extracts this bit
+
+ EOR #%00010000         \ Flip bit 4 so that it's set if the fire button has
+ STA KY18               \ been pressed, and store the result in the keyboard
+                        \ logger at location KY18
+
  LDX #1                 \ Call DKS2 to fetch the value of ADC channel 1 (the
  JSR DKS2               \ joystick 1 X value) into (A X), and OR A with 1. This
  ORA #1                 \ ensures that the high byte is at least 1, and then we
@@ -37217,7 +37704,6 @@ ENDIF
                         \ player2JSTY
 
                         \ --- End of added code ------------------------------->
-
 
  LDX #7                 \ We're now going to copy key press data for the primary
                         \ flight keys from the key logger buffer at KTRAN to the
@@ -43772,7 +44258,7 @@ ENDIF
                         \ If we get here then this is player 2's ship
 
  LDA #%00001000         \ If player 1 is visible in player 2's view, jump to
- BIT player1Visible     \ MV3 to skip tidying it, to avoid making the ship jump
+ BIT player1INWK31      \ MV3 to skip tidying it, to avoid making the ship jump
  BNE MV3                \ around (as tidying player 2's ship will make player
                         \ 2's view jump around)
 
@@ -43882,10 +44368,10 @@ ENDIF
  CMP #2
  BNE move5
 
- BIT player2HasAI       \ If player 2 is an NPC then jump to move4
+ BIT player2INWK32      \ If player 2 is an NPC then jump to move4
  BMI move4
 
- LDA player2Delta       \ Set the speed for player 2's ship to player 2's speed
+ LDA player2DELTA       \ Set the speed for player 2's ship to player 2's speed
  STA INWK+27
 
  BPL move5              \ Jump to move5 to skip the following (this BPL is
@@ -43893,8 +44379,8 @@ ENDIF
 
 .move4
 
- LDA INWK+27            \ Player 2 is an NPC so set player2Delta to the NPC's
- STA player2Delta       \ speed so the stardust field gets drawn correctly
+ LDA INWK+27            \ Player 2 is an NPC so set player2DELTA to the NPC's
+ STA player2DELTA       \ speed so the stardust field gets drawn correctly
 
 .move5
 
@@ -44355,7 +44841,7 @@ ENDIF
  CMP #2                 \ skip the following
  BNE move8
 
- BIT player2HasAI       \ If player 2 is an NPC, jump to move7 to prepare player
+ BIT player2INWK32      \ If player 2 is an NPC, jump to move7 to prepare player
  BMI move7              \ 2's angles for any pitch counter rotations
 
                         \ If we get here then we are moving player 2's ship and
@@ -44364,18 +44850,18 @@ ENDIF
 
                         \ Apply player 2's pitch and roll to player 2's ship
                         \
-                        \   * player2Alpha = roll
+                        \   * player2ALPHA = roll
                         \
-                        \   * player2Beta = pitch
+                        \   * player2BETA = pitch
 
  LDA ALPHA              \ Save current ship's pitch and roll angles (MVS4 only
  STA storeData          \ uses ALPHA and BETA)
  LDA BETA
  STA storeData+4
 
- LDA player2Alpha       \ Switch to player 2's pitch and roll angles
+ LDA player2ALPHA       \ Switch to player 2's pitch and roll angles
  STA ALPHA
- LDA player2Beta
+ LDA player2BETA
  STA BETA
 
  JSR TransposeMatrix    \ Transpose the orientation matrix to move into player
@@ -44405,15 +44891,15 @@ ENDIF
                         \ If we get here then we are moving player 2's ship and
                         \ player 2 is an NPC
 
- STZ player2Alpha       \ Zero the angles, as the following code only sets these
- STZ player2Alp1        \ angles if the ship is rotating
- STZ player2Alp2
- STZ player2Beta
- STZ player2Bet1
- STZ player2Bet2
+ STZ player2ALPHA       \ Zero the angles, as the following code only sets these
+ STZ player2ALP1        \ angles if the ship is rotating
+ STZ player2ALP2
+ STZ player2BETA
+ STZ player2BET1
+ STZ player2BET2
  LDA #%10000000
- STA player2Alp2+1
- STA player2Bet2+1
+ STA player2ALP2+1
+ STA player2BET2+1
 
 .move8
 
@@ -44468,16 +44954,16 @@ ENDIF
                         \ The angle is 1/16 radians
 
  LDA #16                \ Set BET1 to the magnitude
- STA player2Bet1
+ STA player2BET1
 
  ORA RAT2               \ Set BETA to the signed magnitude
- STA player2Beta
+ STA player2BETA
 
  LDA RAT2               \ Set BET2 to the sign of BETA
- STA player2Bet2
+ STA player2BET2
 
  EOR #%10000000         \ Set BET2+1 to the opposite sign to BETA
- STA player2Bet2+1
+ STA player2BET2+1
 
                         \ --- End of added code ------------------------------->
 
@@ -44532,16 +45018,16 @@ ENDIF
                         \ The angle is 1/16 radians
 
  LDA #16                \ Set ALP1 to the magnitude
- STA player2Alp1
+ STA player2ALP1
 
  ORA RAT2               \ Set ALPHA to the signed magnitude
- STA player2Alpha
+ STA player2ALPHA
 
  LDA RAT2               \ Set ALP2 to the sign of ALPHA
- STA player2Alp2
+ STA player2ALP2
 
  EOR #%10000000         \ Set ALP2+1 to the opposite sign to ALPHA
- STA player2Alp2+1
+ STA player2ALP2+1
 
                         \ --- End of added code ------------------------------->
 
@@ -45492,8 +45978,8 @@ ENDIF
  BIT drawPlayerView     \ If we are setting up player 1's view, jump to view1 to
  BPL view1              \ store the space view number in VIEW
 
- STX player2View        \ We are setting up player 2's view, so store the space
-                        \ view number for player 2 in player2View
+ STX player2VIEW        \ We are setting up player 2's view, so store the space
+                        \ view number for player 2 in player2VIEW
 
  JMP view2              \ Skip the following instruction
 
@@ -45543,12 +46029,12 @@ ENDIF
  BPL view3              \ check the new view number against VIEW
 
                         \ We are setting up player 2's view, so we need to check
-                        \ the new view number against player2View
+                        \ the new view number against player2VIEW
 
- CPX player2View        \ If the current view is already of type X, jump to LO2
+ CPX player2VIEW        \ If the current view is already of type X, jump to LO2
  BEQ LO2                \ to return from the subroutine (as LO2 contains an RTS)
 
- STX player2View        \ Set the current space view for player 2 to X
+ STX player2VIEW        \ Set the current space view for player 2 to X
 
  JMP view4              \ Skip the following instruction
 
@@ -45602,7 +46088,30 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDA #POW               \ Give everyone a pulse laser for now
+ BIT drawPlayerView     \ If we are setting up player 1's view, jump to view1 to
+ BPL sigh1              \ store the space view number in VIEW
+
+ LDY player2VIEW        \ We are setting up player 2's view, so fetch the space
+                        \ view number for player 2 in player2VIEW
+
+ LDA player2LASER,Y     \ Fetch the front/rear laser power for player 2
+
+ BEQ LO2                \ If it is zero (i.e. there is no laser fitted to this
+                        \ view), jump to LO2 to return from the subroutine (as
+                        \ LO2 contains an RTS)
+
+ BNE sigh2              \ Skip the following instruction
+
+.sigh1
+
+ LDY VIEW               \ Fetch the laser power for player 1's view
+ LDA LASER,Y
+
+ BEQ LO2                \ If it is zero (i.e. there is no laser fitted to this
+                        \ view), jump to LO2 to return from the subroutine (as
+                        \ LO2 contains an RTS)
+
+.sigh2
 
                         \ --- End of replacement ------------------------------>
 
@@ -45812,7 +46321,7 @@ ENDIF
  LDA #13                \ Move the text cursor to column 11, row 13
  JSR DOYC
 
- LDA player2View        \ Fetch player 2's view
+ LDA player2VIEW        \ Fetch player 2's view
 
  JMP clsc4              \ Skip the following instruction
 
@@ -56842,7 +57351,7 @@ ENDMACRO
 
  JSR RESTORE            \ Fetch the ship's coordinates in slot #12
 
- LDA player1Visible     \ Set the scan visiblilty flag from player1Visible
+ LDA player1INWK31      \ Set the scan visiblilty flag from player1INWK31  
  STA INWK+31
 
  LDA #1                 \ Set TYPE purely to control the colour on the scanner
@@ -56850,9 +57359,9 @@ ENDMACRO
 
  JSR SCAN               \ Remove the ship from the scanner, if it's there
 
- LDA player1Visible     \ From this point on we want to draw the ship on the
+ LDA player1INWK31      \ From this point on we want to draw the ship on the
  ORA #%00010000         \ scanner, so set bit 4 = visible on scanner
- STA player1Visible
+ STA player1INWK31  
 
 .dshp1
 
@@ -57075,7 +57584,7 @@ ENDMACRO
  LDA #PLAYER1SHIP       \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
 
- LDA player1Visible     \ Copy "on-screen" state from player1Visible to INWK
+ LDA player1INWK31      \ Copy "on-screen" state from player1INWK31 to INWK+31
  STA INWK+31
 
 .dshp6
@@ -57089,7 +57598,7 @@ ENDMACRO
  TAX
  JSR SaveShipDataInSlot
 
- LDX player2View        \ Rotate everything into the correct view
+ LDX player2VIEW        \ Rotate everything into the correct view
  JSR PLUT+3
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
@@ -57098,8 +57607,8 @@ ENDMACRO
  CMP #2                 \ the ship setup
  BNE dshp7
 
- LDA INWK+31            \ Copy "on-screen" state from INWK to player1Visible
- STA player1Visible
+ LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31  
+ STA player1INWK31  
 
  LDA #PLAYER2SHIP       \ Switch back to the ship for player 2
  STA TYPE
@@ -57838,27 +58347,27 @@ ENDMACRO
 
 .GetPlayer2Movement
 
- LDA player2Alpha       \ Restore current ship movement data
+ LDA player2ALPHA       \ Restore current ship movement data
  STA ALPHA
- LDA player2Alp1
+ LDA player2ALP1
  STA ALP1
- LDA player2Alp2
+ LDA player2ALP2
  STA ALP2
- LDA player2Alp2+1
+ LDA player2ALP2+1
  STA ALP2+1
- LDA player2Beta
+ LDA player2BETA
  STA BETA
- LDA player2Bet1
+ LDA player2BET1
  STA BET1
- LDA player2Bet2
+ LDA player2BET2
  STA BET2
- LDA player2Bet2+1
+ LDA player2BET2+1
  STA BET2+1
- LDA player2Delta
+ LDA player2DELTA
  STA DELTA
- LDA player2Delt4
+ LDA player2DELT4
  STA DELT4
- LDA player2Delt4+1
+ LDA player2DELT4+1
  STA DELT4+1
 
  RTS                    \ Return from the subroutine
@@ -57879,27 +58388,27 @@ ENDMACRO
 .SavePlayer2Movement
 
  LDA ALPHA              \ Save current ship movement data
- STA player2Alpha
+ STA player2ALPHA
  LDA ALP1
- STA player2Alp1
+ STA player2ALP1
  LDA ALP2
- STA player2Alp2
+ STA player2ALP2
  LDA ALP2+1
- STA player2Alp2+1
+ STA player2ALP2+1
  LDA BETA
- STA player2Beta
+ STA player2BETA
  LDA BET1
- STA player2Bet1
+ STA player2BET1
  LDA BET2
- STA player2Bet2
+ STA player2BET2
  LDA BET2+1
- STA player2Bet2+1
+ STA player2BET2+1
  LDA DELTA
- STA player2Delta
+ STA player2DELTA
  LDA DELT4
- STA player2Delt4
+ STA player2DELT4
  LDA DELT4+1
- STA player2Delt4+1
+ STA player2DELT4+1
 
  RTS                    \ Return from the subroutine
 
