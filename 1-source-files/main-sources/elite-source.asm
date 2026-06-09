@@ -157,10 +157,19 @@ ENDIF
  PLAYER2SHIP = COPS     \ Ship type for player 2
 
  PLAYER2AI = 0          \ AI flag for player 2
-\PLAYER2AI = %11111110  \ AI flag for player 2 (has AI, very hostile)
+\PLAYER2AI = %11111110  \ AI flag for player 2
+                        \
+                        \  * Bit 0: 0 = no E.C.M.
+                        \           1 = has E.C.M.
+                        \
+                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
+                        \                        (see TACTICS part 7)
+                        \
+                        \  * Bit 7: 0 = dumb
+                        \           1 = AI enabled (apply TACTICS to ship)
 
- PLAYER2NB = 0          \ Additional NEWB flags for player 2
-\PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
+\PLAYER2NB = 0          \ Additional NEWB flags for player 2
+ PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
 
                         \ --- End of added code ------------------------------->
 
@@ -3816,24 +3825,6 @@ ENDIF
                         \  * Bit 7: 0 = ship has not been killed
                         \           1 = ship has been killed 
 
-.player2INWK32
-
- SKIP 1                 \ Storage for player 2's INWK+32 (AI) byte, which
-                        \ determines whether player 2 is an NPC:
-                        \
-                        \  * Bit 0: 0 = no E.C.M.
-                        \           1 = has E.C.M.
-                        \
-                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
-                        \                        (see TACTICS part 7)
-                        \
-                        \  * Bit 7: 0 = dumb
-                        \           1 = AI enabled (apply TACTICS to ship)
-
-.player2NEWB
-
- SKIP 1                 \ Storage for player 2's NEWB byte
-
 .player2VIEW
 
  SKIP 1                 \ Storage for player 2's VIEW setting
@@ -5050,7 +5041,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT player2INWK32      \ If player 2 is an NPC then skip the joystick reading
+ BIT K%+NI%*2+32        \ If player 2 is an NPC then skip the joystick reading
  BMI BS2
 
  LDX player2JSTX        \ Set X to the current rate of roll in JSTX
@@ -5437,7 +5428,7 @@ ENDIF
 
 {
 
- LDA player2INWK32      \ If player 2 is not an NPC, skip the following check
+ LDA K%+NI%*2+32        \ If player 2 is not an NPC, skip the following check
  BPL main1
 
  BIT player2Firing      \ If player 2 is not firing its laser then skip the
@@ -14485,9 +14476,6 @@ ENDIF
  CMP #2
  BNE tact1
 
- LDA player2INWK32      \ If player 2 is not an NPC, skip the following
- BPL tact1
-
  STZ player2Firing      \ Reset player2Firing to denote that player 2 is not
                         \ firing its laser at us
 
@@ -14838,9 +14826,6 @@ ENDIF
  LDA XSAV               \ If this is not player 2, skip the following
  CMP #2
  BNE tact2
-
- LDA player2INWK32      \ If player 2 is not an NPC, skip the following
- BPL tact2
 
  SEC                    \ Set bit 7 of player2Firing to denote that NPC player 2
  ROR player2Firing      \ is firing its lasers
@@ -24614,10 +24599,10 @@ ENDIF
  LDA #%10000000
  STA INWK+8
 
- LDA player2INWK32      \ If player 2 is an NPC then set player 2's AI flag in
- BPL laun1              \ INWK+32 to player2INWK32 and NEWB flags to player2NEWB
+ LDA #PLAYER2AI         \ If player 2 is an NPC then set player 2's AI flag in
+ BPL laun1              \ INWK+32 to PLAYER2AI and NEWB flags to PLAYER2NB
  STA INWK+32
- LDA player2NEWB
+ LDA #PLAYER2NB
  STA NEWB
 
 .laun1
@@ -32628,12 +32613,6 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  STZ splitScreen        \ Turn off split-screen drawing
-
- LDX #PLAYER2AI         \ Set player 2's AI flag as defined in PLAYER2AI
- STX player2INWK32
-
- LDX #PLAYER2NB         \ Set player 2's NEWB flags as defined in PLAYER2NB
- STX player2NEWB
 
  LDX #POW               \ Give both players front and rear pulse lasers for now
  STX LASER
@@ -44509,7 +44488,7 @@ ENDIF
  CMP #2
  BNE move5
 
- BIT player2INWK32      \ If player 2 is an NPC then jump to move4
+ BIT INWK+32            \ If player 2 is an NPC then jump to move4
  BMI move4
 
  LDA player2DELTA       \ Set the speed for player 2's ship to player 2's speed
@@ -44982,7 +44961,7 @@ ENDIF
  CMP #2                 \ skip the following
  BNE move8
 
- BIT player2INWK32      \ If player 2 is an NPC, jump to move7 to prepare player
+ BIT INWK+32            \ If player 2 is an NPC, jump to move7 to prepare player
  BMI move7              \ 2's angles for any pitch counter rotations
 
                         \ If we get here then we are moving player 2's ship and
