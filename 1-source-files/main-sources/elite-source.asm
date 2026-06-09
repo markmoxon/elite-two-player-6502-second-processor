@@ -32773,12 +32773,21 @@ ENDIF
 
  STA MCNT               \ Reset MCNT (the main loop counter) to 0
 
- LDA #3                 \ Reset DELTA (speed) to 3
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #3                 \ Reset DELTA (speed) to 3
+\STA DELTA
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #1                 \ Reset DELTA (speed) to 1
  STA DELTA
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
  STA player2DELTA       \ Reset player 2's speed to 3
+
+                        \ --- End of replacement ------------------------------>
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  LDA #0                 \ Set initial roll angles to zero, rather than 3, as we
                         \ are not leaving the space station
