@@ -83,8 +83,17 @@
 
  STRIPE  = %00100011    \ Two mode 2 pixels of colour 5, 1 (magenta/red)
 
- PARMAX = 15            \ The number of dashboard parameters transmitted with
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\PARMAX = 15            \ The number of dashboard parameters transmitted with
+\                       \ the #RDPARAMS and OSWRCH 137 <param> commands
+
+                        \ --- And replaced by: -------------------------------->
+
+ PARMAX = 20            \ The number of dashboard parameters transmitted with
                         \ the #RDPARAMS and OSWRCH 137 <param> commands
+
+                        \ --- End of replacement ------------------------------>
 
  IRQ1V = &0204          \ The IRQ1V vector that we intercept to implement the
                         \ split-screen mode
@@ -867,21 +876,25 @@ ENDIF
 
  SKIP 1                 \ Our current speed, in the range 1-40
 
-.ALTIT
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- SKIP 1                 \ Our altitude above the surface of the planet or sun
-                        \
-                        \   * 255 = we are a long way above the surface
-                        \
-                        \   * 1-254 = our altitude as the square root of:
-                        \
-                        \       x_hi^2 + y_hi^2 + z_hi^2 - 6^2
-                        \
-                        \     where our ship is at the origin, the centre of the
-                        \     planet/sun is at (x_hi, y_hi, z_hi), and the
-                        \     radius of the planet/sun is 6
-                        \
-                        \   * 0 = we have crashed into the surface
+\.ALTIT
+\
+\SKIP 1                 \ Our altitude above the surface of the planet or sun
+\                       \
+\                       \   * 255 = we are a long way above the surface
+\                       \
+\                       \   * 1-254 = our altitude as the square root of:
+\                       \
+\                       \       x_hi^2 + y_hi^2 + z_hi^2 - 6^2
+\                       \
+\                       \     where our ship is at the origin, the centre of the
+\                       \     planet/sun is at (x_hi, y_hi, z_hi), and the
+\                       \     radius of the planet/sun is 6
+\                       \
+\                       \   * 0 = we have crashed into the surface
+
+                        \ --- End of removed code ----------------------------->
 
 .MCNT
 
@@ -906,14 +919,19 @@ ENDIF
                         \
                         \   * &FF = full
 
-.QQ14
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- SKIP 1                 \ Our current fuel level (0-70)
-                        \
-                        \ The fuel level is stored as the number of light years
-                        \ multiplied by 10, so QQ14 = 1 represents 0.1 light
-                        \ years, and the maximum possible value is 70, for 7.0
-                        \ light years
+\.QQ14
+\
+\SKIP 1                 \ Our current fuel level (0-70)
+\                       \
+\                       \ The fuel level is stored as the number of light years
+\                       \ multiplied by 10, so QQ14 = 1 represents 0.1 light
+\                       \ years, and the maximum possible value is 70, for 7.0
+\                       \ light years
+
+                        \ --- End of removed code ----------------------------->
+
 
 .GNTMP
 
@@ -923,20 +941,24 @@ ENDIF
                         \ overheats and cannot be fired again until it has
                         \ cooled down
 
-.CABTMP
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- SKIP 1                 \ Cabin temperature
-                        \
-                        \ The ambient cabin temperature in deep space is 30,
-                        \ which is displayed as one notch on the dashboard bar
-                        \
-                        \ We get higher temperatures closer to the sun
-                        \
-                        \ CABTMP shares a location with MANY, but that's OK as
-                        \ MANY+0 would contain the number of ships of type 0,
-                        \ and as there is no ship type 0 (they start at 1), the
-                        \ byte at MANY+0 is not used for storing a ship type
-                        \ and can be used for the cabin temperature instead
+\.CABTMP
+\
+\SKIP 1                 \ Cabin temperature
+\                       \
+\                       \ The ambient cabin temperature in deep space is 30,
+\                       \ which is displayed as one notch on the dashboard bar
+\                       \
+\                       \ We get higher temperatures closer to the sun
+\                       \
+\                       \ CABTMP shares a location with MANY, but that's OK as
+\                       \ MANY+0 would contain the number of ships of type 0,
+\                       \ and as there is no ship type 0 (they start at 1), the
+\                       \ byte at MANY+0 is not used for storing a ship type
+\                       \ and can be used for the cabin temperature instead
+
+                        \ --- End of removed code ----------------------------->
 
 .FLH
 
@@ -949,13 +971,56 @@ ENDIF
                         \ Toggled by pressing "F" when paused, see the DKS3
                         \ routine for details
 
-.ESCP
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- SKIP 1                 \ Escape pod
-                        \
-                        \   * 0 = not fitted
-                        \
-                        \   * &FF = fitted
+\.ESCP
+\
+\SKIP 1                 \ Escape pod
+\                       \
+\                       \   * 0 = not fitted
+\                       \
+\                       \   * &FF = fitted
+
+                        \ --- End of removed code ----------------------------->
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+.player2ENERGY
+
+ SKIP 1                 \ Player 2's ENERGY value
+
+.player2ALP1
+
+ SKIP 1                 \ Storage for player 2's ALP1 setting
+
+.player2ALP2
+
+ SKIP 1                 \ Storage for player 2's ALP2 and APL2+1 settings
+
+.player2BETA
+
+ SKIP 1                 \ Storage for player 2's BETA setting
+
+.player2BET1
+
+ SKIP 1                 \ Storage for player 2's BET1 setting
+
+.player2DELTA
+
+ SKIP 1                 \ Storage for player 2's DELTA setting
+
+.player2FSH
+
+ SKIP 1                 \ Player 2's player2FSH value
+
+.player2ASH
+
+ SKIP 1                 \ Player 2's player2ASH value
+
+.player2GNTMP
+
+ SKIP 1                 \ Player 2's GNTMP value
+
+                        \ --- End of added code ------------------------------->
 
  PRINT "I/O variables workspace (I/O processor) from ", ~XC, "to ", ~P%-1, "inclusive"
 
@@ -8173,10 +8238,21 @@ ENDMACRO
  STA VIA+&4E            \ (SHEILA &4E) bit 1 (i.e. disable the CA2 interrupt,
                         \ which comes from the keyboard)
 
- LDA #&A0               \ Set SC(1 0) = &71A0, which is the screen address for
- STA SC                 \ the character block containing the left end of the
- LDA #&71               \ top indicator in the right part of the dashboard, the
- STA SC+1               \ one showing our speed
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #&A0               \ Set SC(1 0) = &71A0, which is the screen address for
+\STA SC                 \ the character block containing the left end of the
+\LDA #&71               \ top indicator in the right part of the dashboard, the
+\STA SC+1               \ one showing our speed
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #&70               \ Set SC(1 0) = &7020, which is the screen address for
+ STA SC+1               \ the character block containing the left end of the
+ LDA #&20               \ top indicator in the left part of the dashboard, the
+ STA SC                 \ one showing the forward shield
+
+                        \ --- End of replacement ------------------------------>
 
  JSR PZW2               \ Call PZW2 to set A to the colour for dangerous values
                         \ and X to the colour for safe values, suitable for
@@ -8240,6 +8316,14 @@ ENDMACRO
                         \ and separate sign bits, which we want here rather than
                         \ the two's complement that ADC uses
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDY #1                 \ We want to start drawing the vertical indicator bar on
+                        \ the second line in the indicator's character block, so
+                        \ set Y to point to that row's offset
+
+                        \ --- End of added code ------------------------------->
+
  JSR DIL2               \ Draw a vertical bar on the roll indicator at offset A
                         \ and increment SC to point to the next indicator (the
                         \ pitch indicator)
@@ -8263,9 +8347,27 @@ ENDMACRO
                         \ bar on the indicator at this position (see the JSR ADD
                         \ above for more on this)
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDY #3                 \ We want to start drawing the vertical indicator bar on
+                        \ the fourth line in the indicator's character block, so
+                        \ set Y to point to that row's offset
+
+                        \ --- End of added code ------------------------------->
+
  JSR DIL2               \ Draw a vertical bar on the pitch indicator at offset A
                         \ and increment SC to point to the next indicator (the
                         \ four energy banks)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ INC SC+1               \ Increment the high byte of SC to point to the next
+ INC SC+1               \ character row on-screen (as each row takes up exactly
+                        \ two pages of 256 bytes) - so this sets up SC to point
+                        \ to the next indicator, i.e. the one below the one we
+                        \ just drew
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -8283,7 +8385,11 @@ ENDMACRO
 \
 \ ******************************************************************************
 
- LDY #0                 \ Set Y = 0, for use in various places below
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #0                 \ Set Y = 0, for use in various places below
+
+                        \ --- End of removed code ----------------------------->
 
  JSR PZW                \ Call PZW to set A to the colour for dangerous values
                         \ and X to the colour for safe values
@@ -8299,92 +8405,96 @@ ENDMACRO
                         \ we use not only for the energy banks, but also for the
                         \ shield levels and current fuel
 
- LDX #3                 \ Set up a counter in X so we can zero the four bytes at
-                        \ XX15, so we can then calculate each of the four energy
-                        \ banks' values before drawing them later
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STX T1                 \ Set T1 to 3, the threshold at which we change the
-                        \ indicator's colour
+\LDX #3                 \ Set up a counter in X so we can zero the four bytes at
+\                       \ XX15, so we can then calculate each of the four energy
+\                       \ banks' values before drawing them later
+\
+\STX T1                 \ Set T1 to 3, the threshold at which we change the
+\                       \ indicator's colour
+\
+\.DLL23
+\
+\STY XX15,X             \ Set the X-th byte of XX15 to 0
+\
+\DEX                    \ Decrement the counter
+\
+\BPL DLL23              \ Loop back for the next byte until the four bytes at
+\                       \ XX12 are all zeroed
+\
+\LDX #3                 \ Set up a counter in X to loop through the 4 energy
+\                       \ bank indicators, so we can calculate each of the four
+\                       \ energy banks' values and store them in XX12
+\
+\LDA ENERGY             \ Set A = Q = ENERGY / 4, so they are both now in the
+\LSR A                  \ range 0-63 (so that's a maximum of 16 in each of the
+\LSR A                  \ banks, and a maximum of 15 in the top bank)
+\
+\STA Q                  \ Set Q to A, so we can use Q to hold the remaining
+\                       \ energy as we work our way through each bank, from the
+\                       \ full ones at the bottom to the empty ones at the top
+\
+\.DLL24
+\
+\SEC                    \ Set A = A - 16 to reduce the energy count by a full
+\SBC #16                \ bank
+\
+\BCC DLL26              \ If the C flag is clear then A < 16, so this bank is
+\                       \ not full to the brim, and is therefore the last one
+\                       \ with any energy in it, so jump to DLL26
+\
+\STA Q                  \ This bank is full, so update Q with the energy of the
+\                       \ remaining banks
+\
+\LDA #16                \ Store this bank's level in XX15 as 16, as it is full,
+\STA XX15,X             \ with XX15+3 for the bottom bank and XX15+0 for the top
+\
+\LDA Q                  \ Set A to the remaining energy level again
+\
+\DEX                    \ Decrement X to point to the next bank, i.e. the one
+\                       \ above the bank we just processed
+\
+\BPL DLL24              \ Loop back to DLL24 until we have either processed all
+\                       \ four banks, or jumped out early to DLL26 if the top
+\                       \ banks have no charge
+\
+\BMI DLL9               \ Jump to DLL9 as we have processed all four banks (this
+\                       \ BMI is effectively a JMP as A will never be positive)
+\
+\.DLL26
+\
+\LDA Q                  \ If we get here then the bank we just checked is not
+\STA XX15,X             \ fully charged, so store its value in XX15 (using Q,
+\                       \ which contains the energy of the remaining banks -
+\                       \ i.e. this one)
+\
+\                       \ Now that we have the four energy bank values in XX12,
+\                       \ we can draw them, starting with the top bank in XX12
+\                       \ and looping down to the bottom bank in XX12+3, using Y
+\                       \ as a loop counter, which was set to 0 above
+\
+\.DLL9
+\
+\LDA XX15,Y             \ Fetch the value of the Y-th indicator, starting from
+\                       \ the top
+\
+\STY P                  \ Store the indicator number in P for retrieval later
+\
+\JSR DIL                \ Draw the energy bank using a range of 0-15, and
+\                       \ increment SC to point to the next indicator (the
+\                       \ next energy bank down)
+\
+\LDY P                  \ Restore the indicator number into Y
+\
+\INY                    \ Increment the indicator number
+\
+\CPY #4                 \ Check to see if we have drawn the last energy bank
+\
+\BNE DLL9               \ Loop back to DLL9 if we have more banks to draw,
+\                       \ otherwise we are done
 
-.DLL23
-
- STY XX15,X             \ Set the X-th byte of XX15 to 0
-
- DEX                    \ Decrement the counter
-
- BPL DLL23              \ Loop back for the next byte until the four bytes at
-                        \ XX12 are all zeroed
-
- LDX #3                 \ Set up a counter in X to loop through the 4 energy
-                        \ bank indicators, so we can calculate each of the four
-                        \ energy banks' values and store them in XX12
-
- LDA ENERGY             \ Set A = Q = ENERGY / 4, so they are both now in the
- LSR A                  \ range 0-63 (so that's a maximum of 16 in each of the
- LSR A                  \ banks, and a maximum of 15 in the top bank)
-
- STA Q                  \ Set Q to A, so we can use Q to hold the remaining
-                        \ energy as we work our way through each bank, from the
-                        \ full ones at the bottom to the empty ones at the top
-
-.DLL24
-
- SEC                    \ Set A = A - 16 to reduce the energy count by a full
- SBC #16                \ bank
-
- BCC DLL26              \ If the C flag is clear then A < 16, so this bank is
-                        \ not full to the brim, and is therefore the last one
-                        \ with any energy in it, so jump to DLL26
-
- STA Q                  \ This bank is full, so update Q with the energy of the
-                        \ remaining banks
-
- LDA #16                \ Store this bank's level in XX15 as 16, as it is full,
- STA XX15,X             \ with XX15+3 for the bottom bank and XX15+0 for the top
-
- LDA Q                  \ Set A to the remaining energy level again
-
- DEX                    \ Decrement X to point to the next bank, i.e. the one
-                        \ above the bank we just processed
-
- BPL DLL24              \ Loop back to DLL24 until we have either processed all
-                        \ four banks, or jumped out early to DLL26 if the top
-                        \ banks have no charge
-
- BMI DLL9               \ Jump to DLL9 as we have processed all four banks (this
-                        \ BMI is effectively a JMP as A will never be positive)
-
-.DLL26
-
- LDA Q                  \ If we get here then the bank we just checked is not
- STA XX15,X             \ fully charged, so store its value in XX15 (using Q,
-                        \ which contains the energy of the remaining banks -
-                        \ i.e. this one)
-
-                        \ Now that we have the four energy bank values in XX12,
-                        \ we can draw them, starting with the top bank in XX12
-                        \ and looping down to the bottom bank in XX12+3, using Y
-                        \ as a loop counter, which was set to 0 above
-
-.DLL9
-
- LDA XX15,Y             \ Fetch the value of the Y-th indicator, starting from
-                        \ the top
-
- STY P                  \ Store the indicator number in P for retrieval later
-
- JSR DIL                \ Draw the energy bank using a range of 0-15, and
-                        \ increment SC to point to the next indicator (the
-                        \ next energy bank down)
-
- LDY P                  \ Restore the indicator number into Y
-
- INY                    \ Increment the indicator number
-
- CPY #4                 \ Check to see if we have drawn the last energy bank
-
- BNE DLL9               \ Loop back to DLL9 if we have more banks to draw,
-                        \ otherwise we are done
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -8396,10 +8506,17 @@ ENDMACRO
 \
 \ ******************************************************************************
 
- LDA #&70               \ Set SC(1 0) = &7020, which is the screen address for
- STA SC+1               \ the character block containing the left end of the
- LDA #&20               \ top indicator in the left part of the dashboard, the
- STA SC                 \ one showing the forward shield
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #&70               \ Set SC(1 0) = &7020, which is the screen address for
+\STA SC+1               \ the character block containing the left end of the
+\LDA #&20               \ top indicator in the left part of the dashboard, the
+\STA SC                 \ one showing the forward shield
+
+                        \ --- End of removed code ----------------------------->
+
+ LDA #14                \ Set T1 to 14, the threshold at which we change the
+ STA T1                 \ indicator's colour
 
  LDA FSH                \ Draw the forward shield indicator using a range of
  JSR DILX               \ 0-255, and increment SC to point to the next indicator
@@ -8409,16 +8526,20 @@ ENDMACRO
  JSR DILX               \ and increment SC to point to the next indicator (the
                         \ fuel level)
 
- LDA #YELLOW2           \ Set K (the colour we should show for high values) to
- STA K                  \ yellow
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STA K+1                \ Set K+1 (the colour we should show for low values) to
-                        \ yellow, so the fuel indicator always shows in this
-                        \ colour
+\LDA #YELLOW2           \ Set K (the colour we should show for high values) to
+\STA K                  \ yellow
+\
+\STA K+1                \ Set K+1 (the colour we should show for low values) to
+\                       \ yellow, so the fuel indicator always shows in this
+\                       \ colour
+\
+\LDA QQ14               \ Draw the fuel level indicator using a range of 0-63,
+\JSR DILX+2             \ and increment SC to point to the next indicator (the
+\                       \ cabin temperature)
 
- LDA QQ14               \ Draw the fuel level indicator using a range of 0-63,
- JSR DILX+2             \ and increment SC to point to the next indicator (the
-                        \ cabin temperature)
+                        \ --- End of removed code ----------------------------->
 
  JSR PZW2               \ Call PZW2 to set A to the colour for dangerous values
                         \ and X to the colour for safe values, suitable for
@@ -8437,30 +8558,209 @@ ENDMACRO
  LDX #11                \ Set T1 to 11, the threshold at which we change the
  STX T1                 \ cabin and laser temperature indicators' colours
 
- LDA CABTMP             \ Draw the cabin temperature indicator using a range of
- JSR DILX               \ 0-255, and increment SC to point to the next indicator
-                        \ (the laser temperature)
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA CABTMP             \ Draw the cabin temperature indicator using a range of
+\JSR DILX               \ 0-255, and increment SC to point to the next indicator
+\                       \ (the laser temperature)
+
+                        \ --- End of removed code ----------------------------->
 
  LDA GNTMP              \ Draw the laser temperature indicator using a range of
  JSR DILX               \ 0-255, and increment SC to point to the next indicator
                         \ (the altitude)
 
- LDA #240               \ Set T1 to 240, the threshold at which we change the
- STA T1                 \ altitude indicator's colour. As the altitude has a
-                        \ range of 0-255, pixel 16 will not be filled in, and
-                        \ 240 would change the colour when moving between pixels
-                        \ 15 and 16, so this effectively switches off the colour
-                        \ change for the altitude indicator
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #YELLOW2           \ Set K (the colour we should show for high values) to
- STA K                  \ yellow
+\LDA #240               \ Set T1 to 240, the threshold at which we change the
+\STA T1                 \ altitude indicator's colour. As the altitude has a
+\                       \ range of 0-255, pixel 16 will not be filled in, and
+\                       \ 240 would change the colour when moving between pixels
+\                       \ 15 and 16, so this effectively switches off the colour
+\                       \ change for the altitude indicator
+\
+\LDA #YELLOW2           \ Set K (the colour we should show for high values) to
+\STA K                  \ yellow
+\
+\STA K+1                \ Set K+1 (the colour we should show for low values) to
+\                       \ yellow, so the altitude indicator always shows in this
+\                       \ colour
+\
+\LDA ALTIT              \ Draw the altitude indicator using a range of 0-255,
+\JMP DILX               \ returning from the subroutine using a tail call
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR PZW                \ Call PZW to set A to the colour for dangerous values
+                        \ and X to the colour for safe values
+
+ STX K                  \ Set K (the colour we should show for high values) to X
+                        \ (the colour to use for safe values)
 
  STA K+1                \ Set K+1 (the colour we should show for low values) to
-                        \ yellow, so the altitude indicator always shows in this
-                        \ colour
+                        \ A (the colour to use for dangerous values)
 
- LDA ALTIT              \ Draw the altitude indicator using a range of 0-255,
- JMP DILX               \ returning from the subroutine using a tail call
+ LDA ENERGY             \ Draw the energy bank using a range of 0-255, and
+ JSR DILX               \ increment SC to point to the next indicator
+                        \ (the aft shield)
+
+ LDA #&A0               \ Set SC(1 0) = &71A0, which is the screen address for
+ STA SC                 \ the character block containing the left end of the
+ LDA #&71               \ top indicator in the right part of the dashboard, the
+ STA SC+1               \ one showing our speed
+
+ JSR PZW2               \ Call PZW2 to set A to the colour for dangerous values
+                        \ and X to the colour for safe values, suitable for
+                        \ non-striped indicators
+
+ STX K+1                \ Set K+1 (the colour we should show for low values) to
+                        \ X (the colour to use for safe values)
+
+ STA K                  \ Set K (the colour we should show for high values) to
+                        \ A (the colour to use for dangerous values)
+
+                        \ The above sets the following indicators to show red
+                        \ for high values and yellow/white for low values
+
+ LDA #14                \ Set T1 to 14, the threshold at which we change the
+ STA T1                 \ indicator's colour
+
+ LDA player2DELTA       \ Fetch our ship's speed into A, in the range 0-40
+
+\LSR A                  \ Draw the speed indicator using a range of 0-31, and
+ JSR DIL-1              \ increment SC to point to the next indicator (the roll
+                        \ indicator). The LSR is commented out as it isn't
+                        \ required with a call to DIL-1, so perhaps this was
+                        \ originally a call to DIL that got optimised
+
+ LDA #0                 \ Set R = P = 0 for the low bytes in the call to the ADD
+ STA R                  \ routine below
+ STA P
+
+ LDA #8                 \ Set S = 8, which is the value of the centre of the
+ STA S                  \ roll indicator
+
+ LDA player2ALP1        \ Fetch the roll angle alpha as a value between 0 and
+ LSR A                  \ 31, and divide by 4 to get a value of 0 to 7
+ LSR A
+
+ ORA player2ALP2        \ Apply the roll sign to the value, and flip the sign,
+ EOR #%10000000         \ so it's now in the range -7 to +7, with a positive
+                        \ roll angle alpha giving a negative value in A
+
+ JSR ADD                \ We now add A to S to give us a value in the range 1 to
+                        \ 15, which we can pass to DIL2 to draw the vertical
+                        \ bar on the indicator at this position. We use the ADD
+                        \ routine like this:
+                        \
+                        \ (A X) = (A 0) + (S 0)
+                        \
+                        \ and just take the high byte of the result. We use ADD
+                        \ rather than a normal ADC because ADD separates out the
+                        \ sign bit and does the arithmetic using absolute values
+                        \ and separate sign bits, which we want here rather than
+                        \ the two's complement that ADC uses
+
+ LDY #1                 \ We want to start drawing the vertical indicator bar on
+                        \ the second line in the indicator's character block, so
+                        \ set Y to point to that row's offset
+
+ JSR DIL2               \ Draw a vertical bar on the roll indicator at offset A
+                        \ and increment SC to point to the next indicator (the
+                        \ pitch indicator)
+
+ LDA player2BETA        \ Fetch the pitch angle beta as a value between -8 and
+                        \ +8
+
+ LDX player2BET1        \ Fetch the magnitude of the pitch angle beta, and if it
+ BEQ P%+4               \ is 0 (i.e. we are not pitching), skip the next
+                        \ instruction
+
+ SBC #1                 \ The pitch angle beta is non-zero, so set A = A - 1
+                        \ (the C flag is set by the call to DIL2 above, so we
+                        \ don't need to do a SEC). This gives us a value of A
+                        \ from -7 to +7 because these are magnitude-based
+                        \ numbers with sign bits, rather than two's complement
+                        \ numbers
+
+ JSR ADD                \ We now add A to S to give us a value in the range 1 to
+                        \ 15, which we can pass to DIL2 to draw the vertical
+                        \ bar on the indicator at this position (see the JSR ADD
+                        \ above for more on this)
+
+ LDY #3                 \ We want to start drawing the vertical indicator bar on
+                        \ the fourth line in the indicator's character block, so
+                        \ set Y to point to that row's offset
+
+ JSR DIL2               \ Draw a vertical bar on the pitch indicator at offset A
+                        \ and increment SC to point to the next indicator (the
+                        \ four energy banks)
+
+ INC SC+1               \ Increment the high byte of SC to point to the next
+ INC SC+1               \ character row on-screen (as each row takes up exactly
+                        \ two pages of 256 bytes) - so this sets up SC to point
+                        \ to the next indicator, i.e. the one below the one we
+                        \ just drew
+
+ JSR PZW                \ Call PZW to set A to the colour for dangerous values
+                        \ and X to the colour for safe values
+
+ STX K                  \ Set K (the colour we should show for high values) to X
+                        \ (the colour to use for safe values)
+
+ STA K+1                \ Set K+1 (the colour we should show for low values) to
+                        \ A (the colour to use for dangerous values)
+
+                        \ The above sets the following indicators to show red
+                        \ for low values and yellow/white for high values, which
+                        \ we use not only for the energy banks, but also for the
+                        \ shield levels and current fuel
+
+ LDA #14                \ Set T1 to 14, the threshold at which we change the
+ STA T1                 \ indicator's colour
+
+ LDA player2FSH         \ Draw the forward shield indicator using a range of
+ JSR DILX               \ 0-255, and increment SC to point to the next indicator
+                        \ (the aft shield)
+
+ LDA player2ASH         \ Draw the aft shield indicator using a range of 0-255,
+ JSR DILX               \ and increment SC to point to the next indicator (the
+                        \ fuel level)
+
+ JSR PZW2               \ Call PZW2 to set A to the colour for dangerous values
+                        \ and X to the colour for safe values, suitable for
+                        \ non-striped indicators
+
+ STX K+1                \ Set K+1 (the colour we should show for low values) to
+                        \ X (the colour to use for safe values)
+
+ STA K                  \ Set K (the colour we should show for high values) to
+                        \ A (the colour to use for dangerous values)
+
+                        \ The above sets the following indicators to show red
+                        \ for high values and yellow/white for low values, which
+                        \ we use for the cabin and laser temperature bars
+
+ LDX #11                \ Set T1 to 11, the threshold at which we change the
+ STX T1                 \ cabin and laser temperature indicators' colours
+
+ LDA player2GNTMP       \ Draw the laser temperature indicator using a range of
+ JSR DILX               \ 0-255, and increment SC to point to the next indicator
+                        \ (the altitude)
+
+ JSR PZW                \ Call PZW to set A to the colour for dangerous values
+                        \ and X to the colour for safe values
+
+ STX K                  \ Set K (the colour we should show for high values) to X
+                        \ (the colour to use for safe values)
+
+ STA K+1                \ Set K+1 (the colour we should show for low values) to
+                        \ A (the colour to use for dangerous values)
+
+ LDA player2ENERGY      \ Draw the energy bank using a range of 0-255, and
+ JMP DILX               \ return from the subroutine using a tail call
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -8774,9 +9074,13 @@ ENDMACRO
 
 .DIL2
 
- LDY #1                 \ We want to start drawing the vertical indicator bar on
-                        \ the second line in the indicator's character block, so
-                        \ set Y to point to that row's offset
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #1                 \ We want to start drawing the vertical indicator bar on
+\                       \ the second line in the indicator's character block, so
+\                       \ set Y to point to that row's offset
+
+                        \ --- End of removed code ----------------------------->
 
  STA Q                  \ Store the offset of the vertical bar to draw in Q
 
@@ -8844,27 +9148,37 @@ ENDMACRO
  INY                    \ Draw the next pixel row, incrementing Y
  STA (SC),Y
 
- INY                    \ And draw the third pixel row, incrementing Y
- STA (SC),Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- INY                    \ And draw the fourth pixel row, incrementing Y
- STA (SC),Y
+\INY                    \ And draw the third pixel row, incrementing Y
+\STA (SC),Y
+\
+\INY                    \ And draw the fourth pixel row, incrementing Y
+\STA (SC),Y
 
- TYA                    \ Add 5 to Y, so Y is now 8 more than when we started
+                        \ --- And replaced by: -------------------------------->
+
+ TYA                    \ Add 7 to Y, so Y is now 8 more than when we started
  CLC                    \ this loop iteration, so Y now points to the address
- ADC #5                 \ of the first line of the indicator bar in the next
+ ADC #7                 \ of the first line of the indicator bar in the next
  TAY                    \ character block (as each character is 8 bytes of
                         \ screen memory)
+
+                        \ --- End of replacement ------------------------------>
 
  CPY #60                \ If Y < 60 then we still have some more character
  BCC DLL10              \ blocks to draw, so loop back to DLL10 to display the
                         \ next one along
 
- INC SC+1               \ Increment the high byte of SC to point to the next
- INC SC+1               \ character row on-screen (as each row takes up exactly
-                        \ two pages of 256 bytes) - so this sets up SC to point
-                        \ to the next indicator, i.e. the one below the one we
-                        \ just drew
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\INC SC+1               \ Increment the high byte of SC to point to the next
+\INC SC+1               \ character row on-screen (as each row takes up exactly
+\                       \ two pages of 256 bytes) - so this sets up SC to point
+\                       \ to the next indicator, i.e. the one below the one we
+\                       \ just drew
+
+                        \ --- End of removed code ----------------------------->
 
  RTS                    \ Return from the subroutine
 
@@ -9063,14 +9377,23 @@ ENDMACRO
                         \ (i.e. the bottom part of the screen) but with no
                         \ cursor
 
- LDA ESCP               \ Set A = ESCP, which is &FF if we have an escape pod
-                        \ fitted, or 0 if we don't
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- AND #4                 \ Set A = 4 if we have an escape pod fitted, or 0 if we
-                        \ don't
+\LDA ESCP               \ Set A = ESCP, which is &FF if we have an escape pod
+\                       \ fitted, or 0 if we don't
+\
+\AND #4                 \ Set A = 4 if we have an escape pod fitted, or 0 if we
+\                       \ don't
+\
+\EOR #&34               \ Set A = &30 if we have an escape pod fitted, or &34 if
+\                       \ we don't
 
- EOR #&34               \ Set A = &30 if we have an escape pod fitted, or &34 if
-                        \ we don't
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #&34               \ Set A to indicate that we don't have an escape pod
+                        \ fitted
+
+                        \ --- End of replacement ------------------------------>
 
  STA &FE21              \ Store A in SHEILA &21 to map colour 3 (#YELLOW2) to
                         \ white if we have an escape pod fitted, or yellow if we

@@ -6436,7 +6436,6 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
-
 .b
 
  SEC                    \ Set A = ENERGY + ENGY + 1, so our ship's energy
@@ -13328,8 +13327,12 @@ ENDIF
  LDA DELTA              \ Send the current speed to the I/O processor
  JSR OSWRCH
 
- LDA ALTIT              \ Send the current altitude to the I/O processor
- JSR OSWRCH
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA ALTIT              \ Send the current altitude to the I/O processor
+\JSR OSWRCH
+
+                        \ --- End of removed code ----------------------------->
 
  LDA MCNT               \ Send the value of the main loop counter to the I/O
  JSR OSWRCH             \ processor
@@ -13340,20 +13343,63 @@ ENDIF
  LDA ASH                \ Send the aft shield status to the I/O processor
  JSR OSWRCH
 
- LDA QQ14               \ Send the current fuel level to the I/O processor
- JSR OSWRCH
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA QQ14               \ Send the current fuel level to the I/O processor
+\JSR OSWRCH
+
+                        \ --- End of removed code ----------------------------->
 
  LDA GNTMP              \ Send the laser temperature to the I/O processor
  JSR OSWRCH
 
- LDA CABTMP             \ Send the cabin temperature to the I/O processor
- JSR OSWRCH
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA CABTMP             \ Send the cabin temperature to the I/O processor
+\JSR OSWRCH
+
+                        \ --- End of removed code ----------------------------->
 
  LDA FLH                \ Send the flashing console bars configuration setting
  JSR OSWRCH             \ to the I/O processor
 
- LDA ESCP               \ Send the escape pod status to the I/O processor
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA ESCP               \ Send the escape pod status to the I/O processor
+\JSR OSWRCH
+
+                        \ --- End of removed code ----------------------------->
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player2ENERGY      \ Send the energy bank status to the I/O processor
  JSR OSWRCH
+
+ LDA player2ALP1        \ Send the magnitude of the roll angle to the I/O
+ JSR OSWRCH             \ processor
+
+ LDA player2ALP2        \ Send the sign of the roll angle to the I/O processor
+ JSR OSWRCH
+
+ LDA player2BETA        \ Send the signed pitch angle to the I/O processor
+ JSR OSWRCH
+
+ LDA player2BET1        \ Send the magnitude of the pitch angle to the I/O
+ JSR OSWRCH             \ processor
+
+ LDA player2DELTA       \ Send the current speed to the I/O processor
+ JSR OSWRCH
+
+ LDA player2FSH         \ Send the front shield status to the I/O processor
+ JSR OSWRCH
+
+ LDA player2ASH         \ Send the aft shield status to the I/O processor
+ JSR OSWRCH
+
+ LDA player2GNTMP       \ Send the laser temperature to the I/O processor
+ JSR OSWRCH
+
+                        \ --- End of added code ------------------------------->
 
  LDA MCNT               \ This value will be zero on one out of every four
  AND #3                 \ iterations of the main loop, so skip the following
