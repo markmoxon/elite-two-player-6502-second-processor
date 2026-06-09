@@ -46754,11 +46754,23 @@ ENDIF
  STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
                         \ to the I/O processor with the #onescan command
 
- LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 6 or 7,
- ORA INWK+4             \ then the ship is too far away to be shown on the
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 6 or 7,
+\ORA INWK+4             \ then the ship is too far away to be shown on the
+\ORA INWK+7             \ scanner, so return from the subroutine (as SC5
+\AND #%11000000         \ contains an RTS)
+\BNE SC5
+                        \ --- And replaced by: -------------------------------->
+
+
+ LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 5, 6, or
+ ORA INWK+4             \ 7, then the ship is too far away to be shown on the
  ORA INWK+7             \ scanner, so return from the subroutine (as SC5
- AND #%11000000         \ contains an RTS)
+ AND #%11100000         \ contains an RTS)
  BNE SC5
+
+                        \ --- End of replacement ------------------------------>
 
                         \ If we get here, we know x_hi, y_hi and z_hi are all
                         \ 63 (%00111111) or less
@@ -46768,6 +46780,22 @@ ENDIF
                         \ using the following:
                         \
                         \   X1 = 123 + (x_sign x_hi)
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA INWK+1             \ Set A = x_hi
+
+                        \ --- And replaced by: -------------------------------->
+
+
+                        \ --- End of replacement ------------------------------>
+
+ LDA INWK+2             \ Set A = x_hi * 2
+ ASL A
+ LDA INWK+1
+ ROL A
+
+                        \ --- End of added code ------------------------------->
 
  LDA INWK+1             \ Set A = x_hi
 
@@ -46800,9 +46828,19 @@ ENDIF
                         \
                         \   SC = 255 - (35 + z_hi / 4)
 
- LDA INWK+7             \ Set A = z_hi / 4
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA INWK+7             \ Set A = z_hi / 4
+\LSR A                  \
+\LSR A                  \ So A is in the range 0-15
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA INWK+7             \ Set A = z_hi / 2
  LSR A                  \
- LSR A                  \ So A is in the range 0-15
+                        \ So A is in the range 0-15
+
+                        \ --- End of replacement ------------------------------>
 
  CLC                    \ Clear the C flag for the addition below
 
@@ -46828,8 +46866,16 @@ ENDIF
                         \
                         \ A = - (y_sign y_hi) / 2
 
- LDA INWK+4             \ Set A = y_hi / 2
- LSR A
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA INWK+4             \ Set A = y_hi / 2
+\LSR A
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA INWK+4             \ Set A = y_hi
+
+                        \ --- End of replacement ------------------------------>
 
  CLC                    \ Clear the C flag
 
