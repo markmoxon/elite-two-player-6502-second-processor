@@ -24591,12 +24591,22 @@ ENDIF
 
  JSR ZINF               \ Call ZINF to reset the INWK ship workspace
 
- LDA #96                \ Give ship the same orientation as us, so rotations
- STA INWK+14            \ work
+ STA INWK+22            \ Fix the sign of sidev so the ship the same orientation
+                        \ as player 1, otherwise rotations won't work
+                        \
+                        \ In other words, we set the orientation vectors as
+                        \ follows:
+                        \
+                        \   sidev = (-1,  0,  0)
+                        \   roofv = ( 0,  1,  0)
+                        \   nosev = ( 0,  0, -1)
+                        \
+                        \ So player 2's ship points backwards, in the opposite
+                        \ direction to player 1's ship
 
- LDA #7                 \ Set z_hi = -7 (behind)
- STA INWK+7
- LDA #%10000000
+ LDA #1                 \ Set z_hi = -1, so player 2's ship is behind player 1
+ STA INWK+7             \ and they start out back to back, like a proper
+ LDA #%10000000         \ gunfight
  STA INWK+8
 
  LDA #PLAYER2AI         \ If player 2 is an NPC then set player 2's AI flag in
