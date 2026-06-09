@@ -3926,6 +3926,10 @@ ENDIF
 
  SKIP 1                 \ Player 2's score
 
+.player2Firing
+
+ SKIP 1                 \ Player 2's laser status when an NPC
+
 .coordinateIndex
 
  SKIP 1                 \ The coordinate index in Multiply16x24
@@ -5433,6 +5437,17 @@ ENDIF
 
 {
 
+ LDA player2INWK32      \ If player 2 is not an NPC, skip the following check
+ BPL main1
+
+ BIT player2Firing      \ If player 2 is not firing its laser then skip the
+ BPL main1              \ following
+
+ LDA #&FF               \ Fire the NPC's front lasers
+ STA KY18
+
+.main1
+
  LDA #0                 \ Set LAS = 0, to switch the laser off while we do the
  STA player2LAS         \ following logic
 
@@ -5479,7 +5494,7 @@ ENDIF
  JSR Player2LASLI       \ Call LASLI to draw the laser lines
 
  LDA K%+NI%*2+31        \ Set bit 6 of player 2's INWK+31 byte in slot #2 so we
- ORA #%001000000        \ draw a laser line for player 2
+ ORA #%01000000         \ draw a laser line for player 2
  STA K%+NI%*2+31
 
  PLA                    \ Restore the current view's laser power into A
@@ -14464,6 +14479,22 @@ ENDIF
 
 .TA14
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If this is not player 2, skip the following
+ CMP #2
+ BNE tact1
+
+ LDA player2INWK32      \ If player 2 is not an NPC, skip the following
+ BPL tact1
+
+ STZ player2Firing      \ Reset player2Firing to denote that player 2 is not
+                        \ firing its laser at us
+
+.tact1
+
+                        \ --- End of added code ------------------------------->
+
  JSR DORND              \ Set A and X to random numbers
 
  LDA NEWB               \ Extract bit 0 of the ship's NEWB flags into the C flag
@@ -14787,7 +14818,7 @@ ENDIF
                         \
                         \   X = -35 to -36, we are bang in the middle of the
                         \       enemy ship's crosshairs, so they can not only
-                        \       shoot us, they can hit us
+                        \       shoot at us, they can hit us
 
  CPX #160               \ If X < 160, i.e. X > -32, then we are not in the enemy
  BCC TA4                \ ship's line of fire, so jump to TA4 to skip the laser
@@ -14801,6 +14832,22 @@ ENDIF
 
  BEQ TA4                \ If the enemy has no laser power, jump to TA4 to skip
                         \ the laser checks
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If this is not player 2, skip the following
+ CMP #2
+ BNE tact2
+
+ LDA player2INWK32      \ If player 2 is not an NPC, skip the following
+ BPL tact2
+
+ SEC                    \ Set bit 7 of player2Firing to denote that NPC player 2
+ ROR player2Firing      \ is firing its lasers
+
+.tact2
+
+                        \ --- End of added code ------------------------------->
 
  LDA INWK+31            \ Set bit 6 in byte #31 to denote that the ship is
  ORA #%01000000         \ firing its laser at us
