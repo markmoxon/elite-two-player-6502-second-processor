@@ -62,6 +62,14 @@
 
  OSCLI = &FFF7          \ The address for the OSCLI routine
 
+ OSRDCH = &FFE0
+
+ OSWRCH = &FFEE
+
+ VIA = &FE00            \ Memory-mapped space for accessing internal hardware,
+                        \ such as the video ULA, 6845 CRTC and 6522 VIAs (also
+                        \ known as SHEILA)
+
 \ ******************************************************************************
 \
 \       Name: ZP
@@ -158,28 +166,59 @@ ENDMACRO
                         \ which would display the following message on the
                         \ loading screen: "2nd Pro ELITE -Finished 13/12/84"
 
- MVE ASOFT, &4200, &1   \ Move the binary at ASOFT (the "Acornsoft" heading) to
+\MVE ASOFT, &4200, &1   \ Move the binary at ASOFT (the "Acornsoft" heading) to
                         \ locations &4200-&42FF in screen memory (1 page)
 
- MVE ELITE, &4600, &1   \ Move the binary at ELITE (the "ELITE" heading) to
+\MVE ELITE, &4600, &1   \ Move the binary at ELITE (the "ELITE" heading) to
                         \ locations &4600-&46FF in screen memory (1 page)
 
- MVE CpASOFT, &6C00, &1 \ Move the binary at CpASOFT (the Acornsoft copyright
+\MVE CpASOFT, &6C00, &1 \ Move the binary at CpASOFT (the Acornsoft copyright
                         \ message) to locations &6C00-&6CFF in screen memory
                         \ (1 page)
 
+ LDA #%00010100         \ Set the Video ULA control register (SHEILA &20) to
+ STA VIA+&20            \ %00010100, which is the same as switching to mode 2,
+
+ LDA #&34               \ Set A to indicate that we don't have an escape pod
+                        \ fitted
+
+ STA &FE21              \ Store A in SHEILA &21 to map colour 3 (#YELLOW2) to
+                        \ white if we have an escape pod fitted, or yellow if we
+                        \ don't, so the outline colour of the dashboard changes
+                        \ from yellow to white if we have an escape pod fitted
+
+.VNT2
+
+ LDA TVT1,Y             \ Copy the Y-th palette byte from TVT1 to SHEILA &21
+ STA &FE21              \ to map logical to actual colours for the bottom part
+                        \ of the screen (i.e. the dashboard)
+
+ DEY                    \ Decrement the palette byte counter
+
+ BNE VNT2               \ Loop back to VNT2 until we have copied all the palette
+                        \ bytes bar the first one
+
+
+.loop
+
+ JSR OSRDCH             \ Detect TAB
+ CMP #9
+ BNE loop
+
  LDX #LO(MESS2)         \ Set (Y X) to point to MESS2 ("R.I.CODE")
  LDY #HI(MESS2)
+ JSR OSCLI
 
- JSR OSCLI              \ Call OSCLI to run the OS command in MESS2, which *RUNs
-                        \ the main I/O processor game code in I.CODE
+ LDA #7
+ JSR OSWRCH
 
- LDX #LO(MESS3)         \ Set (Y X) to point to MESS3 ("R.P.CODE")
- LDY #HI(MESS3)
-
- JMP OSCLI              \ Call OSCLI to run the OS command in MESS3, which *RUNs
-                        \ the main parasite game code in P.CODE, returning from
-                        \ the subroutine using a tail call
+ INC char
+ LDA char
+ CMP #'9'+1
+ BNE loop
+ LDA #'0'
+ STA char
+ JMP loop
 
 \ ******************************************************************************
 \
@@ -193,8 +232,21 @@ ENDMACRO
 
 .MESS2
 
- EQUS "R.I.CODE"        \ This is short for "*RUN I.CODE"
+ EQUS "SAVE SCR"
+.char
+ EQUS "0 FFFF7000 FFFF7E00"
  EQUB 13
+
+.TVT1
+
+ EQUB &34, &43
+ EQUB &25, &16
+ EQUB &86, &70
+ EQUB &61, &52
+ EQUB &C3, &B4
+ EQUB &A5, &96
+ EQUB &07, &F0
+ EQUB &E1, &D2
 
 \ ******************************************************************************
 \
