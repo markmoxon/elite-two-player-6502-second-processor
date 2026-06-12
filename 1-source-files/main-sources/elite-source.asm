@@ -46859,7 +46859,15 @@ ENDIF
 
 .SC2
 
- ADC #123               \ Set A = 123 + (x_sign x_hi)
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\ADC #123               \ Set A = 123 + (x_sign x_hi)
+
+                        \ --- And replaced by: -------------------------------->
+
+ ADC #127               \ Set A = 125 + (x_sign x_hi)
+
+                        \ --- End of replacement ------------------------------>
 
  STA SCANx1             \ Store the x-coordinate in SCANx1 so it can be sent
                         \ to the I/O processor with the #onescan command
