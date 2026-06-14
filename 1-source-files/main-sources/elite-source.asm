@@ -5274,9 +5274,13 @@ ENDIF
  BEQ MA17               \ down to MA17 to skip the following
 
  LDA player2DELTA       \ The "go faster" key is being pressed, so first we
- CMP #40                \ fetch the current speed from DELTA into A, and if
- BCS MA17               \ A >= 40, we are already going at full pelt, so jump
+ CMP #37                \ fetch the current speed from DELTA into A, and if
+ BCS MA17               \ A >= 37, we are already going at full pelt, so jump
                         \ down to MA17 to skip the following
+                        \
+                        \ This is a slightly lower maximum than player 1 as
+                        \ otherwise the in-game speeds don't quite match (I am
+                        \ not sure why, but this seems to work)
 
  INC player2DELTA       \ We can go a bit faster, so increment the speed in
                         \ location DELTA
@@ -32970,17 +32974,25 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- STZ splitScreen        \ Turn off split-screen drawing
+ LDX #(coordinateIndex-splitScreen) \ We're going to zero the player workspace
+                                    \ variables
+
+.zero1
+
+ STA splitScreen,X      \ Zero the X-th byte of player1COMC
+
+ DEX                    \ Decrement the loop counter
+
+ BPL zero1              \ Loop back to zero the next variable until we have done
+                        \ them all
+
+                        \ --- End of added code ------------------------------->
 
  LDX #POW               \ Give both players front and rear pulse lasers for now
  STX LASER
  STX LASER+1
  STX player2LASER
  STX player2LASER+1
- STZ player2LASER+2
- STZ player2LASER+3
-
- STZ player2GNTMP       \ Cool down the lasers completely
 
  LDX #&FF               \ Recharge the forward and aft shields
  STX player2FSH
@@ -33131,7 +33143,7 @@ ENDIF
  LDA #1                 \ Reset DELTA (speed) to 1
  STA DELTA
 
- STA player2DELTA       \ Reset player 2's speed to 3
+ STA player2DELTA       \ Reset player 2's speed to 1
 
                         \ --- End of replacement ------------------------------>
 
@@ -44788,7 +44800,7 @@ ENDIF
 
 .move1
 
- CMP #1                 \ If this is not the planet, jump to move2 to keep
+ CMP #1                 \ If this is not the sun, jump to move2 to keep
  BNE move2              \ checking
 
                         \ If we get here then this is the sun
@@ -44922,11 +44934,15 @@ ENDIF
  BIT INWK+32            \ If player 2 is an NPC then jump to move4
  BMI move4
 
- LDA player2DELTA       \ Set the speed for player 2's ship to player 2's speed
+ LDA player2DELTA       \ Set INWK+27 = player2DELTA * 3 / 4
+ ASL A                  \
+ CLC                    \ This makes player 2's in-game speed match that of
+ ADC player2DELTA       \ player 1 (I'm not sure why this is required, but
+ LSR A                  \ player 2 is way too fast without this scaling)
+ LSR A
  STA INWK+27
 
- BPL move5              \ Jump to move5 to skip the following (this BPL is
-                        \ effectively a JMP as we just passed through a BMI)
+ JMP move5              \ Jump to move5 to skip the following
 
 .move4
 
