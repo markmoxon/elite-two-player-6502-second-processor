@@ -150,29 +150,6 @@ ENDIF
 
  DOD = 34               \ Ship type for a Dodecahedron ("Dodo") space station
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- PLAYER1SHIP = CYL      \ Ship type for player 1
-
- PLAYER2SHIP = COPS     \ Ship type for player 2
-
- PLAYER2AI = 0          \ AI flag for player 2
-\PLAYER2AI = %11111110  \ AI flag for player 2
-                        \
-                        \  * Bit 0: 0 = no E.C.M.
-                        \           1 = has E.C.M.
-                        \
-                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
-                        \                        (see TACTICS part 7)
-                        \
-                        \  * Bit 7: 0 = dumb
-                        \           1 = AI enabled (apply TACTICS to ship)
-
-\PLAYER2NB = 0          \ Additional NEWB flags for player 2
- PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
-
-                        \ --- End of added code ------------------------------->
-
  JL = ESC               \ Junk is defined as starting from the escape pod
 
  JH = SHU+2             \ Junk is defined as ending before the Cobra Mk III
@@ -338,6 +315,35 @@ ENDIF
  D = 80                 \ The distance from the camera (z-coordinate) of the
                         \ bottom of the visible part of the Star Wars scroll
                         \ text
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ PLAYER1SHIP = CYL      \ Ship type for player 1
+
+ PLAYER2SHIP = COPS     \ Ship type for player 2
+
+ PLAYER1SCAN = CYAN2    \ The colour that player 1 should look for in the
+                        \ scanner and compass
+
+ PLAYER2SCAN = YELLOW2  \ The colour that player 2 should look for in the
+                        \ scanner and compass
+
+ PLAYER2AI = 0          \ AI flag for player 2
+\PLAYER2AI = %11111110  \ AI flag for player 2
+                        \
+                        \  * Bit 0: 0 = no E.C.M.
+                        \           1 = has E.C.M.
+                        \
+                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
+                        \                        (see TACTICS part 7)
+                        \
+                        \  * Bit 7: 0 = dumb
+                        \           1 = AI enabled (apply TACTICS to ship)
+
+\PLAYER2NB = 0          \ Additional NEWB flags for player 2
+ PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -3903,11 +3909,11 @@ ENDIF
 
 .player2FSH
 
- SKIP 1                 \ Player 2's player2FSH value
+ SKIP 1                 \ Player 2's FSH value
 
 .player2ASH
 
- SKIP 1                 \ Player 2's player2ASH value
+ SKIP 1                 \ Player 2's ASH value
 
 .player1Score
 
@@ -3920,6 +3926,18 @@ ENDIF
 .player2Firing
 
  SKIP 1                 \ Player 2's laser status when an NPC
+
+.player1COMX
+
+ SKIP 1                 \ The COMX value for player 1's compass on the left
+
+.player1COMY
+
+ SKIP 1                 \ The COMY value for player 1's compass on the left
+
+.player1COMC
+
+ SKIP 1                 \ The COMC value for player 1's compass on the left
 
 .coordinateIndex
 
@@ -19435,6 +19453,8 @@ ENDIF
 \
 \ ******************************************************************************
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
 .Player2LASLI
 
  JSR DORND              \ Set A and X to random numbers
@@ -19537,6 +19557,8 @@ ENDIF
 
  RTS                    \ Return from the subroutine
 }
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -23630,6 +23652,8 @@ ENDIF
 \
 \ ******************************************************************************
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
 .Player2ee3
 
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
@@ -23644,6 +23668,8 @@ ENDIF
 
  BEQ pr6                \ Jump to pr6 to print X to 5 digits, as the high byte
                         \ in Y is 0
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -27585,6 +27611,8 @@ ENDIF
 \
 \ ******************************************************************************
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
 .Player2SHD
 
  INX                    \ Increment the shield value
@@ -27596,6 +27624,8 @@ ENDIF
                         \ If the shield value is 0 then this means it was 255
                         \ before, which is the maximum value, so keep going to
                         \ bring it back down to 255 and return without draining
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -27715,15 +27745,35 @@ ENDIF
 
 .COMPAS
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\JSR DOT                \ Call DOT to redraw (i.e. remove) the current compass
+\                       \ dot
+\
+\LDA SSPR               \ If we are inside the space station safe zone, jump to
+\BNE SP1                \ SP1 to draw the space station on the compass
+\
+\JSR SPS1               \ Otherwise we need to draw the planet on the compass,
+\                       \ so first call SPS1 to calculate the vector to the
+\                       \ planet and store it in XX15
+
+                        \ --- And replaced by: -------------------------------->
+
+ JSR Player1DOT         \ Call DOT to redraw (i.e. remove) the current compass
+                        \ dot from player 1's compass on the left
+
+ JSR Player2Vector      \ Call Player2Vector to calculate the vector to player
+                        \ 2 and store it in XX15
+
+ JSR Player1SP2         \ Call Player1SP2 to draw XX15 on the left compass
+
  JSR DOT                \ Call DOT to redraw (i.e. remove) the current compass
-                        \ dot
+                        \ dot from player 2's compass on the left
 
- LDA SSPR               \ If we are inside the space station safe zone, jump to
- BNE SP1                \ SP1 to draw the space station on the compass
+ JSR Player1Vector      \ Call Player1Vector to calculate the vector to player
+                        \ 1 and store it in XX15
 
- JSR SPS1               \ Otherwise we need to draw the planet on the compass,
-                        \ so first call SPS1 to calculate the vector to the
-                        \ planet and store it in XX15
+                        \ --- End of replacement ------------------------------>
 
  BRA SP2                \ Jump to SP2 to draw XX15 on the compass, returning
                         \ from the subroutine using a tail call
@@ -27894,15 +27944,31 @@ ENDIF
                         \
                         \   COMY = 204 - X - (1 - 0) = 203 - X
 
- LDA #WHITE2            \ Set A to white, the colour for when the planet or
-                        \ station in the compass is in front of us
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #WHITE2            \ Set A to white, the colour for when the planet or
+\                       \ station in the compass is in front of us
+\
+\LDX XX15+2             \ If the z-coordinate of the XX15 vector is positive,
+\BPL P%+4               \ skip the following instruction
+\
+\LDA #GREEN2            \ The z-coordinate of XX15 is negative, so the planet or
+\                       \ station is behind us and the compass dot should be in
+\                       \ green, so set A accordingly
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #PLAYER2SCAN       \ Set A to the colour for when the ship in the compass
+                        \ is in front of us
 
  LDX XX15+2             \ If the z-coordinate of the XX15 vector is positive,
  BPL P%+4               \ skip the following instruction
 
- LDA #GREEN2            \ The z-coordinate of XX15 is negative, so the planet or
-                        \ station is behind us and the compass dot should be in
-                        \ green, so set A accordingly
+ LDA #PLAYER2SCAN+128   \ The z-coordinate of XX15 is negative, so the ship is
+                        \ behind us and the compass dot should be small, so set
+                        \ bit 7 of the colour to send this to the I/O processor
+
+                        \ --- End of replacement ------------------------------>
 
  STA COMC               \ Store the compass colour in COMC
 
@@ -27975,6 +28041,122 @@ ENDIF
  EQUB 0                 \ The colour of the dash
 
  RTS                    \ End of the parameter block
+
+\ ******************************************************************************
+\
+\       Name: Player1SP2
+\       Type: Subroutine
+\   Category: Dashboard
+\    Summary: Draw a dot on the compass, given the planet/station vector
+\
+\ ------------------------------------------------------------------------------
+\
+\ Draw a dot on the compass to represent the planet or station, whose normalised
+\ vector is in XX15.
+\
+\   XX15 to XX15+2      The normalised vector to the planet or space station,
+\                       stored as x in XX15, y in XX15+1 and z in XX15+2
+\
+\ ******************************************************************************
+
+.Player1SP2
+
+ LDA XX15               \ Set A to the x-coordinate of the planet or station to
+                        \ show on the compass, which will be in the range -96 to
+                        \ +96 as the vector has been normalised
+
+ JSR SPS2               \ Set (Y X) = A / 10, so X will be from -9 to +9, which
+                        \ is the x-offset from the centre of the compass of the
+                        \ dot we want to draw. Returns with the C flag clear
+
+ TXA                    \ Set COMX = 195 + X, as 186 is the pixel x-coordinate
+ ADC #59                \ of the leftmost dot possible on the compass, and X can
+ STA player1COMX        \ be -9, which would be 195 - 9 = 186. This also means
+                        \ that the highest value for COMX is 195 + 9 = 204,
+                        \ which is the pixel x-coordinate of the rightmost dot
+                        \ in the compass... but the compass dot is actually two
+                        \ pixels wide, so the compass dot can overlap the right
+                        \ edge of the compass, but not the left edge
+
+ LDA XX15+1             \ Set A to the y-coordinate of the planet or station to
+                        \ show on the compass, which will be in the range -96 to
+                        \ +96 as the vector has been normalised
+
+ JSR SPS2               \ Set (Y X) = A / 10, so X will be from -9 to +9, which
+                        \ is the x-offset from the centre of the compass of the
+                        \ dot we want to draw. Returns with the C flag clear
+
+ STX T                  \ Set COMY = 204 - X, as 203 is the pixel y-coordinate
+ LDA #204               \ of the centre of the compass, the C flag is clear,
+ SBC T                  \ and the y-axis needs to be flipped around (because
+ STA player1COMY        \ when the planet or station is above us, and the
+                        \ vector is therefore positive, we want to show the dot
+                        \ higher up on the compass, which has a smaller pixel
+                        \ y-coordinate). So this calculation does this:
+                        \
+                        \   COMY = 204 - X - (1 - 0) = 203 - X
+
+ LDA #PLAYER1SCAN       \ Set A to the colour for when the ship in the compass
+                        \ is in front of us
+
+ LDX XX15+2             \ If the z-coordinate of the XX15 vector is positive,
+ BPL P%+4               \ skip the following instruction
+
+ LDA #PLAYER1SCAN+128   \ The z-coordinate of XX15 is negative, so the ship is
+                        \ behind us and the compass dot should be small, so set
+                        \ bit 7 of the colour to send this to the I/O processor
+
+ STA player1COMC        \ Store the compass colour in COMC
+
+                        \ Fall through into DOT to draw the dot on the compass
+
+\ ******************************************************************************
+\
+\       Name: Player1DOT
+\       Type: Subroutine
+\   Category: Drawing pixels
+\    Summary: Draw a dash on the compass by sending a #DOdot command to the I/O
+\             processor
+\
+\ ------------------------------------------------------------------------------
+\
+\ Draw a dash on the compass for player 1 (on the left).
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   COMX                The screen pixel x-coordinate of the dash
+\
+\   COMY                The screen pixel y-coordinate of the dash
+\
+\   COMC                The colour and thickness of the dash:
+\
+\                         * #WHITE2 = a double-height dash in white, for when
+\                           the object in the compass is in front of us
+\
+\                         * #GREEN2 = a single-height dash in green, for when
+\                           the object in the compass is behind us
+\
+\ ******************************************************************************
+
+.Player1DOT
+
+ LDA player1COMY        \ Store the y-coordinate of the dash in byte #0 of the
+ STA DOTY1              \ parameter block below
+
+ LDA player1COMX        \ Store the x-coordinate of the dash in byte #1 of the
+ STA DOTX1              \ parameter block below
+
+ LDA player1COMC        \ Store the dash colour in byte #2 of the parameter
+ STA DOTCOL             \ block below
+
+ LDX #LO(DOTpars)       \ Set (Y X) to point to the parameter block below
+ LDY #HI(DOTpars)
+
+ LDA #DOdot             \ Send a #DOdot command to the I/O processor to draw
+ JMP OSWORD             \ the dash on-screen, returning from the subroutine
+                        \ using a tail call
 
 \ ******************************************************************************
 \
@@ -28123,6 +28305,110 @@ ENDIF
  STA K3+2,X
 
  RTS                    \ Return from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: Player1SPS3
+\       Type: Subroutine
+\   Category: Maths (Geometry)
+\    Summary: Copy a space coordinate from the K% block into K3
+\
+\ ------------------------------------------------------------------------------
+\
+\ Copy one of the planet's coordinates into the corresponding location in the
+\ temporary variable K3. The high byte and absolute value of the sign byte are
+\ copied into the first two K3 bytes, and the sign of the sign byte is copied
+\ into the highest K3 byte.
+\
+\ The comments below are written for copying the planet's x-coordinate into
+\ K3(2 1 0).
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   Determines which coordinate to copy, and to where:
+\
+\                         * X = 0 copies (x_sign, x_hi) into K3(2 1 0)
+\
+\                         * X = 3 copies (y_sign, y_hi) into K3(5 4 3)
+\
+\                         * X = 6 copies (z_sign, z_hi) into K3(8 7 6)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player1SPS3
+
+ LDA K%+NI%*12+1,X      \ Copy x_hi into K3+X
+ STA K3,X
+
+ LDA K%+NI%*12+2,X      \ Set A = Y = x_sign
+ TAY
+
+ AND #%01111111         \ Set K3+1 = |x_sign|
+ STA K3+1,X
+
+ TYA                    \ Set K3+2 = the sign of x_sign
+ AND #%10000000
+ STA K3+2,X
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: Player2SPS3
+\       Type: Subroutine
+\   Category: Maths (Geometry)
+\    Summary: Copy a space coordinate from the K% block into K3
+\
+\ ------------------------------------------------------------------------------
+\
+\ Copy one of the planet's coordinates into the corresponding location in the
+\ temporary variable K3. The high byte and absolute value of the sign byte are
+\ copied into the first two K3 bytes, and the sign of the sign byte is copied
+\ into the highest K3 byte.
+\
+\ The comments below are written for copying the planet's x-coordinate into
+\ K3(2 1 0).
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   Determines which coordinate to copy, and to where:
+\
+\                         * X = 0 copies (x_sign, x_hi) into K3(2 1 0)
+\
+\                         * X = 3 copies (y_sign, y_hi) into K3(5 4 3)
+\
+\                         * X = 6 copies (z_sign, z_hi) into K3(8 7 6)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2SPS3
+
+ LDA K%+NI%*2+1,X       \ Copy x_hi into K3+X
+ STA K3,X
+
+ LDA K%+NI%*2+2,X       \ Set A = Y = x_sign
+ TAY
+
+ AND #%01111111         \ Set K3+1 = |x_sign|
+ STA K3+1,X
+
+ TYA                    \ Set K3+2 = the sign of x_sign
+ AND #%10000000
+ STA K3+2,X
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -36551,6 +36837,70 @@ ENDIF
 
  RTS                    \ This instruction has no effect as we already returned
                         \ from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: Player1Vector
+\       Type: Subroutine
+\   Category: Maths (Geometry)
+\    Summary: Calculate the vector to player 1 and store it in XX15
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   SPS1+1              A BRK instruction
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player1Vector
+
+ LDX #0                 \ Copy the two high bytes of player 1's x-coordinate
+ JSR Player1SPS3        \ into K3(2 1 0), separating out the sign bit into K3+2
+
+ LDX #3                 \ Copy the two high bytes of player 2's y-coordinate
+ JSR Player1SPS3        \ into K3(5 4 3), separating out the sign bit into K3+5
+
+ LDX #6                 \ Copy the two high bytes of player 2's z-coordinate
+ JSR Player1SPS3        \ into K3(8 7 6), separating out the sign bit into K3+8
+
+ JMP TAS2               \ Jump to TAS2 to build XX15 from K3
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: Player2Vector
+\       Type: Subroutine
+\   Category: Maths (Geometry)
+\    Summary: Calculate the vector to player 2 and store it in XX15
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   SPS1+1              A BRK instruction
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2Vector
+
+ LDX #0                 \ Copy the two high bytes of player 2's x-coordinate
+ JSR Player2SPS3        \ into K3(2 1 0), separating out the sign bit into K3+2
+
+ LDX #3                 \ Copy the two high bytes of player 2's y-coordinate
+ JSR Player2SPS3        \ into K3(5 4 3), separating out the sign bit into K3+5
+
+ LDX #6                 \ Copy the two high bytes of player 2's z-coordinate
+ JSR Player2SPS3        \ into K3(8 7 6), separating out the sign bit into K3+8
+
+ JMP TAS2               \ Jump to TAS2 to build XX15 from K3
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \

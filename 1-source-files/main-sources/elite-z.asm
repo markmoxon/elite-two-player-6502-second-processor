@@ -1947,13 +1947,31 @@ ENDIF
  LDA (OSSC),Y           \ colour) and store it in COL
  STA COL
 
- CMP #WHITE2            \ If the dash's colour is not white, jump to CPIX2 to
- BNE CPIX2              \ draw a single-height dash in the compass, as it is
-                        \ showing that the planet or station is behind us
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-                        \ Otherwise the dash is white, which is in front of us,
-                        \ so fall through into CPIX4 to draw a double-height
-                        \ dash in the compass
+\CMP #WHITE2            \ If the dash's colour is not white, jump to CPIX2 to
+\BNE CPIX2              \ draw a single-height dash in the compass, as it is
+\                       \ showing that the planet or station is behind us
+\
+\                       \ Otherwise the dash is white, which is in front of us,
+\                       \ so fall through into CPIX4 to draw a double-height
+\                       \ dash in the compass
+
+                        \ --- And replaced by: -------------------------------->
+
+ BPL CPIX4              \ If bit 7 of the colour is clear then we draw a large
+                        \ dot, so jump to CPIX4 to process this
+
+                        \ If we get here then bit 7 of the colour is set so we
+                        \ draw a small dot
+
+ AND #%01111111         \ Clear bit 7 of the colour
+ STA COL
+
+ JMP CPIX2              \ Jump to CPIX2 to draw a single-height dash in the
+                        \ compass
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
