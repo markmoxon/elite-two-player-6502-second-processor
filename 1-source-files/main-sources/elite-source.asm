@@ -6191,6 +6191,22 @@ ENDIF
 
                         \ --- End of removed code ----------------------------->
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If this is not player 2, jump to main2 to process the
+ CMP #2                 \ NPC ship
+ BNE main2
+
+                        \ Player 2 has been hit, so process player 2's shields
+                        \ here
+
+ JMP MA8                \ Jump to MA8 to skip the following
+
+.main2
+
+                        \ --- End of added code ------------------------------->
+
+
  LDA INWK+35            \ Fetch the hit ship's energy from byte #35 and subtract
  SEC                    \ our current laser power, and if the result is greater
  SBC LAS                \ than zero, the other ship has survived the hit, so
