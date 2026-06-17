@@ -324,8 +324,7 @@ ENDIF
  PLAYER2SCAN = YELLOW2  \ The colour that player 2 should look for in the
                         \ scanner and compass
 
- PLAYER2AI = 0          \ AI flag for player 2
-\PLAYER2AI = %11111110  \ AI flag for player 2
+ PLAYER2AI = %11111110  \ AI flags to set for NPC player 2
                         \
                         \  * Bit 0: 0 = no E.C.M.
                         \           1 = has E.C.M.
@@ -336,8 +335,12 @@ ENDIF
                         \  * Bit 7: 0 = dumb
                         \           1 = AI enabled (apply TACTICS to ship)
 
-\PLAYER2NB = 0          \ Additional NEWB flags for player 2
- PLAYER2NB = %00000100  \ Additional NEWB flags for player 2 (hostile)
+ PLAYER2NB = %00000100  \ Additional NEWB flags to set for NPC player 2
+                        \ (bit 2 set = hostile)
+
+ SHIP_GAP = 96          \ Gap between ships on title screen
+
+ SHIP_Y = 32            \ Vertical position of ships on title screen
 
                         \ --- End of added code ------------------------------->
 
@@ -1347,119 +1350,161 @@ ENDMACRO
 
 .QQ18
 
- RTOK 111               \ Token 0:      "FUEL SCOOPS ON {beep}"
- RTOK 131               \
- CONT 7                 \ Encoded as:   "[111][131]{7}"
- EQUB 0
 
- CHAR ' '               \ Token 1:      " CHART"
- CHAR 'C'               \
- CHAR 'H'               \ Encoded as:   " CH<138>T"
- TWOK 'A', 'R'
- CHAR 'T'
- EQUB 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CHAR 'G'               \ Token 2:      "GOVERNMENT"
- CHAR 'O'               \
- TWOK 'V', 'E'          \ Encoded as:   "GO<150>RNM<146>T"
- CHAR 'R'
- CHAR 'N'
- CHAR 'M'
- TWOK 'E', 'N'
- CHAR 'T'
- EQUB 0
+\RTOK 111               \ Token 0:      "FUEL SCOOPS ON {beep}"
+\RTOK 131               \
+\CONT 7                 \ Encoded as:   "[111][131]{7}"
+\EQUB 0
+\
+\CHAR ' '               \ Token 1:      " CHART"
+\CHAR 'C'               \
+\CHAR 'H'               \ Encoded as:   " CH<138>T"
+\TWOK 'A', 'R'
+\CHAR 'T'
+\EQUB 0
+\
+\CHAR 'G'               \ Token 2:      "GOVERNMENT"
+\CHAR 'O'               \
+\TWOK 'V', 'E'          \ Encoded as:   "GO<150>RNM<146>T"
+\CHAR 'R'
+\CHAR 'N'
+\CHAR 'M'
+\TWOK 'E', 'N'
+\CHAR 'T'
+\EQUB 0
+\
+\CHAR 'D'               \ Token 3:      "DATA ON {selected system name}"
+\TWOK 'A', 'T'          \
+\CHAR 'A'               \ Encoded as:   "D<145>A[131]{3}"
+\RTOK 131
+\CONT 3
+\EQUB 0
+\
+\TWOK 'I', 'N'          \ Token 4:      "INVENTORY{cr}
+\TWOK 'V', 'E'          \               "
+\CHAR 'N'               \
+\CHAR 'T'               \ Encoded as:   "<140><150>NT<153>Y{12}"
+\TWOK 'O', 'R'
+\CHAR 'Y'
+\CONT 12
+\EQUB 0
+\
+\CHAR 'S'               \ Token 5:      "SYSTEM"
+\CHAR 'Y'               \
+\CHAR 'S'               \ Encoded as:   "SYS<156>M"
+\TWOK 'T', 'E'
+\CHAR 'M'
+\EQUB 0
+\
+\CHAR 'P'               \ Token 6:      "PRICE"
+\TWOK 'R', 'I'          \
+\TWOK 'C', 'E'          \ Encoded as:   "P<158><133>"
+\EQUB 0
+\
+\CONT 2                 \ Token 7:      "{current system name} MARKET PRICES"
+\CHAR ' '               \
+\TWOK 'M', 'A'          \ Encoded as:   "{2} <139>RKET [6]S"
+\CHAR 'R'
+\CHAR 'K'
+\CHAR 'E'
+\CHAR 'T'
+\CHAR ' '
+\RTOK 6
+\CHAR 'S'
+\EQUB 0
+\
+\TWOK 'I', 'N'          \ Token 8:      "INDUSTRIAL"
+\CHAR 'D'               \
+\TWOK 'U', 'S'          \ Encoded as:   "<140>D<136>T<158><128>"
+\CHAR 'T'
+\TWOK 'R', 'I'
+\TWOK 'A', 'L'
+\EQUB 0
+\
+\CHAR 'A'               \ Token 9:      "AGRICULTURAL"
+\CHAR 'G'               \
+\TWOK 'R', 'I'          \ Encoded as:   "AG<158>CULTU<148>L"
+\CHAR 'C'
+\CHAR 'U'
+\CHAR 'L'
+\CHAR 'T'
+\CHAR 'U'
+\TWOK 'R', 'A'
+\CHAR 'L'
+\EQUB 0
+\
+\TWOK 'R', 'I'          \ Token 10:     "RICH "
+\CHAR 'C'               \
+\CHAR 'H'               \ Encoded as:   "<158>CH "
+\CHAR ' '
+\EQUB 0
+\
+\CHAR 'A'               \ Token 11:     "AVERAGE "
+\TWOK 'V', 'E'          \
+\TWOK 'R', 'A'          \ Encoded as:   "A<150><148><131> "
+\TWOK 'G', 'E'
+\CHAR ' '
+\EQUB 0
+\
+\CHAR 'P'               \ Token 12:     "POOR "
+\CHAR 'O'               \
+\TWOK 'O', 'R'          \ Encoded as:   "PO<153> "
+\CHAR ' '
+\EQUB 0
+\
+\TWOK 'M', 'A'          \ Token 13:     "MAINLY "
+\TWOK 'I', 'N'          \
+\CHAR 'L'               \ Encoded as:   "<139><140>LY "
+\CHAR 'Y'
+\CHAR ' '
+\EQUB 0
+\
+\CHAR 'U'               \ Token 14:     "UNIT"
+\CHAR 'N'               \
+\CHAR 'I'               \ Encoded as:   "UNIT"
+\CHAR 'T'
+\EQUB 0
+                        \ --- And replaced by: -------------------------------->
 
- CHAR 'D'               \ Token 3:      "DATA ON {selected system name}"
- TWOK 'A', 'T'          \
- CHAR 'A'               \ Encoded as:   "D<145>A[131]{3}"
- RTOK 131
- CONT 3
- EQUB 0
+ EQUB 0                 \ Token 0
 
- TWOK 'I', 'N'          \ Token 4:      "INVENTORY{cr}
- TWOK 'V', 'E'          \               "
- CHAR 'N'               \
- CHAR 'T'               \ Encoded as:   "<140><150>NT<153>Y{12}"
- TWOK 'O', 'R'
- CHAR 'Y'
- CONT 12
- EQUB 0
+ EQUB 0                 \ Token 1
 
- CHAR 'S'               \ Token 5:      "SYSTEM"
- CHAR 'Y'               \
- CHAR 'S'               \ Encoded as:   "SYS<156>M"
- TWOK 'T', 'E'
- CHAR 'M'
- EQUB 0
+ EQUB 0                 \ Token 2
 
- CHAR 'P'               \ Token 6:      "PRICE"
- TWOK 'R', 'I'          \
- TWOK 'C', 'E'          \ Encoded as:   "P<158><133>"
- EQUB 0
+ EQUB 0                 \ Token 3
 
- CONT 2                 \ Token 7:      "{current system name} MARKET PRICES"
- CHAR ' '               \
- TWOK 'M', 'A'          \ Encoded as:   "{2} <139>RKET [6]S"
- CHAR 'R'
- CHAR 'K'
- CHAR 'E'
- CHAR 'T'
- CHAR ' '
- RTOK 6
- CHAR 'S'
- EQUB 0
+ EQUB 0                 \ Token 4
 
- TWOK 'I', 'N'          \ Token 8:      "INDUSTRIAL"
- CHAR 'D'               \
- TWOK 'U', 'S'          \ Encoded as:   "<140>D<136>T<158><128>"
- CHAR 'T'
- TWOK 'R', 'I'
- TWOK 'A', 'L'
- EQUB 0
+ EQUB 0                 \ Token 5
 
- CHAR 'A'               \ Token 9:      "AGRICULTURAL"
- CHAR 'G'               \
- TWOK 'R', 'I'          \ Encoded as:   "AG<158>CULTU<148>L"
+ EQUB 0                 \ Token 6
+
+ EQUB 0                 \ Token 7
+
+ EQUB 0                 \ Token 8
+
+ EQUB 0                 \ Token 9
+
+ EQUB 0                 \ Token 10
+
+ EQUB 0                 \ Token 11
+
+ EQUB 0                 \ Token 12
+
+ EQUB 0                 \ Token 13
+
+ TWOK 'A', 'N'          \ Token 14:     "ANACONDA"
+ CHAR 'A'
  CHAR 'C'
- CHAR 'U'
- CHAR 'L'
- CHAR 'T'
- CHAR 'U'
- TWOK 'R', 'A'
- CHAR 'L'
+ TWOK 'O', 'N'
+ CHAR 'D'
+ CHAR 'A'
  EQUB 0
 
- TWOK 'R', 'I'          \ Token 10:     "RICH "
- CHAR 'C'               \
- CHAR 'H'               \ Encoded as:   "<158>CH "
- CHAR ' '
- EQUB 0
-
- CHAR 'A'               \ Token 11:     "AVERAGE "
- TWOK 'V', 'E'          \
- TWOK 'R', 'A'          \ Encoded as:   "A<150><148><131> "
- TWOK 'G', 'E'
- CHAR ' '
- EQUB 0
-
- CHAR 'P'               \ Token 12:     "POOR "
- CHAR 'O'               \
- TWOK 'O', 'R'          \ Encoded as:   "PO<153> "
- CHAR ' '
- EQUB 0
-
- TWOK 'M', 'A'          \ Token 13:     "MAINLY "
- TWOK 'I', 'N'          \
- CHAR 'L'               \ Encoded as:   "<139><140>LY "
- CHAR 'Y'
- CHAR ' '
- EQUB 0
-
- CHAR 'U'               \ Token 14:     "UNIT"
- CHAR 'N'               \
- CHAR 'I'               \ Encoded as:   "UNIT"
- CHAR 'T'
- EQUB 0
+                        \ --- End of replacement ------------------------------>
 
  CHAR 'V'               \ Token 15:     "VIEW "
  CHAR 'I'               \
@@ -1468,34 +1513,70 @@ ENDMACRO
  CHAR ' '
  EQUB 0
 
- TWOK 'Q', 'U'          \ Token 16:     "QUANTITY"
- TWOK 'A', 'N'          \
- TWOK 'T', 'I'          \ Encoded as:   "<154><155><151>TY"
- CHAR 'T'
- CHAR 'Y'
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\TWOK 'Q', 'U'          \ Token 16:     "QUANTITY"
+\TWOK 'A', 'N'          \
+\TWOK 'T', 'I'          \ Encoded as:   "<154><155><151>TY"
+\CHAR 'T'
+\CHAR 'Y'
+\EQUB 0
+\
+\TWOK 'A', 'N'          \ Token 17:     "ANARCHY"
+\TWOK 'A', 'R'          \
+\CHAR 'C'               \ Encoded as:   "<155><138>CHY"
+\CHAR 'H'
+\CHAR 'Y'
+\EQUB 0
+\
+\CHAR 'F'               \ Token 18:     "FEUDAL"
+\CHAR 'E'               \
+\CHAR 'U'               \ Encoded as:   "FEUD<128>"
+\CHAR 'D'
+\TWOK 'A', 'L'
+\EQUB 0
+\
+\CHAR 'M'               \ Token 19:     "MULTI-GOVERNMENT"
+\CHAR 'U'               \
+\CHAR 'L'               \ Encoded as:   "MUL<151>-[2]"
+\TWOK 'T', 'I'
+\CHAR '-'
+\RTOK 2
+\EQUB 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ CHAR 'V'               \ Token 16:     "VIPER"
+ CHAR 'I'
+ CHAR 'P'
+ TWOK 'E', 'R'
  EQUB 0
 
- TWOK 'A', 'N'          \ Token 17:     "ANARCHY"
- TWOK 'A', 'R'          \
- CHAR 'C'               \ Encoded as:   "<155><138>CHY"
- CHAR 'H'
- CHAR 'Y'
- EQUB 0
-
- CHAR 'F'               \ Token 18:     "FEUDAL"
- CHAR 'E'               \
- CHAR 'U'               \ Encoded as:   "FEUD<128>"
+ CHAR 'S'               \ Token 17:     "SIDEWINDER"
+ CHAR 'I'
  CHAR 'D'
- TWOK 'A', 'L'
+ CHAR 'E'
+ CHAR 'W'
+ CHAR 'I'
+ CHAR 'N'
+ CHAR 'D'
+ TWOK 'E', 'R'
  EQUB 0
 
- CHAR 'M'               \ Token 19:     "MULTI-GOVERNMENT"
- CHAR 'U'               \
- CHAR 'L'               \ Encoded as:   "MUL<151>-[2]"
- TWOK 'T', 'I'
- CHAR '-'
- RTOK 2
+ TWOK 'M', 'A'          \ Token 18:     "MAMBA"
+ CHAR 'M'
+ CHAR 'B'
+ CHAR 'A'
  EQUB 0
+
+ CHAR 'K'               \ Token 19:     "KRAIT"
+ CHAR 'R'
+ CHAR 'A'
+ CHAR 'I'
+ CHAR 'T'
+ EQUB 0
+
+                        \ --- End of replacement ------------------------------>
 
  TWOK 'D', 'I'          \ Token 20:     "DICTATORSHIP"
  CHAR 'C'               \
@@ -1565,29 +1646,50 @@ ENDMACRO
  TWOK 'E', 'R'
  EQUB 0
 
- CHAR 'H'               \ Token 28:     "HUMAN COLONIAL"
- CHAR 'U'               \
- CHAR 'M'               \ Encoded as:   "HUM<155> COL<159>I<128>"
- TWOK 'A', 'N'
- CHAR ' '
- CHAR 'C'
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CHAR 'H'               \ Token 28:     "HUMAN COLONIAL"
+\CHAR 'U'               \
+\CHAR 'M'               \ Encoded as:   "HUM<155> COL<159>I<128>"
+\TWOK 'A', 'N'
+\CHAR ' '
+\CHAR 'C'
+\CHAR 'O'
+\CHAR 'L'
+\TWOK 'O', 'N'
+\CHAR 'I'
+\TWOK 'A', 'L'
+\EQUB 0
+\
+\CHAR 'H'               \ Token 29:     "HYPERSPACE "
+\CHAR 'Y'               \
+\CHAR 'P'               \ Encoded as:   "HYP<144>SPA<133> "
+\TWOK 'E', 'R'
+\CHAR 'S'
+\CHAR 'P'
+\CHAR 'A'
+\TWOK 'C', 'E'
+\CHAR ' '
+\EQUB 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ CHAR 'M'               \ Token 28:     "MORAY"
  CHAR 'O'
- CHAR 'L'
- TWOK 'O', 'N'
- CHAR 'I'
- TWOK 'A', 'L'
+ TWOK 'R', 'A'
+ CHAR 'Y'
  EQUB 0
 
- CHAR 'H'               \ Token 29:     "HYPERSPACE "
- CHAR 'Y'               \
- CHAR 'P'               \ Encoded as:   "HYP<144>SPA<133> "
- TWOK 'E', 'R'
- CHAR 'S'
- CHAR 'P'
- CHAR 'A'
- TWOK 'C', 'E'
- CHAR ' '
+ CHAR 'T'               \ Token 29:     "THARGOID"
+ CHAR 'H'
+ TWOK 'A', 'R'
+ CHAR 'G'
+ CHAR 'O'
+ CHAR 'I'
+ CHAR 'D'
  EQUB 0
+
+                        \ --- End of replacement ------------------------------>
 
  CHAR 'S'               \ Token 30:     "SHORT RANGE CHART"
  CHAR 'H'               \
@@ -1707,120 +1809,255 @@ ENDIF
  TWOK 'E', 'D'
  EQUB 0
 
- CHAR 'R'               \ Token 42:     "RANGE"
- TWOK 'A', 'N'          \
- TWOK 'G', 'E'          \ Encoded as:   "R<155><131>"
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CHAR 'R'               \ Token 42:     "RANGE"
+\TWOK 'A', 'N'          \
+\TWOK 'G', 'E'          \ Encoded as:   "R<155><131>"
+\EQUB 0
+\
+\CHAR 'S'               \ Token 43:     "ST"
+\CHAR 'T'               \
+\EQUB 0                 \ Encoded as:   "ST"
+\
+\RTOK 16                \ Token 44:     "QUANTITY OF "
+\CHAR ' '               \
+\CHAR 'O'               \ Encoded as:   "[16] OF "
+\CHAR 'F'
+\CHAR ' '
+\EQUB 0
+\
+\CHAR 'S'               \ Token 45:     "SELL"
+\CHAR 'E'               \
+\RTOK 129               \ Encoded as:   "SE[129]"
+\EQUB 0
+\
+\CHAR ' '               \ Token 46:     " CARGO{sentence case}"
+\CHAR 'C'               \
+\TWOK 'A', 'R'          \ Encoded as:   " C<138>GO{6}"
+\CHAR 'G'
+\CHAR 'O'
+\CONT 6
+\EQUB 0
+\
+\CHAR 'E'               \ Token 47:     "EQUIP"
+\TWOK 'Q', 'U'          \
+\CHAR 'I'               \ Encoded as:   "E<154>IP"
+\CHAR 'P'
+\EQUB 0
+\
+\CHAR 'F'               \ Token 48:     "FOOD"
+\CHAR 'O'               \
+\CHAR 'O'               \ Encoded as:   "FOOD"
+\CHAR 'D'
+\EQUB 0
+\
+\TWOK 'T', 'E'          \ Token 49:     "TEXTILES"
+\CHAR 'X'               \
+\TWOK 'T', 'I'          \ Encoded as:   "<156>X<151>L<137>"
+\CHAR 'L'
+\TWOK 'E', 'S'
+\EQUB 0
+\
+\TWOK 'R', 'A'          \ Token 50:     "RADIOACTIVES"
+\TWOK 'D', 'I'          \
+\CHAR 'O'               \ Encoded as:   "<148><141>OAC<151><150>S"
+\CHAR 'A'
+\CHAR 'C'
+\TWOK 'T', 'I'
+\TWOK 'V', 'E'
+\CHAR 'S'
+\EQUB 0
+\
+\CHAR 'S'               \ Token 51:     "SLAVES"
+\TWOK 'L', 'A'          \
+\TWOK 'V', 'E'          \ Encoded as:   "S<149><150>S"
+\CHAR 'S'
+\EQUB 0
+\
+\CHAR 'L'               \ Token 52:     "LIQUOR/WINES"
+\CHAR 'I'               \
+\TWOK 'Q', 'U'          \ Encoded as:   "LI<154><153>/W<140><137>"
+\TWOK 'O', 'R'
+\CHAR '/'
+\CHAR 'W'
+\TWOK 'I', 'N'
+\TWOK 'E', 'S'
+\EQUB 0
+\
+\CHAR 'L'               \ Token 53:     "LUXURIES"
+\CHAR 'U'               \
+\CHAR 'X'               \ Encoded as:   "LUXU<158><137>"
+\CHAR 'U'
+\TWOK 'R', 'I'
+\TWOK 'E', 'S'
+\EQUB 0
+\
+\CHAR 'N'               \ Token 54:     "NARCOTICS"
+\TWOK 'A', 'R'          \
+\CHAR 'C'               \ Encoded as:   "N<138>CO<151>CS"
+\CHAR 'O'
+\TWOK 'T', 'I'
+\CHAR 'C'
+\CHAR 'S'
+\EQUB 0
+\
+\RTOK 91                \ Token 55:     "COMPUTERS"
+\CHAR 'P'               \
+\CHAR 'U'               \ Encoded as:   "[91]PUT<144>S"
+\CHAR 'T'
+\TWOK 'E', 'R'
+\CHAR 'S'
+\EQUB 0
+\
+\TWOK 'M', 'A'          \ Token 56:     "MACHINERY"
+\CHAR 'C'               \
+\CHAR 'H'               \ Encoded as:   "<139>CH<140><144>Y"
+\TWOK 'I', 'N'
+\TWOK 'E', 'R'
+\CHAR 'Y'
+\EQUB 0
+\
+\CHAR 'A'               \ Token 57:     "ALLOYS"
+\CHAR 'L'               \
+\CHAR 'L'               \ Encoded as:   "ALLOYS"
+\CHAR 'O'
+\CHAR 'Y'
+\CHAR 'S'
+\EQUB 0
+
+                        \ --- And replaced by: -------------------------------->
+
+ TWOK 'M', 'A'          \ Token 42:     "MAIN"
+ TWOK 'I', 'N'
  EQUB 0
 
- CHAR 'S'               \ Token 43:     "ST"
- CHAR 'T'               \
- EQUB 0                 \ Encoded as:   "ST"
-
- RTOK 16                \ Token 44:     "QUANTITY OF "
- CHAR ' '               \
- CHAR 'O'               \ Encoded as:   "[16] OF "
- CHAR 'F'
- CHAR ' '
- EQUB 0
-
- CHAR 'S'               \ Token 45:     "SELL"
- CHAR 'E'               \
- RTOK 129               \ Encoded as:   "SE[129]"
- EQUB 0
-
- CHAR ' '               \ Token 46:     " CARGO{sentence case}"
- CHAR 'C'               \
- TWOK 'A', 'R'          \ Encoded as:   " C<138>GO{6}"
- CHAR 'G'
+ CHAR 'C'               \ Token 43:     "CONTROLS"
+ TWOK 'O', 'N'
+ CHAR 'T'
+ CHAR 'R'
  CHAR 'O'
- CONT 6
+ CHAR 'L'
+ CHAR 'S'
  EQUB 0
 
- CHAR 'E'               \ Token 47:     "EQUIP"
- TWOK 'Q', 'U'          \
- CHAR 'I'               \ Encoded as:   "E<154>IP"
- CHAR 'P'
+ CHAR 'J'               \ Token 44:     "JOYSTICK"
+ CHAR 'O'
+ CHAR 'Y'
+ CHAR 'S'
+ CHAR 'T'
+ CHAR 'I'
+ CHAR 'C'
+ CHAR 'K'
  EQUB 0
 
- CHAR 'F'               \ Token 48:     "FOOD"
- CHAR 'O'               \
- CHAR 'O'               \ Encoded as:   "FOOD"
+ CHAR 'K'               \ Token 45:     "KEYBOARD"
+ CHAR 'E'
+ CHAR 'Y'
+ CHAR 'B'
+ CHAR 'O'
+ TWOK 'A', 'R'
  CHAR 'D'
  EQUB 0
 
- TWOK 'T', 'E'          \ Token 49:     "TEXTILES"
- CHAR 'X'               \
- TWOK 'T', 'I'          \ Encoded as:   "<156>X<151>L<137>"
- CHAR 'L'
- TWOK 'E', 'S'
- EQUB 0
-
- TWOK 'R', 'A'          \ Token 50:     "RADIOACTIVES"
- TWOK 'D', 'I'          \
- CHAR 'O'               \ Encoded as:   "<148><141>OAC<151><150>S"
- CHAR 'A'
- CHAR 'C'
- TWOK 'T', 'I'
- TWOK 'V', 'E'
- CHAR 'S'
- EQUB 0
-
- CHAR 'S'               \ Token 51:     "SLAVES"
- TWOK 'L', 'A'          \
- TWOK 'V', 'E'          \ Encoded as:   "S<149><150>S"
- CHAR 'S'
- EQUB 0
-
- CHAR 'L'               \ Token 52:     "LIQUOR/WINES"
- CHAR 'I'               \
- TWOK 'Q', 'U'          \ Encoded as:   "LI<154><153>/W<140><137>"
- TWOK 'O', 'R'
- CHAR '/'
- CHAR 'W'
- TWOK 'I', 'N'
- TWOK 'E', 'S'
- EQUB 0
-
- CHAR 'L'               \ Token 53:     "LUXURIES"
- CHAR 'U'               \
- CHAR 'X'               \ Encoded as:   "LUXU<158><137>"
- CHAR 'U'
- TWOK 'R', 'I'
- TWOK 'E', 'S'
- EQUB 0
-
- CHAR 'N'               \ Token 54:     "NARCOTICS"
- TWOK 'A', 'R'          \
- CHAR 'C'               \ Encoded as:   "N<138>CO<151>CS"
- CHAR 'O'
- TWOK 'T', 'I'
- CHAR 'C'
- CHAR 'S'
- EQUB 0
-
- RTOK 91                \ Token 55:     "COMPUTERS"
+ RTOK 91                \ Token 46:     "COMPUTER"
  CHAR 'P'               \
  CHAR 'U'               \ Encoded as:   "[91]PUT<144>S"
  CHAR 'T'
  TWOK 'E', 'R'
- CHAR 'S'
  EQUB 0
 
- TWOK 'M', 'A'          \ Token 56:     "MACHINERY"
- CHAR 'C'               \
- CHAR 'H'               \ Encoded as:   "<139>CH<140><144>Y"
- TWOK 'I', 'N'
- TWOK 'E', 'R'
- CHAR 'Y'
+ CHAR 'D'               \ Token 47:     "DELTA14B"
+ CHAR 'E'
+ CHAR 'L'
+ CHAR 'T'
+ CHAR 'A'
+ CHAR '1'
+ CHAR '4'
+ CHAR 'B'
  EQUB 0
 
- CHAR 'A'               \ Token 57:     "ALLOYS"
- CHAR 'L'               \
- CHAR 'L'               \ Encoded as:   "ALLOYS"
+ CHAR 'N'               \ Token 48:     "NO UNIT"
  CHAR 'O'
- CHAR 'Y'
+ CHAR ' '
+ CHAR 'U'
+ CHAR 'N'
+ CHAR 'I'
+ CHAR 'T'
+ EQUB 0
+
+ CHAR 'S'               \ Token 49:     "STANDARD"
+ CHAR 'T'
+ TWOK 'A', 'N'
+ CHAR 'D'
+ TWOK 'A', 'R'
+ CHAR 'D'
+ EQUB 0
+
+ CHAR 'N'               \ Token 50:     "NAVAL"
+ CHAR 'A'
+ CHAR 'V'
+ TWOK 'A', 'L'
+ EQUB 0
+
+ CHAR 'W'               \ Token 51:     "WINNER"
+ TWOK 'I', 'N'
+ CHAR 'N'
+ TWOK 'E', 'R'
+ EQUB 0
+
+ CHAR 'F'               \ Token 52:     "FIRST TO "
+ CHAR 'I' 
+ CHAR 'R'
+ CHAR 'S'
+ CHAR 'T'
+ CHAR ' '
+ CHAR 'T'
+ CHAR 'O'
+ CHAR ' '
+ EQUB 0
+
+ CHAR ' '               \ Token 53:     " HITS"
+ CHAR 'H'
+ CHAR 'I'
+ CHAR 'T'
  CHAR 'S'
  EQUB 0
+
+ TWOK 'L', 'A'          \ Token 54:     "LAST ONE STANDING"
+ CHAR 'S'
+ CHAR 'T'
+ CHAR ' '
+ TWOK 'O', 'N'
+ CHAR 'E'
+ CHAR ' '
+ CHAR 'S'
+ CHAR 'T'
+ TWOK 'A', 'N'
+ CHAR 'D'
+ CHAR 'I'
+ CHAR 'N'
+ CHAR 'G'
+ EQUB 0
+
+ CHAR 'P'               \ Token 55:     "PLAYER"
+ TWOK 'L', 'A'
+ CHAR 'Y'
+ TWOK 'E', 'R'
+ EQUB 0
+
+ RTOK 55                \ Token 56:     "PLAYER 1"
+ CHAR ' '
+ CHAR '1'
+ EQUB 0
+
+ RTOK 55                \ Token 57:     "PLAYER 2"
+ CHAR ' '
+ CHAR '2'
+ EQUB 0
+
+                        \ --- End of replacement ------------------------------>
+
 
  CHAR 'F'               \ Token 58:     "FIREARMS"
  CHAR 'I'               \
@@ -2143,13 +2380,25 @@ ENDIF
  CHAR 'L'               \ Encoded as:   "PULSE[27]"
  CHAR 'S'
  CHAR 'E'
- RTOK 27
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\RTOK 27
+
+                        \ --- End of removed code ----------------------------->
+
  EQUB 0
 
  TWOK 'B', 'E'          \ Token 104:    "BEAM LASER"
  CHAR 'A'               \
  CHAR 'M'               \ Encoded as:   "<147>AM[27]"
- RTOK 27
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\RTOK 27
+
+                        \ --- End of removed code ----------------------------->
+
  EQUB 0
 
  CHAR 'F'               \ Token 105:    "FUEL"
@@ -2179,7 +2428,13 @@ ENDIF
  CHAR '.'
  CHAR 'M'
  CHAR '.'
- RTOK 5
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\RTOK 5
+
+                        \ --- End of removed code ----------------------------->
+
  EQUB 0
 
  RTOK 102               \ Token 109:    "EXTRA PULSE LASERS"
@@ -2257,16 +2512,28 @@ ENDIF
  CHAR 'T'
  TWOK 'A', 'R'
  CHAR 'Y'
- CHAR ' '
- RTOK 27
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CHAR ' '
+\RTOK 27
+
+                        \ --- End of removed code ----------------------------->
+
  EQUB 0
 
  CHAR 'M'               \ Token 118:    "MINING  LASER"
  TWOK 'I', 'N'          \
  TWOK 'I', 'N'          \ Encoded as:   "M<140><140>G [27]"
  CHAR 'G'
- CHAR ' '
- RTOK 27
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CHAR ' '
+\RTOK 27
+
+                        \ --- End of removed code ----------------------------->
+
  EQUB 0
 
  RTOK 37                \ Token 119:    "CASH:{cash} CR{cr}
@@ -2530,6 +2797,12 @@ ELIF _SOURCE_DISC
  SKIP 4                 \ These bytes appear to be unused
 
 ENDIF
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ ORG &07C0
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -3922,6 +4195,23 @@ ENDIF
 .player2NOMSL
 
  SKIP 1                 \ Player 2's number of missiles
+
+.player2INWK32
+
+ SKIP 1                 \ Player 2's AI flag
+                        \
+                        \  * Bit 0: 0 = no E.C.M.
+                        \           1 = has E.C.M.
+                        \
+                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
+                        \                        (see TACTICS part 7)
+                        \
+                        \  * Bit 7: 0 = dumb
+                        \           1 = AI enabled (apply TACTICS to ship)
+
+.player2NEWB
+
+ SKIP 1                 \ Player 2's NEWB flags
 
 .player1Score
 
@@ -24764,10 +25054,10 @@ ENDIF
  LDA #%10000000         \ gunfight
  STA INWK+8
 
- LDA #PLAYER2AI         \ If player 2 is an NPC then set player 2's AI flag in
- BPL laun1              \ INWK+32 to PLAYER2AI and NEWB flags to PLAYER2NB
+ LDA player2INWK32      \ Set player 2's AI flag to the configured value
  STA INWK+32
- LDA #PLAYER2NB
+
+ LDA player2NEWB        \ Set player 2's NEWB flags to the configured value
  STA NEWB
 
 .laun1
@@ -34498,13 +34788,7 @@ ENDIF
 \BNE P%+5               \ Market Price screen, returning from the subroutine
 \JMP TT167              \ using a tail call
 
-                        \ --- And replaced by: -------------------------------->
-
- CMP #f8                \ If red key f8 was pressed, jump to STATUS to show the
- BNE P%+5               \ Status Mode screen, returning from the subroutine
- JSR ConfigureGame      \ using a tail call
-
-                        \ --- End of replacement ------------------------------>
+                        \ --- End of removed code ----------------------------->
 
  CMP #f0                \ If red key f0 was pressed, jump to TT110 to launch our
  BNE fvw                \ ship (if docked), returning from the subroutine using
@@ -34544,10 +34828,14 @@ ENDIF
 \CMP #f2                \ If red key f2 was pressed, jump to TT208 to show the
 \BNE LABEL_3            \ Sell Cargo screen, returning from the subroutine using
 \JMP TT208              \ a tail call
+\
+\RTS                    \ Return from the subroutine
 
                         \ --- And replaced by: -------------------------------->
 
- RTS                    \ Return from the subroutine
+ CMP #f8                \ If red key f8 was pressed, jump to STATUS to show the
+ BNE P%+5               \ Status Mode screen, returning from the subroutine
+ JMP TITLE              \ using a tail call
 
                         \ --- End of replacement ------------------------------>
 
@@ -35251,8 +35539,11 @@ ENDIF
  LDX #CYL               \ Set player 1 to a Cobra by default
  STX player1ShipType
 
- LDX #COPS              \ Set player 1 to a Viper by default
+ LDX #COPS              \ Set player 2 to a Viper by default
  STX player2ShipType
+
+ LDX #3                 \ Set player 2's missiles to 3 by default
+ STX player2NOMSL
 
                         \ --- End of added code ------------------------------->
 
@@ -35550,45 +35841,6 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: ConfigureGame
-\       Type: Subroutine
-\   Category: Start and end
-\    Summary: Display the configuration screen
-\
-\ ******************************************************************************
-
-.ConfigureGame
-
- JSR RESET              \ Reset our ship so we can use it for the rotating ships
-
- JSR ZEKTRAN            \ Reset the key logger buffer that gets returned from
-                        \ the I/O processor
-
- LDA #32                \ Send a #SETVDU19 32 command to the I/O processor to
- JSR DOVDU19            \ set the mode 1 palette to yellow (colour 1), white
-                        \ (colour 2) and cyan (colour 3)
-
- LDA #1                 \ Clear the top part of the screen, draw a border box,
- JSR TT66               \ and set the current view type in QQ11 to 1
-
- LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
- JSR DOCOL              \ switch to colour 2, which is white in the title screen
-
- STZ QQ11               \ Set QQ11 to 0, so from here on we are using a space
-                        \ view
-
-
- LDA #8                 \ Clear the top part of the screen, draw a border box,
- JSR TRADEMODE          \ and set up a printable trading screen with a view type
-                        \ in QQ11 of 8 (Status Mode screen)
-
- LDA #f0                \ Set A to f0 so we launch the game when we return to
-                        \ TT102
-
- RTS                    \ Return from the subroutine
-
-\ ******************************************************************************
-\
 \       Name: TITLE
 \       Type: Subroutine
 \   Category: Start and end
@@ -35621,9 +35873,13 @@ ENDIF
 
 .TITLE
 
- PHA                    \ Store the token number on the stack for later
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STX TYPE               \ Store the ship type in location TYPE
+\PHA                    \ Store the token number on the stack for later
+\
+\STX TYPE               \ Store the ship type in location TYPE
+
+                        \ --- End of removed code ----------------------------->
 
  JSR RESET              \ Reset our ship so we can use it for the rotating
                         \ title ship
@@ -35631,18 +35887,37 @@ ENDIF
  JSR ZEKTRAN            \ Reset the key logger buffer that gets returned from
                         \ the I/O processor
 
- LDA #32                \ Send a #SETVDU19 32 command to the I/O processor to
- JSR DOVDU19            \ set the mode 1 palette to yellow (colour 1), white
-                        \ (colour 2) and cyan (colour 3)
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #32                \ Send a #SETVDU19 32 command to the I/O processor to
+\JSR DOVDU19            \ set the mode 1 palette to yellow (colour 1), white
+\                       \ (colour 2) and cyan (colour 3)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #0                 \ Send a #SETVDU19 0 command to the I/O processor to
+ JSR DOVDU19            \ switch to the mode 1 palette for the space view,
+                        \ which is yellow (colour 1), red (colour 2) and cyan
+                        \ (colour 3)
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #1                 \ Clear the top part of the screen, draw a border box,
  JSR TT66               \ and set the current view type in QQ11 to 1
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
- JSR DOCOL              \ switch to colour 2, which is white in the title screen
-
- STZ QQ11               \ Set QQ11 to 0, so from here on we are using a space
+\LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
+\JSR DOCOL              \ switch to colour 2, which is white in the title screen
+\
+\STZ QQ11               \ Set QQ11 to 0, so from here on we are using a space
                         \ view
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
+ JSR DOCOL              \ switch to colour 3, which is cyan
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #96                \ Set nosev_z hi = 96 (96 is the value of unity in the
  STA INWK+14            \ rotation vector)
@@ -35661,8 +35936,38 @@ ENDIF
  STX QQ17               \ Sentence Case, with the next letter printing in upper
                         \ case
 
- LDA TYPE               \ Set up a new ship, using the ship type in TYPE
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA TYPE               \ Set up a new ship, using the ship type in TYPE
+\JSR NWSHP
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ships are up the screen
+ STX INWK+3
+
+ LDX #SHIP_GAP          \ Set x = -SHIP_GAP, so ship is on left
+ STX INWK
+ LDX #%10000000
+ STX INWK+2
+
+ LDA player1ShipType    \ Set up a new ship for player 1 into slot #0
  JSR NWSHP
+
+ LDX #0                 \ Save player 1's ship data
+ JSR SaveShipDataInSlot
+
+ LDX #SHIP_GAP          \ Set x = SHIP_GAP, so ship is on right
+ STX INWK
+ STZ INWK+2
+
+ LDA player2ShipType    \ Set up a new ship for player 2 into slot #1
+ JSR NWSHP
+
+ LDX #1                 \ Save player 2's ship data
+ JSR SaveShipDataInSlot
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #6                 \ Move the text cursor to column 6
  JSR DOXC
@@ -35670,20 +35975,24 @@ ENDIF
  LDA #30                \ Print recursive token 144 ("---- E L I T E ----")
  JSR plf                \ followed by a newline
 
- LDA #10                \ Print a line feed to move the text cursor down a line
- JSR TT26
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #6                 \ Move the text cursor to column 6 again
- JSR DOXC
+\LDA #10                \ Print a line feed to move the text cursor down a line
+\JSR TT26
+\
+\LDA #6                 \ Move the text cursor to column 6 again
+\JSR DOXC
+\
+\LDA PATG               \ If PATG = 0, skip the following two lines, which
+\BEQ awe                \ print the author credits (PATG can be toggled by
+\                       \ pausing the game and pressing "X")
+\
+\LDA #13                \ Print extended token 13 ("BY D.BRABEN & I.BELL")
+\JSR DETOK
+\
+\.awe
 
- LDA PATG               \ If PATG = 0, skip the following two lines, which
- BEQ awe                \ print the author credits (PATG can be toggled by
-                        \ pausing the game and pressing "X")
-
- LDA #13                \ Print extended token 13 ("BY D.BRABEN & I.BELL")
- JSR DETOK
-
-.awe
+                        \ --- End of removed code ----------------------------->
 
  LDA brkd               \ If brkd = 0, jump to BRBR2 to skip the following, as
  BEQ BRBR2              \ we do not have a system error message to display
@@ -35723,35 +36032,73 @@ ENDIF
 
 .BRBR2
 
- JSR CLYNS              \ Clear the bottom three text rows of the upper screen,
-                        \ and move the text cursor to the first cleared row.
-                        \ It also returns with Y = 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STY DELTA              \ Set DELTA = 0 (i.e. ship speed = 0)
+\JSR CLYNS              \ Clear the bottom three text rows of the upper screen,
+\                       \ and move the text cursor to the first cleared row.
+\                       \ It also returns with Y = 0
+\
+\STY DELTA              \ Set DELTA = 0 (i.e. ship speed = 0)
+\
+\STY JSTK               \ Set JSTK = 0 (i.e. keyboard, not joystick)
+\
+\PLA                    \ Restore the recursive token number we stored on the
+\                       \ stack at the start of this subroutine
+\
+\\JSR ex                 \ This instruction is commented out in the original
+\                       \ source (it would print the recursive token in A)
+\
+\JSR DETOK              \ Print the extended token in A
+\
+\LDA #7                 \ Move the text cursor to column 7
+\JSR DOXC
+\
+\LDA #12                \ Print extended token 12 ("({single cap}C) ACORNSOFT
+\JSR DETOK              \ 1984")
+\
+\LDA #12                \ Set CNT2 = 12 as the outer loop counter for the loop
+\STA CNT2               \ starting at TLL2
 
- STY JSTK               \ Set JSTK = 0 (i.e. keyboard, not joystick)
+                        \ --- And replaced by: -------------------------------->
 
- PLA                    \ Restore the recursive token number we stored on the
-                        \ stack at the start of this subroutine
-
-\JSR ex                 \ This instruction is commented out in the original
-                        \ source (it would print the recursive token in A)
-
- JSR DETOK              \ Print the extended token in A
-
- LDA #7                 \ Move the text cursor to column 7
+ LDA #13                \ Move the text cursor to column 13, row 12
  JSR DOXC
+ LDA #12
+ JSR DOYC
 
- LDA #12                \ Print extended token 12 ("({single cap}C) ACORNSOFT
- JSR DETOK              \ 1984")
+ LDA #185               \ Print token 25 ("SHIP")
+ JSR TT27
 
- LDA #12                \ Set CNT2 = 12 as the outer loop counter for the loop
- STA CNT2               \ starting at TLL2
+ STZ DELTA              \ Set DELTA = 0 (i.e. ship speed = 0)
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #5                 \ Set the main loop counter in MCNT to 5, to act as the
  STA MCNT               \ inner loop counter for the loop starting at TLL2
 
 .TLL2
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player1ShipType    \ Switch to player 1's ship
+ STA TYPE
+
+ ASL A                  \ Set Y = ship type * 2
+ TAY
+
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
+
+ LDX #0                 \ Fetch player 1's ship data from slot #0
+ STX XSAV
+ JSR GetShipDataToINWK
+
+                        \ --- End of added code ------------------------------->
 
  LDA INWK+7             \ If z_hi (the ship's distance) is 1, jump to TL1 to
  CMP #1                 \ skip the following decrement
@@ -35779,27 +36126,94 @@ ENDIF
 
 .nodesire
 
- STZ INWK               \ Set x_lo = 0, so the ship remains in the screen centre
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- STZ INWK+3             \ Set y_lo = 0, so the ship remains in the screen centre
+\STZ INWK               \ Set x_lo = 0, so the ship remains in the screen centre
+\
+\STZ INWK+3             \ Set y_lo = 0, so the ship remains in the screen centre
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #SHIP_GAP          \ Set x = -SHIP_GAP, so ship stays on left
+ STX INWK
+ LDX #%10000000
+ STX INWK+2
+
+ LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ship is up the screen
+ STX INWK+3
+
+                        \ --- End of replacement ------------------------------>
+
 
  JSR LL9                \ Call LL9 to display the ship
 
- LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
-                        \ button from the key logger buffer, which contains
-                        \ the value of the 6522 System VIA input register IRB
-                        \ (SHEILA &40)
+ LDX #0                 \ Save player 1's ship
+ JSR SaveShipDataInSlot
 
- AND #%00010000         \ Bit 4 of IRB (PB4) is clear if joystick 1's fire
-                        \ button is pressed, otherwise it is set, so AND'ing
-                        \ the value of IRB with %10000 extracts this bit
+ LDA player2ShipType    \ Switch to player 2's ship
+ STA TYPE
 
- TAX                    \ Copy the joystick fire button state to X, though this
-                        \ instruction has no effect, as the comparison flags are
-                        \ already set by the AND, and the value of X is not used
-                        \ anywhere
+ ASL A                  \ Set Y = ship type * 2
+ TAY
 
- BEQ TL2                \ If the joystick fire button is pressed, jump to TL2
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
+
+ LDX #1                 \ Fetch player 2's ship data from slot #1
+ STX XSAV
+ JSR GetShipDataToINWK
+
+ LDA INWK+7             \ If z_hi (the ship's distance) is 1, jump to TL1a to
+ CMP #1                 \ skip the following decrement
+ BEQ TL1a
+
+ DEC INWK+7             \ Decrement the ship's distance, to bring the ship
+                        \ a bit closer to us
+
+.TL1a
+
+ JSR MVEIT              \ Move the ship in space according to the orientation
+                        \ vectors and the new value in z_hi
+
+ LDX #128               \ Set z_lo = 128, so the closest the ship gets to us is
+ STX INWK+6             \ z_hi = 1, z_lo = 128, or 256 + 128 = 384
+
+ LDX #SHIP_GAP          \ Set x = SHIP_GAP, so ship stays on right
+ STX INWK
+ STZ INWK+2
+
+ LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ship is up the screen
+ STX INWK+3
+
+ JSR LL9                \ Call LL9 to display the ship
+
+ LDX #1                 \ Save player 1's ship
+ JSR SaveShipDataInSlot
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
+\                       \ button from the key logger buffer, which contains
+\                       \ the value of the 6522 System VIA input register IRB
+\                       \ (SHEILA &40)
+\
+\AND #%00010000         \ Bit 4 of IRB (PB4) is clear if joystick 1's fire
+\                       \ button is pressed, otherwise it is set, so AND'ing
+\                       \ the value of IRB with %10000 extracts this bit
+\
+\TAX                    \ Copy the joystick fire button state to X, though this
+\                       \ instruction has no effect, as the comparison flags are
+\                       \ already set by the AND, and the value of X is not used
+\                       \ anywhere
+\
+\BEQ TL2                \ If the joystick fire button is pressed, jump to TL2
+
+                        \ --- End of removed code ----------------------------->
 
  LDA KTRAN              \ Fetch the internal key number of the current key
                         \ press from the key logger buffer
@@ -35808,26 +36222,50 @@ ENDIF
 
  DEC MCNT               \ Decrement the inner loop counter
 
- BNE TLL2               \ Loop back to keep the ship rotating, until the inner
-                        \ loop counter is zero
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- DEC CNT2               \ Decrement the outer loop counter in CNT2
+\BNE TLL2               \ Loop back to keep the ship rotating, until the inner
+\                       \ loop counter is zero
+\
+\DEC CNT2               \ Decrement the outer loop counter in CNT2
+\
+\BNE TLL2               \ Loop back to keep the ship rotating, until the outer
+\                       \ loop counter is zero
+\
+\JMP DEMON              \ Once we have iterated through CNT2 iterations of MCNT,
+\                       \ jump to DEMON to start the demo
+\
+\.TL2
+\
+\DEC JSTK               \ Joystick fire button was pressed, so set JSTK to &FF
+\                       \ (it was set to 0 above), to disable keyboard and
+\                       \ enable joysticks
 
- BNE TLL2               \ Loop back to keep the ship rotating, until the outer
-                        \ loop counter is zero
+                        \ --- And replaced by: -------------------------------->
 
- JMP DEMON              \ Once we have iterated through CNT2 iterations of MCNT,
-                        \ jump to DEMON to start the demo
+ JMP TLL2               \ Loop back to keep rotating the ships
 
-.TL2
-
- DEC JSTK               \ Joystick fire button was pressed, so set JSTK to &FF
-                        \ (it was set to 0 above), to disable keyboard and
-                        \ enable joysticks
+                        \ --- End of replacement ------------------------------>
 
 .TL3
 
- RTS                    \ Return from the subroutine
+ CMP #f0                \ If f0 is being pressed, start the game
+ BNE titl1
+
+ JMP TT102              \ Start the game
+
+.titl1
+
+\ Set the following:
+\ player1ShipType, player2ShipType
+\ LASER, player2LASER
+\ ENGY, player2ENGY
+\ NOMSL, player2NOMSL
+\ ECM, player2ECM
+\ JSTK, player2INWK32, player2NEWB
+\ gameType
+
+ JMP TLL2               \ Loop back to keep rotating the ships
 
 \ ******************************************************************************
 \
