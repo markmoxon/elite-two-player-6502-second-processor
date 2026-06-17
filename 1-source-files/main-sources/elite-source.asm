@@ -318,10 +318,6 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- PLAYER1SHIP = CYL      \ Ship type for player 1
-
- PLAYER2SHIP = COPS     \ Ship type for player 2
-
  PLAYER1SCAN = CYAN2    \ The colour that player 1 should look for in the
                         \ scanner and compass
 
@@ -3907,6 +3903,10 @@ ENDIF
 
  SKIP 1                 \ Player 2's ENERGY value
 
+.player2ENGY
+
+ SKIP 1                 \ Player 2's energy unit strength
+
 .player2FSH
 
  SKIP 1                 \ Player 2's FSH value
@@ -3914,6 +3914,14 @@ ENDIF
 .player2ASH
 
  SKIP 1                 \ Player 2's ASH value
+
+.player2ECM
+
+ SKIP 1                 \ Player 2's ECM value
+
+.player2NOMSL
+
+ SKIP 1                 \ Player 2's number of missiles
 
 .player1Score
 
@@ -3938,6 +3946,22 @@ ENDIF
 .player1COMC
 
  SKIP 1                 \ The COMC value for player 1's compass on the left
+
+.player1ShipType
+
+ SKIP 1                 \ Player 1's ship type
+
+.player2ShipType
+
+ SKIP 1                 \ Player 1's ship type
+
+.gameType
+
+ SKIP 1                 \ Game type:
+                        \
+                        \   * 0 = fight to the death
+                        \
+                        \   * Non-zero = first to n*5 hits (n = 1 to 200)
 
 .coordinateIndex
 
@@ -6177,14 +6201,6 @@ ENDIF
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
                         \ us making a laser strike on another ship
 
- LDX player1Score       \ Print player 2's score to remove it from the screen
- JSR ee3
-
- INC player1Score       \ Increment player 2's score
-
- LDX player1Score       \ Print player 2's score
- JSR ee3
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA TYPE               \ Did we just hit the space station? If so, jump to
@@ -6219,8 +6235,23 @@ ENDIF
  CMP #2                 \ NPC ship
  BNE main2
 
+                        \ Player 2 has been hit, so increment player 1's score
+
+ LDX player1Score       \ Print player 1's score to remove it from the screen
+ JSR ee3
+
+ INC player1Score       \ Increment player 1's score
+
+ LDX player1Score       \ Print player 1's score
+ JSR ee3
+
                         \ Player 2 has been hit, so process player 2's shields
-                        \ here
+
+ LDA LAS                \ Fetch the power of the current laser and clear the
+ AND #%01111111         \ continuous bit to fetch the power per pulse, and then
+ LSR A                  \ halve the laser power to get the damage level
+
+ JSR Player2OOPS        \ Remove the relevant energy from player 2's shields
 
  JMP MA8                \ Jump to MA8 to skip the following
 
@@ -6446,9 +6477,20 @@ ENDIF
 
 .MA77
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA MCNT               \ Fetch the main loop counter and calculate MCNT mod 8,
+\AND #7                 \ jumping to MA22 if it is non-zero (so the following
+\BNE MA22               \ code only runs every 8 iterations of the main loop)
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA MCNT               \ Fetch the main loop counter and calculate MCNT mod 8,
  AND #7                 \ jumping to MA22 if it is non-zero (so the following
- BNE MA22               \ code only runs every 8 iterations of the main loop)
+ BEQ P%+5               \ code only runs every 8 iterations of the main loop)
+ JMP MA22
+                        \ --- End of replacement ------------------------------>
+
 
  LDX ENERGY             \ Fetch our ship's energy levels and skip to b if bit 7
  BPL b                  \ is not set, i.e. only charge the shields from the
@@ -6462,7 +6504,15 @@ ENDIF
  JSR SHD                \ the shield status in FSH
  STX FSH
 
+.b
+
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDX player2ENERGY      \ Fetch our ship's energy levels and skip to b if bit 7
+ BPL b                  \ is not set, i.e. only charge the shields from the
+                        \ energy banks if they are at more than 50% charge
 
  LDX player2ASH         \ Call SHD to recharge our aft shield and update the
  JSR Player2SHD         \ shield status in ASH
@@ -6472,9 +6522,11 @@ ENDIF
  JSR Player2SHD         \ the shield status in FSH
  STX player2FSH
 
-                        \ --- End of added code ------------------------------->
-
 .b
+
+}
+
+                        \ --- End of added code ------------------------------->
 
  SEC                    \ Set A = ENERGY + ENGY + 1, so our ship's energy
  LDA ENGY               \ level goes up by 2 if we have an energy unit fitted,
@@ -6482,6 +6534,17 @@ ENDIF
 
  BCS P%+5               \ If the value of A did not overflow (the maximum
  STA ENERGY             \ energy level is &FF), then store A in ENERGY
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ SEC                    \ Set A = ENERGY + ENGY + 1, so player 2's energy
+ LDA player2ENGY        \ level goes up by 2 if we have an energy unit fitted,
+ ADC player2ENERGY      \ otherwise it goes up by 1
+
+ BCS P%+5               \ If the value of A did not overflow (the maximum
+ STA player2ENERGY      \ energy level is &FF), then store A in ENERGY
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -24709,7 +24772,7 @@ ENDIF
 
 .laun1
 
- LDA #PLAYER2SHIP       \ Spawn a ship for player 2 in slot 2
+ LDA player2ShipType    \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
  STZ player1INWK31      \ Reset byte #31 for player 1's ship in player 2's view,
@@ -28256,11 +28319,128 @@ ENDIF
                         \ and in either case that means we jump to our DEATH,
                         \ returning from the subroutine using a tail call
 
- JSR EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
-                        \ collision
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JMP OUCH               \ And jump to OUCH to take damage and return from the
-                        \ subroutine using a tail call
+\JSR EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
+\                       \ collision
+\
+\JMP OUCH               \ And jump to OUCH to take damage and return from the
+\                       \ subroutine using a tail call
+
+                        \ --- And replaced by: -------------------------------->
+
+ JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
+                        \ collision and return from the subroutine using a tail
+                        \ call
+
+                        \ --- End of replacement ------------------------------>
+
+\ ******************************************************************************
+\
+\       Name: Player2OOPS
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Take some damage
+\
+\ ------------------------------------------------------------------------------
+\
+\ We just took some damage, so reduce the shields if we have any, or reduce the
+\ energy levels and potentially take some damage to the cargo if we don't.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   A                   The amount of damage to take
+\
+\   INF                 The address of the ship block for the ship that attacked
+\                       us, or the ship that we just ran into
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2OOPS
+
+{
+
+ STA T                  \ Store the amount of damage in T
+
+ LDA K%+NI%*12+8        \ Fetch byte #8 (z_sign) for player 1 in player 2's
+                        \ frame of reference, so we can work out whether player
+                        \ 1 is in front of or behind player 2 when it hits
+                        \ player 2 with its lasers
+
+ BMI OO1                \ If A is negative, then player 2 got hit in the rear,
+                        \ so jump to OO1 to process damage to the aft shield
+
+ LDA player2FSH         \ Otherwise the forward shield was damaged, so fetch the
+ SBC T                  \ shield strength from FSH and subtract the damage in T
+
+ BCC OO2                \ If the C flag is clear then this amount of damage was
+                        \ too much for the shields, so jump to OO2 to set the
+                        \ shield level to 0 and start taking damage directly
+                        \ from the energy banks
+
+ STA player2FSH         \ Store the new value of the forward shield in FSH
+
+ RTS                    \ Return from the subroutine
+
+.OO2
+
+ STZ player2FSH         \ Set the forward shield to 0
+
+ BCC OO3                \ Jump to OO3 to start taking damage directly from the
+                        \ energy banks (this BCC is effectively a JMP as the C
+                        \ flag is clear, as we jumped to OO2 with a BCC)
+
+.OO1
+
+ LDA player2ASH         \ The aft shield was damaged, so fetch the shield
+ SBC T                  \ strength from ASH and subtract the damage in T
+
+ BCC OO5                \ If the C flag is clear then this amount of damage was
+                        \ too much for the shields, so jump to OO5 to set the
+                        \ shield level to 0 and start taking damage directly
+                        \ from the energy banks
+
+ STA player2ASH         \ Store the new value of the aft shield in ASH
+
+ RTS                    \ Return from the subroutine
+
+.OO5
+
+ STZ player2ASH         \ Set the aft shield to 0
+
+.OO3
+
+ ADC player2ENERGY      \ A is negative and contains the amount by which the
+ STA player2ENERGY      \ damage overwhelmed the shields, so this drains the
+                        \ energy banks by that amount (and because the energy
+                        \ banks are shown over four indicators rather than one,
+                        \ but with the same value range of 0-255, energy will
+                        \ appear to drain away four times faster than the
+                        \ shields did)
+
+ BEQ P%+4               \ If we have just run out of energy, skip the next
+                        \ instruction to jump straight to our death
+
+ BCS P%+5               \ If the C flag is set, then subtracting the damage from
+                        \ the energy banks didn't underflow, so we had enough
+                        \ energy to survive, and we can skip the next
+                        \ instruction to make a sound and take some damage
+
+ JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
+                        \ and in either case that means we jump to our DEATH,
+                        \ returning from the subroutine using a tail call
+
+ JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
+                        \ collision and return from the subroutine using a tail
+                        \ call
+
+}
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -32974,31 +33154,14 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDX #(coordinateIndex-splitScreen) \ We're going to zero the player workspace
-                                    \ variables
-
-.zero1
-
- STA splitScreen,X      \ Zero the X-th byte of player1COMC
-
- DEX                    \ Decrement the loop counter
-
- BPL zero1              \ Loop back to zero the next variable until we have done
-                        \ them all
-
-                        \ --- End of added code ------------------------------->
-
- LDX #POW               \ Give both players front and rear pulse lasers for now
- STX LASER
- STX LASER+1
- STX player2LASER
- STX player2LASER+1
-
  LDX #&FF               \ Recharge the forward and aft shields
  STX player2FSH
  STX player2ASH
 
  STX player2ENERGY      \ Recharge the energy banks
+
+ STZ GNTMP              \ Cool down the lasers completely
+ STZ player2GNTMP
 
                         \ --- End of added code ------------------------------->
 
@@ -34303,12 +34466,12 @@ ENDIF
 
 .TT102
 
- CMP #f8                \ If red key f8 was pressed, jump to STATUS to show the
- BNE P%+5               \ Status Mode screen, returning from the subroutine
- JMP STATUS             \ using a tail call
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\CMP #f8                \ If red key f8 was pressed, jump to STATUS to show the
+\BNE P%+5               \ Status Mode screen, returning from the subroutine
+\JMP STATUS             \ using a tail call
+\
 \CMP #f4                \ If red key f4 was pressed, jump to TT22 to show the
 \BNE P%+5               \ Long-range Chart, returning from the subroutine using
 \JMP TT22               \ a tail call
@@ -34335,7 +34498,13 @@ ENDIF
 \BNE P%+5               \ Market Price screen, returning from the subroutine
 \JMP TT167              \ using a tail call
 
-                        \ --- End of removed code ----------------------------->
+                        \ --- And replaced by: -------------------------------->
+
+ CMP #f8                \ If red key f8 was pressed, jump to STATUS to show the
+ BNE P%+5               \ Status Mode screen, returning from the subroutine
+ JSR ConfigureGame      \ using a tail call
+
+                        \ --- End of replacement ------------------------------>
 
  CMP #f0                \ If red key f0 was pressed, jump to TT110 to launch our
  BNE fvw                \ ship (if docked), returning from the subroutine using
@@ -35057,6 +35226,36 @@ ENDIF
 
  JSR RESET              \ Call RESET to initialise most of the game variables
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #0                 \ Set A = 0 to use as a zero reset
+
+ LDX #(coordinateIndex-splitScreen) \ We're going to zero the player workspace
+                                    \ variables
+
+.zero1
+
+ STA splitScreen,X      \ Zero the X-th byte of splitScreen
+
+ DEX                    \ Decrement the loop counter
+
+ BPL zero1              \ Loop back to zero the next variable until we have done
+                        \ them all
+
+ LDX #POW               \ Give both players front and rear pulse lasers by
+ STX LASER              \ default
+ STX LASER+1
+ STX player2LASER
+ STX player2LASER+1
+
+ LDX #CYL               \ Set player 1 to a Cobra by default
+ STX player1ShipType
+
+ LDX #COPS              \ Set player 1 to a Viper by default
+ STX player2ShipType
+
+                        \ --- End of added code ------------------------------->
+
 IF _EXECUTIVE
 
  JSR DEMON              \ Call DEMON to show the demo
@@ -35124,36 +35323,40 @@ ENDIF
  JSR FX200              \ Disable the ESCAPE key and clear memory if the BREAK
                         \ key is pressed (*FX 200,3)
 
-IF _EXECUTIVE
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDX #3                 \ Call TALK with X = 3 to say "Elite" using the Watford
- JSR TALK               \ Electronics Beeb Speech Synthesiser (if one is fitted
-                        \ and speech has been enabled)
+\IF _EXECUTIVE
+\
+\LDX #3                 \ Call TALK with X = 3 to say "Elite" using the Watford
+\JSR TALK               \ Electronics Beeb Speech Synthesiser (if one is fitted
+\                       \ and speech has been enabled)
+\
+\ENDIF
+\
+\LDX #CYL               \ Call TITLE to show a rotating Cobra Mk III (#CYL) and
+\LDA #6                 \ token 6 ("LOAD NEW {single cap}COMMANDER {all caps}
+\JSR TITLE              \ (Y/N)?{sentence case}{cr}{cr}"), returning with the
+\                       \ internal number of the key pressed in A
+\
+\CMP #&60               \ Did we press TAB? If not, skip the following
+\BNE P%+5               \ instruction
+\
+\.BRGO
+\
+\JMP DEMON              \ We pressed TAB, so jump to DEMON to show the demo
+\
+\CMP #&44               \ Did we press "Y"? If not, jump to QU5, otherwise
+\BNE QU5                \ continue on to load a new commander
+\
+\JSR DFAULT             \ Call DFAULT to reset the current commander data block
+\                       \ to the last saved commander
+\
+\JSR SVE                \ Call SVE to load a new commander into the last saved
+\                       \ commander data block
+\
+\.QU5
 
-ENDIF
-
- LDX #CYL               \ Call TITLE to show a rotating Cobra Mk III (#CYL) and
- LDA #6                 \ token 6 ("LOAD NEW {single cap}COMMANDER {all caps}
- JSR TITLE              \ (Y/N)?{sentence case}{cr}{cr}"), returning with the
-                        \ internal number of the key pressed in A
-
- CMP #&60               \ Did we press TAB? If not, skip the following
- BNE P%+5               \ instruction
-
-.BRGO
-
- JMP DEMON              \ We pressed TAB, so jump to DEMON to show the demo
-
- CMP #&44               \ Did we press "Y"? If not, jump to QU5, otherwise
- BNE QU5                \ continue on to load a new commander
-
- JSR DFAULT             \ Call DFAULT to reset the current commander data block
-                        \ to the last saved commander
-
- JSR SVE                \ Call SVE to load a new commander into the last saved
-                        \ commander data block
-
-.QU5
+                        \ --- End of removed code ----------------------------->
 
  JSR DFAULT             \ Call DFAULT to reset the current commander data block
                         \ to the last saved commander
@@ -35175,10 +35378,14 @@ ENDIF
  JSR msblob             \ Reset the dashboard's missile indicators so none of
                         \ them are targeted
 
- LDA #7                 \ Call TITLE to show a rotating Asp Mk II (#ASP) and
- LDX #ASP               \ token 7 ("PRESS SPACE OR FIRE,{single cap}COMMANDER.
- JSR TITLE              \ {cr}{cr}"), returning with the internal number of the
-                        \ key pressed in A
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #7                 \ Call TITLE to show a rotating Asp Mk II (#ASP) and
+\LDX #ASP               \ token 7 ("PRESS SPACE OR FIRE,{single cap}COMMANDER.
+\JSR TITLE              \ {cr}{cr}"), returning with the internal number of the
+\                       \ key pressed in A
+
+                        \ --- End of removed code ----------------------------->
 
  JSR ping               \ Set the target system coordinates (QQ9, QQ10) to the
                         \ current system coordinates (QQ0, QQ1) we just loaded
@@ -35338,6 +35545,45 @@ ENDIF
                         \ fixed)
 
  STA COK                \ Store the updated competition flags in COK
+
+ RTS                    \ Return from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: ConfigureGame
+\       Type: Subroutine
+\   Category: Start and end
+\    Summary: Display the configuration screen
+\
+\ ******************************************************************************
+
+.ConfigureGame
+
+ JSR RESET              \ Reset our ship so we can use it for the rotating ships
+
+ JSR ZEKTRAN            \ Reset the key logger buffer that gets returned from
+                        \ the I/O processor
+
+ LDA #32                \ Send a #SETVDU19 32 command to the I/O processor to
+ JSR DOVDU19            \ set the mode 1 palette to yellow (colour 1), white
+                        \ (colour 2) and cyan (colour 3)
+
+ LDA #1                 \ Clear the top part of the screen, draw a border box,
+ JSR TT66               \ and set the current view type in QQ11 to 1
+
+ LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
+ JSR DOCOL              \ switch to colour 2, which is white in the title screen
+
+ STZ QQ11               \ Set QQ11 to 0, so from here on we are using a space
+                        \ view
+
+
+ LDA #8                 \ Clear the top part of the screen, draw a border box,
+ JSR TRADEMODE          \ and set up a printable trading screen with a view type
+                        \ in QQ11 of 8 (Status Mode screen)
+
+ LDA #f0                \ Set A to f0 so we launch the game when we return to
+                        \ TT102
 
  RTS                    \ Return from the subroutine
 
@@ -58217,13 +58463,19 @@ ENDMACRO
 
 \STZ INWK+36            \ Clear scooped state
 
- LDA XX21-2+2*PLAYER1SHIP   \ Set XX0(1 0) to point to the ship blueprint for
- STA XX0                    \ player 1, as viewed from player 2
- LDA XX21-1+2*PLAYER1SHIP
- STA XX0+1
-
- LDA #PLAYER1SHIP       \ We're drawing player 1, so switch to the correct ship
+ LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
+
+ ASL A                  \ Set Y = ship type * 2
+ TAY
+
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
 
  LDA player1INWK31      \ Copy "on-screen" state from player1INWK31 to INWK+31
  STA INWK+31
@@ -58272,15 +58524,30 @@ ENDMACRO
  LDX player2Score       \ Print player 2's score
  JSR Player2ee3
 
+                        \ Player 1 has been hit, so process player 1's shields
+
+ LDX player2VIEW        \ Fetch the power of the current laser and clear the
+ LDA player2LASER,X     \ continuous bit to fetch the power per pulse, and then
+ AND #%01111111         \ halve the laser power to get the damage level
+ LSR A
+
+ JSR OOPS               \ Remove the relevant energy from player 1's shields
+
 .dshp7
 
- LDA #PLAYER2SHIP       \ Switch back to the ship for player 2
+ LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
 
- LDA XX21-2+2*PLAYER2SHIP   \ Set XX0(1 0) to point to the ship blueprint for
- STA XX0                    \ player 2, which we were processing from the point
- LDA XX21-1+2*PLAYER2SHIP   \ of view of player 1
- STA XX0+1
+ ASL A                  \ Set Y = ship type * 2
+ TAY
+
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
 
 .dshp8
 
