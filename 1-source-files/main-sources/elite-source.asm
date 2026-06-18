@@ -338,10 +338,6 @@ ENDIF
  PLAYER2NB = %00000100  \ Additional NEWB flags to set for NPC player 2
                         \ (bit 2 set = hostile)
 
- SHIP_GAP = 96          \ Gap between ships on title screen
-
- SHIP_Y = 48            \ Vertical position of ships on title screen
-
                         \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
@@ -35657,7 +35653,7 @@ ENDIF
  LDX #CYL               \ Set player 1 to a Cobra by default
  STX player1ShipType
 
- LDX #COPS              \ Set player 2 to a Viper by default
+ LDX #SH3               \ Set player 2 to a Sidewinder by default
  STX player2ShipType
 
  LDX #3                 \ Set player 2's missiles to 3 by default
@@ -36061,11 +36057,12 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ships are up the screen
- STX INWK+3
+ STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
 
- LDX #SHIP_GAP          \ Set x = -SHIP_GAP, so ship is on left
- STX INWK
+ LDX player1ShipType    \ Set x = -shipOffset, so ship starts on left
+ LDA shipOffsetLo,X
+ STA INWK
+ STZ INWK+1
  LDX #%10000000
  STX INWK+2
 
@@ -36075,8 +36072,10 @@ ENDIF
  LDX #0                 \ Save player 1's ship data
  JSR SaveShipDataInSlot
 
- LDX #SHIP_GAP          \ Set x = SHIP_GAP, so ship is on right
- STX INWK
+ LDX player2ShipType    \ Set x = +shipOffset, so ship starts on right
+ LDA shipOffsetLo,X
+ STA INWK
+ STZ INWK+1
  STZ INWK+2
 
  LDA player2ShipType    \ Set up a new ship for player 2 into slot #1
@@ -36289,6 +36288,10 @@ ENDIF
 
  STZ DELTA              \ Set DELTA = 0 (i.e. ship speed = 0)
 
+ LDA #%10000000         \ Move the ships into the top half of the screen
+ STA splitScreen
+ STZ drawPlayerView
+
                         \ --- End of replacement ------------------------------>
 
  LDA #5                 \ Set the main loop counter in MCNT to 5, to act as the
@@ -36318,9 +36321,19 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- LDA INWK+7             \ If z_hi (the ship's distance) is 1, jump to TL1 to
- CMP #1                 \ skip the following decrement
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA INWK+7             \ If z_hi (the ship's distance) is 1, jump to TL1 to
+\CMP #1                 \ skip the following decrement
+\BEQ TL1
+                        \ --- And replaced by: -------------------------------->
+
+ LDX player1ShipType    \ If z_hi matches this ship type's entry in shipDistance
+ LDA shipDistance,X     \ then skip the following decrement
+ CMP INWK+7
  BEQ TL1
+
+                        \ --- End of replacement ------------------------------>
 
  DEC INWK+7             \ Decrement the ship's distance, to bring the ship
                         \ a bit closer to us
@@ -36349,21 +36362,40 @@ ENDIF
 \STZ INWK               \ Set x_lo = 0, so the ship remains in the screen centre
 \
 \STZ INWK+3             \ Set y_lo = 0, so the ship remains in the screen centre
+\
+\JSR LL9                \ Call LL9 to display the ship
+\
+\LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
+\                       \ button from the key logger buffer, which contains
+\                       \ the value of the 6522 System VIA input register IRB
+\                       \ (SHEILA &40)
+\
+\AND #%00010000         \ Bit 4 of IRB (PB4) is clear if joystick 1's fire
+\                       \ button is pressed, otherwise it is set, so AND'ing
+\                       \ the value of IRB with %10000 extracts this bit
+\
+\TAX                    \ Copy the joystick fire button state to X, though this
+\                       \ instruction has no effect, as the comparison flags are
+\                       \ already set by the AND, and the value of X is not used
+\                       \ anywhere
+\
+\BEQ TL2                \ If the joystick fire button is pressed, jump to TL2
+
 
                         \ --- And replaced by: -------------------------------->
 
- LDX #SHIP_GAP          \ Set x = -SHIP_GAP, so ship stays on left
- STX INWK
- LDX #%10000000
- STX INWK+2
+ LDX player1ShipType    \ Set x = -shipOffset, so ship stays on left
+ LDA shipOffsetLo,X
+ STA INWK
+ STZ INWK+1
+ LDA #%10000000
+ STA INWK+2
 
- LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ship is up the screen
- STX INWK+3
+ STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
 
                         \ --- End of replacement ------------------------------>
 
-
- JSR LL9                \ Call LL9 to display the ship
+ JSR LL9                \ Call LL9 to display player 1's ship
 
  LDX #0                 \ Save player 1's ship
  JSR SaveShipDataInSlot
@@ -36386,8 +36418,9 @@ ENDIF
  STX XSAV
  JSR GetShipDataToINWK
 
- LDA INWK+7             \ If z_hi (the ship's distance) is 1, jump to TL1a to
- CMP #1                 \ skip the following decrement
+ LDX player2ShipType    \ If z_hi matches this ship type's entry in shipDistance
+ LDA shipDistance,X     \ then skip the following decrement
+ CMP INWK+7
  BEQ TL1a
 
  DEC INWK+7             \ Decrement the ship's distance, to bring the ship
@@ -36401,37 +36434,20 @@ ENDIF
  LDX #128               \ Set z_lo = 128, so the closest the ship gets to us is
  STX INWK+6             \ z_hi = 1, z_lo = 128, or 256 + 128 = 384
 
- LDX #SHIP_GAP          \ Set x = SHIP_GAP, so ship stays on right
- STX INWK
+ LDX player2ShipType    \ Set x = +shipOffset, so ship stays on right
+ LDA shipOffsetLo,X
+ STA INWK
+ STZ INWK+1
  STZ INWK+2
 
- LDX #SHIP_Y            \ Set y_hi = SHIP_Y, so ship is up the screen
- STX INWK+3
+ STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
 
- JSR LL9                \ Call LL9 to display the ship
+ JSR LL9                \ Call LL9 to display player 2's ship
 
  LDX #1                 \ Save player 1's ship
  JSR SaveShipDataInSlot
 
-                        \ --- Mod: Code removed for two-player Elite: --------->
-
-\LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
-\                       \ button from the key logger buffer, which contains
-\                       \ the value of the 6522 System VIA input register IRB
-\                       \ (SHEILA &40)
-\
-\AND #%00010000         \ Bit 4 of IRB (PB4) is clear if joystick 1's fire
-\                       \ button is pressed, otherwise it is set, so AND'ing
-\                       \ the value of IRB with %10000 extracts this bit
-\
-\TAX                    \ Copy the joystick fire button state to X, though this
-\                       \ instruction has no effect, as the comparison flags are
-\                       \ already set by the AND, and the value of X is not used
-\                       \ anywhere
-\
-\BEQ TL2                \ If the joystick fire button is pressed, jump to TL2
-
-                        \ --- End of removed code ----------------------------->
+                        \ --- End of replacement ------------------------------>
 
  LDA KTRAN              \ Fetch the internal key number of the current key
                         \ press from the key logger buffer
@@ -36470,6 +36486,9 @@ ENDIF
  CMP #f0                \ If f0 is being pressed, start the game
  BNE titl4
 
+ STZ splitScreen        \ Undo the ship clipping used on the title screen
+ STZ drawPlayerView
+
  JMP TT102              \ Start the game
 
 .titl4
@@ -36484,6 +36503,78 @@ ENDIF
 \ player1GameType, player2GameType
 
  JMP TLL2               \ Loop back to keep rotating the ships
+
+\ ******************************************************************************
+\
+\       Name: shipDistance
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: The distance for each ship on the title screen
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.shipDistance
+
+ SKIP 11
+ EQUB 2                 \ Cobra Mk III
+ EQUB 3                 \ Python
+ EQUB 0
+ EQUB 3                 \ Anaconda
+ EQUB 0
+ EQUB 2                 \ Viper
+ EQUB 1                 \ Sidewinder
+ EQUB 1                 \ Mamba
+ EQUB 2                 \ Krait
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 1                 \ Moray
+ EQUB 3                 \ Thargoid
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: shipOffsetLo
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: The sideways offset for each ship on the title screen (low byte)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.shipOffsetLo
+
+ SKIP 11
+ EQUB 160               \ Cobra Mk III
+ EQUB 200               \ Python
+ EQUB 0
+ EQUB 180               \ Anaconda
+ EQUB 0
+ EQUB 120               \ Viper
+ EQUB 96                \ Sidewinder
+ EQUB 96                \ Mamba
+ EQUB 150               \ Krait
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 96                \ Moray
+ EQUB 220                \ Thargoid
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
