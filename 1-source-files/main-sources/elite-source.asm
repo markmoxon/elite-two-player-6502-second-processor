@@ -1491,6 +1491,10 @@ ENDMACRO
  CHAR 'B'
  CHAR 'R'
  CHAR 'A'
+ CHAR ' '
+ CHAR 'M'
+ CHAR 'K'
+ CHAR '3'
  EQUB 0
 
  CHAR 'P'               \ Token 12: "PYTHON"
@@ -55486,9 +55490,54 @@ ENDIF
 
 .ToggleOption00
 
+ LDX player1ShipType    \ Set X = the current ship type for player 1
+
+ JSR ToggleShipType     \ Toggle the ship type
+
+ STX player1ShipType    \ Set the ship type for player 1 to the new value
+
  RTS                    \ Return from the subroutine
 
 .ToggleOption01
+
+ LDX player2ShipType    \ Set X = the current ship type for player 2
+
+ JSR ToggleShipType     \ Toggle the ship type
+
+ STX player2ShipType    \ Set the ship type for player 2 to the new value
+
+ RTS                    \ Return from the subroutine
+
+.ToggleShipType
+
+ INX                    \ Move ship on to next type
+
+ CPX #13                \ Fix if new type is Anaconda
+ BNE styp1
+ LDX #14
+ RTS
+
+.styp1
+
+ CPX #15                \ Fix if new type is Viper
+ BNE styp2
+ LDX #16
+ RTS
+
+.styp2
+
+ CPX #20                \ Fix if new type is Moray
+ BNE styp3
+ LDX #28
+ RTS
+
+.styp3
+
+ CPX #30                \ Fix if new type is Cobra
+ BNE styp4
+ LDX #11
+
+.styp4
 
  RTS                    \ Return from the subroutine
 
