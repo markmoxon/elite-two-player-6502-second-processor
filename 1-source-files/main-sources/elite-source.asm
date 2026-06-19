@@ -338,6 +338,8 @@ ENDIF
  PLAYER2NB = %00000100  \ Additional NEWB flags to set for NPC player 2
                         \ (bit 2 set = hostile)
 
+ SHIPCOL = CYAN         \ Ship colours on title screen
+
                         \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
@@ -4364,6 +4366,10 @@ ENDIF
 .tokenNumber
 
  SKIP 1                 \ The token number to print in the PrintOption routine
+
+.titleScreen
+
+ SKIP 1                 \ A flag to denote we are drawing the title screen
 
 .endWP
 
@@ -35647,10 +35653,8 @@ ENDIF
  STX player2LASER
  STX player2LASER+1
 
- LDX #CYL               \ Set player 1 to a Cobra by default
+ LDX #CYL               \ Set player ships to Cobras by default
  STX player1ShipType
-
- LDX #SH3               \ Set player 2 to a Sidewinder by default
  STX player2ShipType
 
  LDX #3                 \ Set player 2's missiles to 3 by default
@@ -36015,6 +36019,7 @@ ENDIF
 
  LDA #1                 \ Clear the top part of the screen, draw a border box,
  JSR TT66               \ and set the current view type in QQ11 to 1
+
                         \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
@@ -36053,6 +36058,9 @@ ENDIF
 \JSR NWSHP
 
                         \ --- And replaced by: -------------------------------->
+
+ STX titleScreen        \ Set bit 7 of titleScreen to denote we are drawing the
+                        \ title screen, so ships are drawin in cyan
 
  STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
 
@@ -36478,8 +36486,9 @@ ENDIF
  CMP #f0                \ If f0 is not being pressed, jump to titl2 to keep
  BNE titl2              \ checking for keys
 
- STZ splitScreen        \ Undo the ship clipping used on the title screen
- STZ drawPlayerView
+ STZ splitScreen        \ Undo the ship clipping used on the title screen and
+ STZ drawPlayerView     \ denote we are no longer drawing the title screen
+ STZ titleScreen
 
  JMP TT102              \ Start the game
 
@@ -36612,7 +36621,7 @@ ENDIF
  EQUB 0
  EQUB 3                 \ Anaconda
  EQUB 0
- EQUB 2                 \ Viper
+ EQUB 1                 \ Viper
  EQUB 1                 \ Sidewinder
  EQUB 1                 \ Mamba
  EQUB 2                 \ Krait
@@ -41960,6 +41969,14 @@ ENDIF
  LDA shpcol,X           \ Set A to the ship colour for this type, from the X-th
                         \ entry in the shpcol table
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT titleScreen        \ If this is the title screen, force the ship colour to
+ BPL P%+4               \ the configured colour
+ LDA #SHIPCOL
+
+                        \ --- End of added code ------------------------------->
+
  JSR DOCOL              \ Send a #SETCOL command to the I/O processor to switch
                         \ to this colour
 
@@ -43868,6 +43885,14 @@ ENDIF
 
  LDX TYPE               \ Set A to the ship colour for this type, from the
  LDA shpcol,X           \ relevant entry in the shpcol table
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT titleScreen        \ If this is the title screen, force the ship colour to
+ BPL P%+4               \ the configured colour
+ LDA #SHIPCOL
+
+                        \ --- End of added code ------------------------------->
 
  JSR DOCOL              \ Send a #SETCOL command to the I/O processor to switch
                         \ back to the ship's colour
@@ -55494,15 +55519,78 @@ ENDIF
 
  JSR ToggleShipType     \ Toggle the ship type
 
+\CPX #0                 \ If there's a drawing issue, jump to fixs1
+\BEQ fixs1
+\CPX #28
+\BCS fixs1
+
+ LDA shipDistance,X     \ Set the correct distance for the new choice
+ STA K%+7
+
  STX player1ShipType    \ Set the ship type for player 1 to the new value
 
  RTS                    \ Return from the subroutine
+
+.fixs1
+
+ PHX
+
+ LDA player1ShipType    \ Switch to player 1's ship
+ STA TYPE
+
+ ASL A                  \ Set Y = ship type * 2
+ TAY
+
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
+
+ LDX #0                 \ Fetch player 1's ship data from slot #0
+ STX XSAV
+ JSR GetShipDataToINWK
+
+ LDA #%10000000
+ STA NEWB
+ JSR LL9
+
+ PLX
+ STX TYPE
+ STX player1ShipType    \ Set the ship type for player 1 to the new value
+
+ LDA shipDistance,X     \ Set the correct distance for the new choice
+ STA INWK+7
+ STA K%+7
+
+ STZ NEWB
+
+ TXA
+ ASL A                  \ Set Y = ship type * 2
+ TAY
+
+ LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
+ STA XX0                \ table that points to the individual ship blueprints,
+                        \ so this fetches the low byte of this particular ship
+                        \ type's blueprint and stores it in XX0
+
+ LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
+ STA XX0+1              \ blueprint and store it in XX0+1
+
+ JSR LL9
+
+ RTS
 
 .ToggleOption01
 
  LDX player2ShipType    \ Set X = the current ship type for player 2
 
  JSR ToggleShipType     \ Toggle the ship type
+
+ LDA shipDistance,X     \ Set the correct distance for the new choice
+ STA K%+NI%+7
 
  STX player2ShipType    \ Set the ship type for player 2 to the new value
 
