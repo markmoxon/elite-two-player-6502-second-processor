@@ -2114,18 +2114,7 @@ ENDIF
  CHAR 'S'
  EQUB 0
 
- CHAR ' '               \ Token 54:     "           "
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- CHAR ' '
- EQUB 0
+ EQUB 0                 \ Token 54:     Unused
 
  CHAR 'P'               \ Token 55:     "PLAYER"
  TWOK 'L', 'A'
@@ -2216,7 +2205,6 @@ ENDIF
  CHAR 'E'
  CHAR 'S'
  EQUB 0
-
 
                         \ --- End of replacement ------------------------------>
 
@@ -36260,31 +36248,18 @@ ENDIF
  LDA #160+60            \ Print token 60 (" F0 TO PLAY")
  JSR TT27
 
- STZ YSAV               \ Set YSAV to 0 to use as a loop counter in the
-                        \ following loop to print all options
+ LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
+ STA YSAV               \ following loop to print all options
 
 .titl1
 
- LDY YSAV               \ If YSAV = 28 then we have printed all options, so
- CPY #28                \ jump to titl3 to exit the loop
- BEQ titl3
+ JSR PrintOptionA       \ Print option A
 
- LDA optionJumpTable,Y  \ Set the address of the JSR at titl2 to the Y-th
- STA titl2+1            \ entry, incrementing Y to point to the next entry
- INY
- LDA optionJumpTable,Y
- STA titl2+2
- INY
+ INC YSAV               \ Move on to the next option
 
- STY YSAV               \ Store the updated value of Y in YSAV
-
-.titl2
-
- JSR &FFFF              \ Call the routine to print this option
-
- BRA titl1              \ Loop back to print the next option
-
-.titl3
+ LDA YSAV               \ Loop back until we have printed all options
+ CMP #14
+ BNE titl1
 
  STZ DELTA              \ Set DELTA = 0 (i.e. ship speed = 0)
 
@@ -36346,9 +36321,13 @@ ENDIF
  LDX #128               \ Set z_lo = 128, so the closest the ship gets to us is
  STX INWK+6             \ z_hi = 1, z_lo = 128, or 256 + 128 = 384
 
- LDA MCNT               \ This value will be zero on one out of every four
- AND #3                 \ iterations, so for the other three, skip to nodesire
- BNE nodesire           \ so we only scan for key presses once every four loops
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA MCNT               \ This value will be zero on one out of every four
+\AND #3                 \ iterations, so for the other three, skip to nodesire
+\BNE nodesire           \ so we only scan for key presses once every four loops
+
+                        \ --- End of removed code ----------------------------->
 
  STX NEEDKEY            \ Set NEEDKEY = 128, so the call to LL9 below draws the
                         \ ship and scans for key presses (LL9 resets NEEDKEY to
@@ -36434,6 +36413,10 @@ ENDIF
  LDX #128               \ Set z_lo = 128, so the closest the ship gets to us is
  STX INWK+6             \ z_hi = 1, z_lo = 128, or 256 + 128 = 384
 
+ STX NEEDKEY            \ Set NEEDKEY = 128, so the call to LL9 below draws the
+                        \ ship and scans for key presses (LL9 resets NEEDKEY to
+                        \ 0 so we have to reset NEEDKEY every iteration)
+
  LDX player2ShipType    \ Set x = +shipOffset, so ship stays on right
  LDA shipOffsetLo,X
  STA INWK
@@ -36483,8 +36466,8 @@ ENDIF
 
 .TL3
 
- CMP #f0                \ If f0 is being pressed, start the game
- BNE titl4
+ CMP #f0                \ If f0 is not being pressed, jump to titl4 to keep
+ BNE titl4              \ checking for keys
 
  STZ splitScreen        \ Undo the ship clipping used on the title screen
  STZ drawPlayerView
@@ -36492,6 +36475,53 @@ ENDIF
  JMP TT102              \ Start the game
 
 .titl4
+
+ CMP #&19               \ If the left arrow was pressed, jump to titl5
+ BEQ titl5
+
+ CMP #&79               \ If the right arrow was not pressed, jump to titl6 to
+ BNE titl6              \ keep checking
+
+.titl5
+
+                        \ If we get here then either the left or right arrow was
+                        \ pressed, so we move the highlight into the other column
+
+ LDA configHighlight    \ Redraw the first highlight to remove it
+ JSR PrintOptionA
+
+ LDA configHighlight    \ Redraw the second highlight to remove it
+ EOR #1
+ JSR PrintOptionA
+
+ LDA configHighlight    \ Flip the side of the highlight
+ EOR #1
+ STA configHighlight
+
+ JSR PrintOptionA       \ Redraw the first highlight to show it
+
+ LDA configHighlight    \ Redraw the second highlight to show it
+ EOR #1
+ JSR PrintOptionA
+
+ BRA titl8              \ Jump to titl8 to skip any other key checks
+
+.titl6
+
+ CMP #&39               \ If the up arrow was not pressed, jump to titl7 to
+ BNE titl7              \ keep checking
+
+.titl7
+
+ CMP #&29               \ If the down arrow was not pressed, jump to titl9 to
+ BNE titl9              \ stop checking for keys
+
+.titl8
+
+ JSR RDKEY              \ Wait for any keys being pressed to be released
+ BNE titl8
+
+.titl9
 
 \ Set the following:
 \ player1ShipType, player2ShipType
@@ -54892,8 +54922,33 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: optionJumpTable
+\       Name: PrintOptionA
 \       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Print configuration option A
+\
+\ ******************************************************************************
+
+.PrintOptionA
+
+ ASL A                  \ Set Y = A * 2   
+ TAY
+
+ LDA optionJumpTable,Y  \ Set the address of the JSR at opta1 to the Y-th
+ STA opta1+1            \ entry, incrementing Y to point to the next entry
+ INY
+ LDA optionJumpTable,Y
+ STA opta1+2
+
+.opta1
+
+ JMP &FFFF              \ Call the routine to print this option and return from
+                        \ the subroutine using a tail call
+
+\ ******************************************************************************
+\
+\       Name: optionJumpTable
+\       Type: Variable
 \   Category: Two-player Elite
 \    Summary: A jump table for printing configuration options
 \
@@ -54991,13 +55046,7 @@ ENDIF
  LDA #17
  JSR DOYC
 
- LDA #160+54            \ Print token 54 (11 spaces) to remove the previous
- JSR TT27               \ option text
-
- LDA #1                 \ Move to column 1 again
- JSR DOXC
-
- LDA #6                 \ Set the highlight colour for this option (i.e. red if
+ LDX #6                 \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
  LDX NOMSL              \ Print the number of missiles for player 1
@@ -55008,18 +55057,12 @@ ENDIF
 
 .PrintOption07
 
- LDA #20                \ Move to (20, 17)
+ LDA #30                \ Move to (30, 17)
  JSR DOXC
  LDA #17
  JSR DOYC
 
- LDA #160+54            \ Print token 54 (11 spaces) to remove the previous
- JSR TT27               \ option text
-
- LDA #30                \ Move to column 30
- JSR DOXC
-
- LDA #7                 \ Set the highlight colour for this option (i.e. red if
+ LDX #7                 \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
  LDX player2NOMSL       \ Print the number of missiles for player 2
@@ -55092,13 +55135,7 @@ ENDIF
  LDA #20
  JSR DOYC
 
- LDA #160+54            \ Print token 54 (11 spaces) to remove the previous
- JSR TT27               \ option text
-
- LDA #1                 \ Move to column 1 again
- JSR DOXC
-
- LDA #12                \ Set the highlight colour for this option (i.e. red if
+ LDX #12                \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
  LDX player1GameType    \ Set X to the number of hits divided by 10
@@ -55145,15 +55182,10 @@ ENDIF
                         \ specific number of hits, with the number of hits
                         \ divided by 10 is in Y
 
- LDA #20                \ Move to (20, 20)
- JSR DOXC
- LDA #20
+ LDA #20                \ Move to row 20
  JSR DOYC
 
- LDA #160+54            \ Print token 54 (11 spaces) to remove the previous
- JSR TT27               \ option text
-
- LDA #13                \ Set the highlight colour for this option (i.e. red if
+ LDX #13                \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
  LDX player2GameType    \ Set X to the number of hits divided by 10
@@ -55243,18 +55275,10 @@ ENDIF
  CLC                    \ row 14
  ADC #14
 
- PHA                    \ Store the row number on the stack
-
  JSR DOYC               \ Move to the row for this option
 
- LDA #160+54            \ Print token 54 (11 spaces) to remove the previous
- JSR TT27               \ option text
-
- LDA optionNumber       \ Set the highlight colour for this option (i.e. red if
+ LDX optionNumber       \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
-
- PLA                    \ Move to the row for this option (not needed?)
- JSR DOYC
 
  PLA                    \ Set A to the column for this option
 
@@ -55306,7 +55330,7 @@ ENDIF
 \
 \ Arguments:
 \
-\   A                   Option number (0-1, 2-3, 4-5 etc.)
+\   X                   Option number (0-1, 2-3, 4-5 etc.)
 \
 \ ******************************************************************************
 
@@ -55314,10 +55338,10 @@ ENDIF
 
 .SetHighlightColour
 
- CMP configHighlight    \ If A matches the currently highlighted field, jump
+ CPX configHighlight    \ If X matches the currently highlighted field, jump
  BEQ high1              \ to high1 to print the field in red
 
- LDA #YELLOW            \ Send a #SETCOL CYAN command to the I/O processor to
+ LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
  JMP DOCOL              \ switch to yellow
 
 .high1
