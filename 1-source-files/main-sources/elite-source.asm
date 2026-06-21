@@ -4826,9 +4826,19 @@ ENDIF
 
  EQUB 0                 \ GCNT = Galaxy number, 0-7, #15
 
- EQUB POW+(128 AND Q%)  \ LASER = Front laser, #16
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB (POW+128) AND Q%  \ LASER+1 = Rear laser, #17
+\EQUB POW+(128 AND Q%)  \ LASER = Front laser, #16
+\
+\EQUB (POW+128) AND Q%  \ LASER+1 = Rear laser, #17
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB POW               \ LASER = Front laser, #16
+
+ EQUB POW               \ LASER+1 = Rear laser, #17
+
+                        \ --- End of replacement ------------------------------>
 
  EQUB 0                 \ LASER+2 = Left laser, #18
 
