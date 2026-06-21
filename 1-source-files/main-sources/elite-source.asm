@@ -36062,14 +36062,18 @@ ENDIF
  STX titleScreen        \ Set bit 7 of titleScreen to denote we are drawing the
                         \ title screen, so ships are drawin in cyan
 
- STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
-
- LDX player1ShipType    \ Set x = -shipOffset, so ship starts on left
- LDA shipOffsetLo,X
+ LDX player1ShipType    \ Set x = -xShipOffset, so ship starts on left
+ LDA xShipOffset,X
  STA INWK
  STZ INWK+1
  LDX #%10000000
  STX INWK+2
+
+ LDA yShipOffset,X      \ Set y = -yShipOffset, to move ship down a little
+ STA INWK+3
+ STZ INWK+4
+ LDA #%10000000
+ STA INWK+5
 
  LDA player1ShipType    \ Set up a new ship for player 1 into slot #0
  JSR NWSHP
@@ -36077,8 +36081,8 @@ ENDIF
  LDX #0                 \ Save player 1's ship data
  JSR SaveShipDataInSlot
 
- LDX player2ShipType    \ Set x = +shipOffset, so ship starts on right
- LDA shipOffsetLo,X
+ LDX player2ShipType    \ Set x = +xShipOffset, so ship starts on right
+ LDA xShipOffset,X
  STA INWK
  STZ INWK+1
  STZ INWK+2
@@ -36380,14 +36384,18 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDX player1ShipType    \ Set x = -shipOffset, so ship stays on left
- LDA shipOffsetLo,X
+ LDX player1ShipType    \ Set x = -xShipOffset, so ship stays on left
+ LDA xShipOffset,X
  STA INWK
  STZ INWK+1
  LDA #%10000000
  STA INWK+2
 
- STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
+ LDA yShipOffset,X      \ Set y = -yShipOffset, to move ship down a little
+ STA INWK+3
+ STZ INWK+4
+ LDA #%10000000
+ STA INWK+5
 
                         \ --- End of replacement ------------------------------>
 
@@ -36434,13 +36442,17 @@ ENDIF
                         \ ship and scans for key presses (LL9 resets NEEDKEY to
                         \ 0 so we have to reset NEEDKEY every iteration)
 
- LDX player2ShipType    \ Set x = +shipOffset, so ship stays on right
- LDA shipOffsetLo,X
+ LDX player2ShipType    \ Set x = +xShipOffset, so ship stays on right
+ LDA xShipOffset,X
  STA INWK
  STZ INWK+1
  STZ INWK+2
 
- STZ INWK+3             \ Set y_lo = 0, so ship is in the middle of the screen
+ LDA yShipOffset,X      \ Set y = -yShipOffset, to move ship down a little
+ STA INWK+3
+ STZ INWK+4
+ LDA #%10000000
+ STA INWK+5
 
  JSR LL9                \ Call LL9 to display player 2's ship
 
@@ -36640,7 +36652,7 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: shipOffsetLo
+\       Name: xShipOffset
 \       Type: Variable
 \   Category: Two-player Elite
 \    Summary: The sideways offset for each ship on the title screen (low byte)
@@ -36649,7 +36661,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.shipOffsetLo
+.xShipOffset
 
  SKIP 11
  EQUB 160               \ Cobra Mk III
@@ -36657,7 +36669,7 @@ ENDIF
  EQUB 0
  EQUB 180               \ Anaconda
  EQUB 0
- EQUB 120               \ Viper
+ EQUB 96                \ Viper
  EQUB 96                \ Sidewinder
  EQUB 96                \ Mamba
  EQUB 150               \ Krait
@@ -36671,6 +36683,42 @@ ENDIF
  EQUB 0
  EQUB 96                \ Moray
  EQUB 220                \ Thargoid
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: yShipOffset
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: The sideways offset for each ship on the title screen (low byte)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.yShipOffset
+
+ SKIP 11
+ EQUB 24                \ Cobra Mk III
+ EQUB 24                \ Python
+ EQUB 0
+ EQUB 24                \ Anaconda
+ EQUB 0
+ EQUB 12                \ Viper
+ EQUB 12                \ Sidewinder
+ EQUB 12                \ Mamba
+ EQUB 24                \ Krait
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 0
+ EQUB 12                \ Moray
+ EQUB 24                \ Thargoid
 
                         \ --- End of added code ------------------------------->
 
