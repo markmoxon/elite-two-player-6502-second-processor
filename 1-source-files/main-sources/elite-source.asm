@@ -24141,6 +24141,10 @@ ENDIF
 
 .Player2ee3
 
+ LDA player2GameType    \ If player 2 is playing survival, they don't need a
+ BNE P%+3               \ score, so return from the subroutine without printing
+ RTS                    \ the score
+
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is red in the space view
 
@@ -24178,6 +24182,14 @@ ENDIF
 \ ******************************************************************************
 
 .ee3
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player1GameType    \ If player 1 is playing survival, they don't need a
+ BNE P%+3               \ score, so return from the subroutine without printing
+ RTS                    \ the score
+
+                        \ --- End of added code ------------------------------->
 
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is red in the space view
@@ -35657,10 +35669,8 @@ ENDIF
  BPL zero1              \ Loop back to zero the next variable until we have done
                         \ them all
 
- LDX #POW               \ Give both players front and rear pulse lasers by
- STX LASER              \ default
- STX LASER+1
- STX player2LASER
+ LDX #POW               \ Give player 2 front and rear pulse lasers by default
+ STX player2LASER       \ (player 1 gets them via NA%)
  STX player2LASER+1
 
  LDX #CYL               \ Set player ships to Cobras by default
@@ -48341,14 +48351,14 @@ ENDIF
                         \ scanner, so return from the subroutine (as SC5
                         \ contains an RTS)
 
- LDA scacol,X           \ Set A to the scanner colour for this ship type from
-                        \ the X-th entry in the scacol table
-
- STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
-                        \ to the I/O processor with the #onescan command
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\LDA scacol,X           \ Set A to the scanner colour for this ship type from
+\                       \ the X-th entry in the scacol table
+\
+\STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
+\                       \ to the I/O processor with the #onescan command
+\
 \LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 6 or 7,
 \ORA INWK+4             \ then the ship is too far away to be shown on the
 \ORA INWK+7             \ scanner, so return from the subroutine (as SC5
@@ -48356,6 +48366,8 @@ ENDIF
 \BNE SC5
                         \ --- And replaced by: -------------------------------->
 
+ LDA #CYAN2             \ Set the scanner colour in SCANcol to cyan so it can be
+ STA SCANcol            \ sent to the I/O processor with the #onescan command
 
  LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 5, 6, or
  ORA INWK+4             \ 7, then the ship is too far away to be shown on the
