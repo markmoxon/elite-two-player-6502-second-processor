@@ -4375,6 +4375,10 @@ ENDIF
 
  SKIP 1                 \ The option number to print in the PrintOption routine
 
+.optionDebounce
+
+ SKIP 1                 \ Debounce for key presses on the title screen
+
 .tokenNumber
 
  SKIP 1                 \ The token number to print in the PrintOption routine
@@ -36606,6 +36610,8 @@ ENDIF
 
  BNE TL3                \ If a key is being pressed, jump to TL3
 
+ STZ optionDebounce     \ Clear the debounce variable
+
  DEC MCNT               \ Decrement the inner loop counter
 
                         \ --- Mod: Code removed for two-player Elite: --------->
@@ -36629,14 +36635,22 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
+.titl2
+
  JMP TLL2               \ Loop back to keep rotating the ships
 
                         \ --- End of replacement ------------------------------>
 
 .TL3
 
- CMP #f0                \ If f0 is not being pressed, jump to titl2 to keep
- BNE titl2              \ checking for keys
+ CMP optionDebounce     \ If the same key is being pressed, jump to TLL2 via
+ BEQ titl2              \ titl2 to skip processing the key until it is released
+                        \ (so this implements debounce)
+
+ STA optionDebounce     \ Store the key press in optionDebounce
+
+ CMP #f0                \ If f0 is not being pressed, jump to titl3 to keep
+ BNE titl3              \ checking for keys
 
  STZ splitScreen        \ Undo the ship clipping used on the title screen and
  STZ drawPlayerView     \ denote we are no longer drawing the title screen
@@ -36644,15 +36658,15 @@ ENDIF
 
  JMP TT102              \ Start the game
 
-.titl2
-
- CMP #&19               \ If the left arrow was pressed, jump to titl3
- BEQ titl3
-
- CMP #&79               \ If the right arrow was not pressed, jump to titl4 to
- BNE titl4              \ keep checking
-
 .titl3
+
+ CMP #&19               \ If the left arrow was pressed, jump to titl4
+ BEQ titl4
+
+ CMP #&79               \ If the right arrow was not pressed, jump to titl5 to
+ BNE titl5              \ keep checking
+
+.titl4
 
                         \ If we get here then either the left or right arrow was
                         \ pressed, so we move the highlight into the other column
@@ -36674,13 +36688,13 @@ ENDIF
  EOR #1
  JSR PrintOptionA
 
- BRA titl8              \ Jump to titl8 to wait for any keys to be releases and
+ BRA titl9              \ Jump to titl9 to wait for any keys to be releases and
                         \ skip any other key checks
 
-.titl4
+.titl5
 
- CMP #&39               \ If the up arrow was not pressed, jump to titl6 to
- BNE titl6              \ keep checking
+ CMP #&39               \ If the up arrow was not pressed, jump to titl7 to
+ BNE titl7              \ keep checking
 
  LDX configHighlight    \ Set nextHighlight to the new highlight option,
  DEX                    \ wrapping around from top to bottom
@@ -36689,7 +36703,7 @@ ENDIF
  LDX #12
  STX nextHighlight
 
-.titl5
+.titl6
 
  LDA configHighlight    \ Redraw the original highlight to remove it
  JSR PrintOptionA
@@ -36708,10 +36722,10 @@ ENDIF
 
  BRA titl9              \ Jump to titl9 to skip any other key checks
 
-.titl6
+.titl7
 
  CMP #&29               \ If the down arrow was not pressed, jump to titl9 to
- BNE titl7              \ keep checking
+ BNE titl8              \ keep checking
 
  LDX configHighlight    \ Set nextHighlight to the new highlight option,
  INX                    \ wrapping around from top to bottom
@@ -36721,12 +36735,9 @@ ENDIF
  LDX #0
  STX nextHighlight
 
- BRA titl5              \ Jump to titl5 to draw the new highlight
+ BRA titl6              \ Jump to titl6 to draw the new highlight
 
-.titl7
-
-\CMP #&49               \ If the RETURN arrow was not pressed, jump to titl9 to
-\BNE titl9              \ stop checking for keys
+.titl8
 
  LDA configHighlight    \ Redraw the highlight to remove it
  JSR PrintOptionA
@@ -36735,11 +36746,6 @@ ENDIF
 
  LDA configHighlight    \ Draw the highlight to update it
  JSR PrintOptionA
-
-.titl8
-
- JSR RDKEY              \ Wait for any keys being pressed to be released
- BNE titl8
 
 .titl9
 
