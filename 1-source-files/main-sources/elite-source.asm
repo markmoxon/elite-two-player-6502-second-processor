@@ -4299,11 +4299,19 @@ ENDIF
 
 .player1Score
 
- SKIP 1                 \ Player 1's score
+ SKIP 2                 \ Player 1's score
 
 .player2Score
 
- SKIP 1                 \ Player 2's score
+ SKIP 2                 \ Player 2's score
+
+.player1Target
+
+ SKIP 2                 \ Player 1's target score
+
+.player2Target
+
+ SKIP 2                 \ Player 2's target score
 
 .player2Firing
 
@@ -6655,13 +6663,13 @@ ENDIF
 
                         \ Player 2 has been hit, so increment player 1's score
 
- LDX player1Score       \ Print player 1's score to remove it from the screen
- JSR ee3
+ JSR ee3                \ Print player 1's score to remove it from the screen
 
  INC player1Score       \ Increment player 1's score
+ BNE P%+5
+ INC player1Score+1
 
- LDX player1Score       \ Print player 1's score
- JSR ee3
+ JSR ee3                \ Print player 1's score
 
                         \ Player 2 has been hit, so process player 2's shields
 
@@ -14028,123 +14036,127 @@ ENDIF
 \
 \ ******************************************************************************
 
-.HME2
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
- JSR DOCOL              \ switch to colour 3, which is white in the chart view
+\.HME2
+\
+\LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
+\JSR DOCOL              \ switch to colour 3, which is white in the chart view
+\
+\LDA #14                \ Print extended token 14 ("{clear bottom of screen}
+\JSR DETOK              \ PLANET NAME?{fetch line input from keyboard}"). The
+\                       \ last token calls MT26, which puts the entered search
+\                       \ term in INWK+5 and the term length in Y
+\
+\JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
+\                       \ which will erase the crosshairs currently there
+\
+\JSR TT81               \ Set the seeds in QQ15 (the selected system) to those
+\                       \ of system 0 in the current galaxy (i.e. copy the seeds
+\                       \ from QQ21 to QQ15)
+\
+\LDA #0                 \ We now loop through the galaxy's systems in order,
+\STA XX20               \ until we find a match, so set XX20 to act as a system
+\                       \ counter, starting with system 0
+\
+\.HME3
+\
+\JSR MT14               \ Switch to justified text when printing extended
+\                       \ tokens, so the call to cpl prints into the justified
+\                       \ text buffer at BUF instead of the screen, and DTW5
+\                       \ gets set to the length of the system name
+\
+\JSR cpl                \ Print the selected system name into the justified text
+\                       \ buffer
+\
+\LDX DTW5               \ Fetch DTW5 into X, so X is now equal to the length of
+\                       \ the selected system name
+\
+\LDA INWK+5,X           \ Fetch the X-th character from the entered search term
+\
+\CMP #13                \ If the X-th character is not a carriage return, then
+\BNE HME6               \ the selected system name and the entered search term
+\                       \ are different lengths, so jump to HME6 to move on to
+\                       \ the next system
+\
+\.HME4
+\
+\DEX                    \ Decrement X so it points to the last letter of the
+\                       \ selected system name (and, when we loop back here, it
+\                       \ points to the next letter to the left)
+\
+\LDA INWK+5,X           \ Set A to the X-th character of the entered search term
+\
+\ORA #%00100000         \ Set bit 5 of the character to make it lower case
+\
+\CMP BUF,X              \ If the character in A matches the X-th character of
+\BEQ HME4               \ the selected system name in BUF, loop back to HME4 to
+\                       \ check the next letter to the left
+\
+\TXA                    \ The last comparison didn't match, so copy the letter
+\BMI HME5               \ number into A, and if it's negative, that means we
+\                       \ managed to go past the first letters of each term
+\                       \ before we failed to get a match, so the terms are the
+\                       \ same, so jump to HME5 to process a successful search
+\
+\.HME6
+\
+\                       \ If we get here then the selected system name and the
+\                       \ entered search term did not match
+\
+\JSR TT20               \ We want to move on to the next system, so call TT20
+\                       \ to twist the three 16-bit seeds in QQ15
+\
+\INC XX20               \ Increment the system counter in XX20
+\
+\BNE HME3               \ If we haven't yet checked all 256 systems in the
+\                       \ current galaxy, loop back to HME3 to check the next
+\                       \ system
+\
+\                       \ If we get here then the entered search term did not
+\                       \ match any systems in the current galaxy
+\
+\JSR TT111              \ Select the system closest to galactic coordinates
+\                       \ (QQ9, QQ10), so we can put the crosshairs back where
+\                       \ they were before the search
+\
+\JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10)
+\
+\LDA #40                \ Call the NOISE routine with A = 40 to make a low,
+\JSR NOISE              \ long beep to indicate a failed search
+\
+\LDA #215               \ Print extended token 215 ("{left align} UNKNOWN
+\JMP DETOK              \ PLANET"), which will print on-screen as the left align
+\                       \ code disables justified text, and return from the
+\                       \ subroutine using a tail call
+\
+\.HME5
+\
+\                       \ If we get here then we have found a match for the
+\                       \ entered search
+\
+\LDA QQ15+3             \ The x-coordinate of the system described by the seeds
+\STA QQ9                \ in QQ15 is in QQ15+3 (s1_hi), so we copy this to QQ9
+\                       \ as the x-coordinate of the search result
+\
+\LDA QQ15+1             \ The y-coordinate of the system described by the seeds
+\STA QQ10               \ in QQ15 is in QQ15+1 (s0_hi), so we copy this to QQ10
+\                       \ as the y-coordinate of the search result
+\
+\JSR TT111              \ Select the system closest to galactic coordinates
+\                       \ (QQ9, QQ10)
+\
+\JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10)
+\
+\JSR MT15               \ Switch to left-aligned text when printing extended
+\                       \ tokens so future tokens will print to the screen (as
+\                       \ this disables justified text)
+\
+\JMP T95                \ Jump to T95 to print the distance to the selected
+\                       \ system and return from the subroutine using a tail
+\                       \ call
 
- LDA #14                \ Print extended token 14 ("{clear bottom of screen}
- JSR DETOK              \ PLANET NAME?{fetch line input from keyboard}"). The
-                        \ last token calls MT26, which puts the entered search
-                        \ term in INWK+5 and the term length in Y
-
- JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
-                        \ which will erase the crosshairs currently there
-
- JSR TT81               \ Set the seeds in QQ15 (the selected system) to those
-                        \ of system 0 in the current galaxy (i.e. copy the seeds
-                        \ from QQ21 to QQ15)
-
- LDA #0                 \ We now loop through the galaxy's systems in order,
- STA XX20               \ until we find a match, so set XX20 to act as a system
-                        \ counter, starting with system 0
-
-.HME3
-
- JSR MT14               \ Switch to justified text when printing extended
-                        \ tokens, so the call to cpl prints into the justified
-                        \ text buffer at BUF instead of the screen, and DTW5
-                        \ gets set to the length of the system name
-
- JSR cpl                \ Print the selected system name into the justified text
-                        \ buffer
-
- LDX DTW5               \ Fetch DTW5 into X, so X is now equal to the length of
-                        \ the selected system name
-
- LDA INWK+5,X           \ Fetch the X-th character from the entered search term
-
- CMP #13                \ If the X-th character is not a carriage return, then
- BNE HME6               \ the selected system name and the entered search term
-                        \ are different lengths, so jump to HME6 to move on to
-                        \ the next system
-
-.HME4
-
- DEX                    \ Decrement X so it points to the last letter of the
-                        \ selected system name (and, when we loop back here, it
-                        \ points to the next letter to the left)
-
- LDA INWK+5,X           \ Set A to the X-th character of the entered search term
-
- ORA #%00100000         \ Set bit 5 of the character to make it lower case
-
- CMP BUF,X              \ If the character in A matches the X-th character of
- BEQ HME4               \ the selected system name in BUF, loop back to HME4 to
-                        \ check the next letter to the left
-
- TXA                    \ The last comparison didn't match, so copy the letter
- BMI HME5               \ number into A, and if it's negative, that means we
-                        \ managed to go past the first letters of each term
-                        \ before we failed to get a match, so the terms are the
-                        \ same, so jump to HME5 to process a successful search
-
-.HME6
-
-                        \ If we get here then the selected system name and the
-                        \ entered search term did not match
-
- JSR TT20               \ We want to move on to the next system, so call TT20
-                        \ to twist the three 16-bit seeds in QQ15
-
- INC XX20               \ Increment the system counter in XX20
-
- BNE HME3               \ If we haven't yet checked all 256 systems in the
-                        \ current galaxy, loop back to HME3 to check the next
-                        \ system
-
-                        \ If we get here then the entered search term did not
-                        \ match any systems in the current galaxy
-
- JSR TT111              \ Select the system closest to galactic coordinates
-                        \ (QQ9, QQ10), so we can put the crosshairs back where
-                        \ they were before the search
-
- JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10)
-
- LDA #40                \ Call the NOISE routine with A = 40 to make a low,
- JSR NOISE              \ long beep to indicate a failed search
-
- LDA #215               \ Print extended token 215 ("{left align} UNKNOWN
- JMP DETOK              \ PLANET"), which will print on-screen as the left align
-                        \ code disables justified text, and return from the
-                        \ subroutine using a tail call
-
-.HME5
-
-                        \ If we get here then we have found a match for the
-                        \ entered search
-
- LDA QQ15+3             \ The x-coordinate of the system described by the seeds
- STA QQ9                \ in QQ15 is in QQ15+3 (s1_hi), so we copy this to QQ9
-                        \ as the x-coordinate of the search result
-
- LDA QQ15+1             \ The y-coordinate of the system described by the seeds
- STA QQ10               \ in QQ15 is in QQ15+1 (s0_hi), so we copy this to QQ10
-                        \ as the y-coordinate of the search result
-
- JSR TT111              \ Select the system closest to galactic coordinates
-                        \ (QQ9, QQ10)
-
- JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10)
-
- JSR MT15               \ Switch to left-aligned text when printing extended
-                        \ tokens so future tokens will print to the screen (as
-                        \ this disables justified text)
-
- JMP T95                \ Jump to T95 to print the distance to the selected
-                        \ system and return from the subroutine using a tail
-                        \ call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -23785,112 +23797,116 @@ ENDIF
 \
 \ ******************************************************************************
 
-.hyp
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA QQ12               \ If we are docked (QQ12 = &FF) then jump to dockEd to
- BNE dockEd             \ print an error message and return from the subroutine
-                        \ using a tail call (as we can't hyperspace when docked)
-
- LDA QQ22+1             \ Fetch QQ22+1, which contains the number that's shown
-                        \ on-screen during hyperspace countdown
-
- BEQ P%+3               \ If it is zero, skip the next instruction
-
- RTS                    \ The count is non-zero, so return from the subroutine
-
- LDA #CYAN              \ The count is zero, so send a #SETCOL CYAN command to
- JSR DOCOL              \ the I/O processor to switch to colour 3, which is cyan
-                        \ in the space view
-
- JSR CTRL               \ Scan the keyboard to see if CTRL is currently pressed
-
- BMI Ghy                \ If it is, then the galactic hyperdrive has been
-                        \ activated, so jump to Ghy to process it
-
- LDA QQ11               \ If the current view is 0 (i.e. the space view) then
- BEQ TTX110             \ jump to TTX110, which calls TT111 to set the current
-                        \ system to the nearest system to (QQ9, QQ10), and jumps
-                        \ back into this routine at TTX111 below
-
- AND #%11000000         \ If either bit 6 or 7 of the view type is set - so
- BNE P%+3               \ this is either the Short-range or Long-range Chart -
-                        \ then skip the following instruction
-
- RTS                    \ This is not a chart view, so return from the
-                        \ subroutine
-
- JSR hm                 \ This is a chart view, so call hm to redraw the chart
-                        \ crosshairs
-
-.TTX111
-
-                        \ If we get here then the current view is either the
-                        \ space view or a chart
-
- LDA QQ8                \ If either byte of the distance to the selected system
- ORA QQ8+1              \ in QQ8 are zero, skip the next instruction to make a
- BNE P%+3               \ copy of the destination seeds in safehouse
-
- RTS                    \ The selected system is the same as the current system,
-                        \ so return from the subroutine
-
- LDX #5                 \ We now want to copy those seeds into safehouse, so we
-                        \ so set a counter in X to copy 6 bytes
-
-.sob
-
- LDA QQ15,X             \ Copy the X-th byte of QQ15 into the X-th byte of
- STA safehouse,X        \ safehouse
-
- DEX                    \ Decrement the loop counter
-
- BPL sob                \ Loop back to copy the next byte until we have copied
-                        \ all six seed bytes
-
- LDA #7                 \ Move the text cursor to column 7, row 23 (in the
- JSR DOXC               \ middle of the bottom text row)
- LDA #23
- JSR DOYC
-
- LDA #0                 \ Set QQ17 = 0 to switch to ALL CAPS
- STA QQ17
-
- LDA #189               \ Print recursive token 29 ("HYPERSPACE ")
- JSR TT27
-
+\.hyp
+\
+\LDA QQ12               \ If we are docked (QQ12 = &FF) then jump to dockEd to
+\BNE dockEd             \ print an error message and return from the subroutine
+\                       \ using a tail call (as we can't hyperspace when docked)
+\
+\LDA QQ22+1             \ Fetch QQ22+1, which contains the number that's shown
+\                       \ on-screen during hyperspace countdown
+\
+\BEQ P%+3               \ If it is zero, skip the next instruction
+\
+\RTS                    \ The count is non-zero, so return from the subroutine
+\
+\LDA #CYAN              \ The count is zero, so send a #SETCOL CYAN command to
+\JSR DOCOL              \ the I/O processor to switch to colour 3, which is cyan
+\                       \ in the space view
+\
+\JSR CTRL               \ Scan the keyboard to see if CTRL is currently pressed
+\
+\BMI Ghy                \ If it is, then the galactic hyperdrive has been
+\                       \ activated, so jump to Ghy to process it
+\
+\LDA QQ11               \ If the current view is 0 (i.e. the space view) then
+\BEQ TTX110             \ jump to TTX110, which calls TT111 to set the current
+\                       \ system to the nearest system to (QQ9, QQ10), and jumps
+\                       \ back into this routine at TTX111 below
+\
+\AND #%11000000         \ If either bit 6 or 7 of the view type is set - so
+\BNE P%+3               \ this is either the Short-range or Long-range Chart -
+\                       \ then skip the following instruction
+\
+\RTS                    \ This is not a chart view, so return from the
+\                       \ subroutine
+\
+\JSR hm                 \ This is a chart view, so call hm to redraw the chart
+\                       \ crosshairs
+\
+\.TTX111
+\
+\                       \ If we get here then the current view is either the
+\                       \ space view or a chart
+\
+\LDA QQ8                \ If either byte of the distance to the selected system
+\ORA QQ8+1              \ in QQ8 are zero, skip the next instruction to make a
+\BNE P%+3               \ copy of the destination seeds in safehouse
+\
+\RTS                    \ The selected system is the same as the current system,
+\                       \ so return from the subroutine
+\
+\LDX #5                 \ We now want to copy those seeds into safehouse, so we
+\                       \ so set a counter in X to copy 6 bytes
+\
+\.sob
+\
+\LDA QQ15,X             \ Copy the X-th byte of QQ15 into the X-th byte of
+\STA safehouse,X        \ safehouse
+\
+\DEX                    \ Decrement the loop counter
+\
+\BPL sob                \ Loop back to copy the next byte until we have copied
+\                       \ all six seed bytes
+\
+\LDA #7                 \ Move the text cursor to column 7, row 23 (in the
+\JSR DOXC               \ middle of the bottom text row)
+\LDA #23
+\JSR DOYC
+\
+\LDA #0                 \ Set QQ17 = 0 to switch to ALL CAPS
+\STA QQ17
+\
+\LDA #189               \ Print recursive token 29 ("HYPERSPACE ")
+\JSR TT27
+\
 IF _EXECUTIVE
-
- BIT JUMP               \ If infinite jump range is configured, then jump down
- BMI goTT147+3          \ to IJUMP so we do the jump whatever the distance
-
+\
+\BIT JUMP               \ If infinite jump range is configured, then jump down
+\BMI goTT147+3          \ to IJUMP so we do the jump whatever the distance
+\
 ENDIF
+\
+\LDA QQ8+1              \ If the high byte of the distance to the selected
+\BNE goTT147            \ system in QQ8 is > 0, then it is definitely too far to
+\                       \ jump (as our maximum range is 7.0 light years, or a
+\                       \ value of 70 in QQ8(1 0)), so jump to TT147 via goTT147
+\                       \ to print "RANGE?" and return from the subroutine using
+\                       \ a tail call
+\
+\LDA QQ14               \ Fetch our current fuel level from Q114 into A
+\
+\CMP QQ8                \ If our fuel reserves are greater than or equal to the
+\BCS P%+5               \ distance to the selected system, then we have enough
+\                       \ fuel for this jump, so skip the following instruction
+\                       \ to start the hyperspace countdown
+\
+\.goTT147
+\
+\JMP TT147              \ We don't have enough fuel to reach the destination, so
+\                       \ jump to TT147 to print "RANGE?" and return from the
+\                       \ subroutine using a tail call
+\
+\LDA #'-'               \ Print a hyphen
+\JSR TT27
+\
+\JSR cpl                \ Call cpl to print the name of the selected system
+\
+\                       \ Fall through into wW to start the hyperspace countdown
 
- LDA QQ8+1              \ If the high byte of the distance to the selected
- BNE goTT147            \ system in QQ8 is > 0, then it is definitely too far to
-                        \ jump (as our maximum range is 7.0 light years, or a
-                        \ value of 70 in QQ8(1 0)), so jump to TT147 via goTT147
-                        \ to print "RANGE?" and return from the subroutine using
-                        \ a tail call
-
- LDA QQ14               \ Fetch our current fuel level from Q114 into A
-
- CMP QQ8                \ If our fuel reserves are greater than or equal to the
- BCS P%+5               \ distance to the selected system, then we have enough
-                        \ fuel for this jump, so skip the following instruction
-                        \ to start the hyperspace countdown
-
-.goTT147
-
- JMP TT147              \ We don't have enough fuel to reach the destination, so
-                        \ jump to TT147 to print "RANGE?" and return from the
-                        \ subroutine using a tail call
-
- LDA #'-'               \ Print a hyphen
- JSR TT27
-
- JSR cpl                \ Call cpl to print the name of the selected system
-
-                        \ Fall through into wW to start the hyperspace countdown
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -23913,27 +23929,31 @@ ENDIF
 \
 \ ******************************************************************************
 
-.wW
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #15                \ The hyperspace countdown starts from 15, so set A to
-                        \ 15 so we can set the two hyperspace counters
+\.wW
+\
+\LDA #15                \ The hyperspace countdown starts from 15, so set A to
+\                       \ 15 so we can set the two hyperspace counters
+\
+\.wW2
+\
+\STA QQ22+1             \ Set the number in QQ22+1 to A, which is the number
+\                       \ that's shown on-screen during the hyperspace countdown
+\
+\STA QQ22               \ Set the number in QQ22 to 15, which is the internal
+\                       \ counter that counts down by 1 each iteration of the
+\                       \ main game loop, and each time it reaches zero, the
+\                       \ on-screen counter gets decremented, and QQ22 gets set
+\                       \ to 5, so setting QQ22 to 15 here makes the first tick
+\                       \ of the hyperspace counter longer than subsequent ticks
+\
+\TAX                    \ Print the 8-bit number in X (i.e. 15) at text location
+\JMP ee3                \ (0, 1), padded to 5 digits, so it appears in the top
+\                       \ left corner of the screen, and return from the
+\                       \ subroutine using a tail call
 
-.wW2
-
- STA QQ22+1             \ Set the number in QQ22+1 to A, which is the number
-                        \ that's shown on-screen during the hyperspace countdown
-
- STA QQ22               \ Set the number in QQ22 to 15, which is the internal
-                        \ counter that counts down by 1 each iteration of the
-                        \ main game loop, and each time it reaches zero, the
-                        \ on-screen counter gets decremented, and QQ22 gets set
-                        \ to 5, so setting QQ22 to 15 here makes the first tick
-                        \ of the hyperspace counter longer than subsequent ticks
-
- TAX                    \ Print the 8-bit number in X (i.e. 15) at text location
- JMP ee3                \ (0, 1), padded to 5 digits, so it appears in the top
-                        \ left corner of the screen, and return from the
-                        \ subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -23944,16 +23964,20 @@ ENDIF
 \
 \ ******************************************************************************
 
-.TTX110
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-                        \ This routine is only called from the hyp routine, and
-                        \ it jumps back into hyp at label TTX111
+\.TTX110
+\
+\                       \ This routine is only called from the hyp routine, and
+\                       \ it jumps back into hyp at label TTX111
+\
+\JSR TT111              \ Call TT111 to set the current system to the nearest
+\                       \ system to (QQ9, QQ10), and put the seeds of the
+\                       \ nearest system into QQ15 to QQ15+5
+\
+\JMP TTX111             \ Return to TTX111 in the hyp routine
 
- JSR TT111              \ Call TT111 to set the current system to the nearest
-                        \ system to (QQ9, QQ10), and put the seeds of the
-                        \ nearest system into QQ15 to QQ15+5
-
- JMP TTX111             \ Return to TTX111 in the hyp routine
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -23989,99 +24013,103 @@ ENDIF
 \
 \ ******************************************************************************
 
-.Ghy
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDX GHYP               \ Fetch GHYP, which tells us whether we own a galactic
- BEQ zZ+1               \ hyperdrive, and if it is zero, which means we don't,
-                        \ return from the subroutine (as zZ+1 contains an RTS)
+\.Ghy
+\
+\LDX GHYP               \ Fetch GHYP, which tells us whether we own a galactic
+\BEQ zZ+1               \ hyperdrive, and if it is zero, which means we don't,
+\                       \ return from the subroutine (as zZ+1 contains an RTS)
+\
+\INX                    \ We own a galactic hyperdrive, so X is &FF, so this
+\                       \ instruction sets X = 0
+\
+\\STX QQ8                \ These instructions are commented out in the original
+\\STX QQ8+1              \ source
+\
+\STX GHYP               \ The galactic hyperdrive is a one-use item, so set GHYP
+\                       \ to 0 so we no longer have one fitted
+\
+\STX FIST               \ Changing galaxy also clears our criminal record, so
+\                       \ set our legal status in FIST to 0 ("clean")
+\
+\LDA #2                 \ Call wW2 with A = 2 to start the hyperspace countdown,
+\JSR wW2                \ but starting the countdown from 2
+\
+\LDX #5                 \ To move galaxy, we rotate the galaxy's seeds left, so
+\                       \ set a counter in X for the 6 seed bytes
+\
+\INC GCNT               \ Increment the current galaxy number in GCNT
+\
+\LDA GCNT               \ Set GCNT = GCNT mod 8, so we jump from galaxy 7 back
+\AND #7                 \ to galaxy 0 (shown in-game as going from galaxy 8 back
+\STA GCNT               \ to the starting point in galaxy 1)
+\
+\.G1
+\
+\LDA QQ21,X             \ Load the X-th seed byte into A
+\
+\ASL A                  \ Set the C flag to bit 7 of the seed
+\
+\ROL QQ21,X             \ Rotate the seed in memory, which will add bit 7 back
+\                       \ in as bit 0, so this rolls the seed around on itself
+\
+\DEX                    \ Decrement the counter
+\
+\BPL G1                 \ Loop back for the next seed byte, until we have
+\                       \ rotated them all
+\
+\\JSR DORND              \ This instruction is commented out in the original
+\                       \ source, and would set A and X to random numbers, so
+\                       \ perhaps the original plan was to arrive in each new
+\                       \ galaxy in a random place?
+\
+\.zZ
+\
+\LDA #96                \ Set (QQ9, QQ10) to (96, 96), which is where we always
+\STA QQ9                \ arrive in a new galaxy (the selected system will be
+\STA QQ10               \ set to the nearest actual system later on)
+\
+\JSR TT110              \ Call TT110 to show the front space view
+\
+\JSR TT111              \ Call TT111 to set the current system to the nearest
+\                       \ system to (QQ9, QQ10), and put the seeds of the
+\                       \ nearest system into QQ15 to QQ15+5
+\                       \
+\                       \ This call fixes a bug in the cassette version, where
+\                       \ the galactic hyperdrive will take us to coordinates
+\                       \ (96, 96) in the new galaxy, even if there isn't
+\                       \ actually a system there, so if we jump when we are
+\                       \ low on fuel, it is possible to get stuck in the
+\                       \ middle of nowhere when changing galaxy
+\                       \
+\                       \ This call sets the current system correctly, so we
+\                       \ always arrive at the nearest system to (96, 96)
+\
+\LDX #5                 \ We now want to copy those seeds into safehouse, so we
+\                       \ so set a counter in X to copy 6 bytes
+\
+\.dumdeedum
+\
+\LDA QQ15,X             \ Copy the X-th byte of QQ15 into the X-th byte of
+\STA safehouse,X        \ safehouse
+\
+\DEX                    \ Decrement the loop counter
+\
+\BPL dumdeedum          \ Loop back to copy the next byte until we have copied
+\                       \ all six seed bytes
+\
+\LDX #0                 \ Set the distance to the selected system in QQ8(1 0)
+\STX QQ8                \ to 0
+\STX QQ8+1
+\
+\LDA #116               \ Print recursive token 116 (GALACTIC HYPERSPACE ")
+\JSR MESS               \ as an in-flight message
+\
+\                       \ Fall through into jmp to set the system to the
+\                       \ current system and return from the subroutine there
 
- INX                    \ We own a galactic hyperdrive, so X is &FF, so this
-                        \ instruction sets X = 0
-
-\STX QQ8                \ These instructions are commented out in the original
-\STX QQ8+1              \ source
-
- STX GHYP               \ The galactic hyperdrive is a one-use item, so set GHYP
-                        \ to 0 so we no longer have one fitted
-
- STX FIST               \ Changing galaxy also clears our criminal record, so
-                        \ set our legal status in FIST to 0 ("clean")
-
- LDA #2                 \ Call wW2 with A = 2 to start the hyperspace countdown,
- JSR wW2                \ but starting the countdown from 2
-
- LDX #5                 \ To move galaxy, we rotate the galaxy's seeds left, so
-                        \ set a counter in X for the 6 seed bytes
-
- INC GCNT               \ Increment the current galaxy number in GCNT
-
- LDA GCNT               \ Set GCNT = GCNT mod 8, so we jump from galaxy 7 back
- AND #7                 \ to galaxy 0 (shown in-game as going from galaxy 8 back
- STA GCNT               \ to the starting point in galaxy 1)
-
-.G1
-
- LDA QQ21,X             \ Load the X-th seed byte into A
-
- ASL A                  \ Set the C flag to bit 7 of the seed
-
- ROL QQ21,X             \ Rotate the seed in memory, which will add bit 7 back
-                        \ in as bit 0, so this rolls the seed around on itself
-
- DEX                    \ Decrement the counter
-
- BPL G1                 \ Loop back for the next seed byte, until we have
-                        \ rotated them all
-
-\JSR DORND              \ This instruction is commented out in the original
-                        \ source, and would set A and X to random numbers, so
-                        \ perhaps the original plan was to arrive in each new
-                        \ galaxy in a random place?
-
-.zZ
-
- LDA #96                \ Set (QQ9, QQ10) to (96, 96), which is where we always
- STA QQ9                \ arrive in a new galaxy (the selected system will be
- STA QQ10               \ set to the nearest actual system later on)
-
- JSR TT110              \ Call TT110 to show the front space view
-
- JSR TT111              \ Call TT111 to set the current system to the nearest
-                        \ system to (QQ9, QQ10), and put the seeds of the
-                        \ nearest system into QQ15 to QQ15+5
-                        \
-                        \ This call fixes a bug in the cassette version, where
-                        \ the galactic hyperdrive will take us to coordinates
-                        \ (96, 96) in the new galaxy, even if there isn't
-                        \ actually a system there, so if we jump when we are
-                        \ low on fuel, it is possible to get stuck in the
-                        \ middle of nowhere when changing galaxy
-                        \
-                        \ This call sets the current system correctly, so we
-                        \ always arrive at the nearest system to (96, 96)
-
- LDX #5                 \ We now want to copy those seeds into safehouse, so we
-                        \ so set a counter in X to copy 6 bytes
-
-.dumdeedum
-
- LDA QQ15,X             \ Copy the X-th byte of QQ15 into the X-th byte of
- STA safehouse,X        \ safehouse
-
- DEX                    \ Decrement the loop counter
-
- BPL dumdeedum          \ Loop back to copy the next byte until we have copied
-                        \ all six seed bytes
-
- LDX #0                 \ Set the distance to the selected system in QQ8(1 0)
- STX QQ8                \ to 0
- STX QQ8+1
-
- LDA #116               \ Print recursive token 116 (GALACTIC HYPERSPACE ")
- JSR MESS               \ as an in-flight message
-
-                        \ Fall through into jmp to set the system to the
-                        \ current system and return from the subroutine there
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -24141,19 +24169,57 @@ ENDIF
 
 .Player2ee3
 
- LDA player2GameType    \ If player 2 is playing survival, they don't need a
+ LDX player2GameType    \ If player 2 is playing survival, they don't need a
  BNE P%+3               \ score, so return from the subroutine without printing
  RTS                    \ the score
 
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is red in the space view
 
- LDA #26                 \ Move the text cursor to column 26 on row 13
- JSR DOXC
- LDA #13
- JSR DOYC
+ LDY #1                 \ Set Y to the number of digits in X (1 to 3), so that's
+ CPX #10                \ the number of digits in the target score
+ BCC qscr1
+ INY
+ CPX #100
+ BCC qscr1
+ INY
 
- LDY #0                 \ Set Y = 0 for the high byte in pr6
+.qscr1
+
+ STY P                  \ Set P to the number of digits in the target score (1
+                        \ to 3)
+
+ LDA #13                \ Move the text cursor to row 13, column 25
+ JSR DOYC
+ LDA #25
+ JSR DOXC
+
+ LDY #0                 \ Set (Y X) = player2GameType (the target score)
+ LDX player2GameType
+
+ JSR pr6                \ Call pr6 to print (Y X) to 5 digits
+
+ LDA #30                \ Move the text cursor to column 30
+ JSR DOXC
+
+ LDA #'0'               \ Print a trailing 0 for the target score
+ JSR TT27
+
+ LDA #29                \ Move the text cursor to column 29 - P
+ SEC
+ SBC P
+ JSR DOXC
+
+ LDA #'/'               \ Print a "/" between the two scores
+ JSR TT27
+
+ LDA #24                \ Move the text cursor to column 24 - P
+ SEC
+ SBC P
+ JSR DOXC
+
+ LDX player2Score       \ Set (Y X) to the score to print
+ LDY player2Score+1
 
  BEQ pr6                \ Jump to pr6 to print X to 5 digits, as the high byte
                         \ in Y is 0
@@ -24185,7 +24251,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA player1GameType    \ If player 1 is playing survival, they don't need a
+ LDX player1GameType    \ If player 1 is playing survival, they don't need a
  BNE P%+3               \ score, so return from the subroutine without printing
  RTS                    \ the score
 
@@ -24199,18 +24265,57 @@ ENDIF
 \LDA #1                 \ Move the text cursor to column 1 on row 1
 \JSR DOXC
 \JSR DOYC
+\
+\LDY #0                 \ Set Y = 0 for the high byte in pr6
 
                         \ --- And replaced by: -------------------------------->
 
- LDA #26                 \ Move the text cursor to column 26 on row 1
- JSR DOXC
- LDA #1
+ LDY #1                 \ Set Y to the number of digits in X (1 to 3), so that's
+ CPX #10                \ the number of digits in the target score
+ BCC pscr1
+ INY
+ CPX #100
+ BCC pscr1
+ INY
+
+.pscr1
+
+ STY P                  \ Set P to the number of digits in the target score (1
+                        \ to 3)
+
+ LDA #1                 \ Move the text cursor to row 1, column 25
  JSR DOYC
+ LDA #25
+ JSR DOXC
+
+ LDY #0                 \ Set (Y X) = player1GameType (the target score)
+ LDX player1GameType
+
+ JSR pr6                \ Call pr6 to print (Y X) to 5 digits
+
+ LDA #30                \ Move the text cursor to column 30
+ JSR DOXC
+
+ LDA #'0'               \ Print a trailing 0 for the target score
+ JSR TT27
+
+ LDA #29                \ Move the text cursor to column 29 - P
+ SEC
+ SBC P
+ JSR DOXC
+
+ LDA #'/'               \ Print a "/" between the two scores
+ JSR TT27
+
+ LDA #24                \ Move the text cursor to column 24 - P
+ SEC
+ SBC P
+ JSR DOXC
+
+ LDX player1Score       \ Set (Y X) to the score to print
+ LDY player1Score+1
 
                         \ --- End of replacement ------------------------------>
-
-
- LDY #0                 \ Set Y = 0 for the high byte in pr6
 
                         \ Fall through into pr6 to print X to 5 digits, as the
                         \ high byte in Y is 0
@@ -33593,6 +33698,11 @@ ENDIF
  STZ GNTMP              \ Cool down the lasers completely
  STZ player2GNTMP
 
+ STZ player1Score       \ Reset the scores
+ STZ player1Score+1
+ STZ player2Score
+ STZ player2Score+2
+
                         \ --- End of added code ------------------------------->
 
  LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
@@ -35047,150 +35157,156 @@ ENDIF
 
 .keys4
 
-                        \ --- End of added code ------------------------------->
-
- CMP #&54               \ If "H" was pressed, jump to hyp to do a hyperspace
- BNE P%+5               \ jump (if we are in space), returning from the
- JMP hyp                \ subroutine using a tail call
-
-.NWDAV5
-
- CMP #&32               \ If "D" was pressed, jump to T95 to print the distance
- BEQ T95                \ to a system (if we are in one of the chart screens)
-
- CMP #&43               \ If "F" was not pressed, jump down to HME1, otherwise
- BNE HME1               \ keep going to process searching for systems
-
- LDA QQ12               \ If QQ12 = 0 (we are not docked), we can't search for
- BEQ t95                \ systems, so return from the subroutine (as t95
-                        \ contains an RTS)
-
- LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
- AND #%11000000         \ keep going, otherwise return from the subroutine (as
- BEQ t95                \ t95 contains an RTS)
-
- JMP HME2               \ Jump to HME2 to let us search for a system, returning
-                        \ from the subroutine using a tail call
-
-.HME1
-
- STA T1                 \ Store A (the key that's been pressed) in T1
-
- LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
- AND #%11000000         \ keep going, otherwise jump down to TT107 to skip the
- BEQ TT107              \ following
-
- LDA QQ22+1             \ If the on-screen hyperspace counter is non-zero,
- BNE TT107              \ then we are already counting down, so jump to TT107
-                        \ to skip the following
-
- LDA T1                 \ Restore the original value of A (the key that's been
-                        \ pressed) from T1
-
- CMP #&36               \ If "O" was pressed, do the following three jumps,
- BNE ee2                \ otherwise skip to ee2 to continue
-
- JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
-                        \ which will erase the crosshairs currently there
-
- JSR ping               \ Set the target system to the current system (which
-                        \ will move the location in (QQ9, QQ10) to the current
-                        \ home system
-
- JMP TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
-                        \ which will draw the crosshairs at our current home
-                        \ system, and return from the subroutine using a tail
-                        \ call
-
-.ee2
-
- JSR TT16               \ Call TT16 to move the crosshairs by the amount in X
-                        \ and Y, which were passed to this subroutine as
-                        \ arguments
-
-.TT107
-
- LDA QQ22+1             \ If the on-screen hyperspace counter is zero, return
- BEQ t95                \ from the subroutine (as t95 contains an RTS), as we
-                        \ are not currently counting down to a hyperspace jump
-
- DEC QQ22               \ Decrement the internal hyperspace counter
-
- BNE t95                \ If the internal hyperspace counter is still non-zero,
-                        \ then we are still counting down, so return from the
-                        \ subroutine (as t95 contains an RTS)
-
-                        \ If we get here then the internal hyperspace counter
-                        \ has just reached zero and it wasn't zero before, so
-                        \ we need to reduce the on-screen counter and update
-                        \ the screen. We do this by first printing the next
-                        \ number in the countdown sequence, and then printing
-                        \ the old number, which will erase the old number
-                        \ and display the new one because printing uses EOR
-                        \ logic
-
- LDX QQ22+1             \ Set X = the on-screen hyperspace counter - 1
- DEX                    \ (i.e. the next number in the sequence)
-
- JSR ee3                \ Print the 8-bit number in X at text location (0, 1)
-
- LDA #5                 \ Reset the internal hyperspace counter to 5
- STA QQ22
-
- LDX QQ22+1             \ Set X = the on-screen hyperspace counter (i.e. the
-                        \ current number in the sequence, which is already
-                        \ shown on-screen)
-
- JSR ee3                \ Print the 8-bit number in X at text location (0, 1),
-                        \ i.e. print the hyperspace countdown in the top-left
-                        \ corner
-
- DEC QQ22+1             \ Decrement the on-screen hyperspace countdown
-
- BNE t95                \ If the countdown is not yet at zero, return from the
-                        \ subroutine (as t95 contains an RTS)
-
- JMP TT18               \ Otherwise the countdown has finished, so jump to TT18
-                        \ to do a hyperspace jump, returning from the subroutine
-                        \ using a tail call
-
-.t95
-
  RTS                    \ Return from the subroutine
 
-.T95
+                        \ --- End of added code ------------------------------->
 
-                        \ If we get here, "D" was pressed, so we need to show
-                        \ the distance to the selected system (if we are in a
-                        \ chart view)
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
- AND #%11000000         \ keep going, otherwise return from the subroutine (as
- BEQ t95                \ t95 contains an RTS)
+\CMP #&54               \ If "H" was pressed, jump to hyp to do a hyperspace
+\BNE P%+5               \ jump (if we are in space), returning from the
+\JMP hyp                \ subroutine using a tail call
+\
+\.NWDAV5
+\
+\CMP #&32               \ If "D" was pressed, jump to T95 to print the distance
+\BEQ T95                \ to a system (if we are in one of the chart screens)
+\
+\CMP #&43               \ If "F" was not pressed, jump down to HME1, otherwise
+\BNE HME1               \ keep going to process searching for systems
+\
+\LDA QQ12               \ If QQ12 = 0 (we are not docked), we can't search for
+\BEQ t95                \ systems, so return from the subroutine (as t95
+\                       \ contains an RTS)
+\
+\LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
+\AND #%11000000         \ keep going, otherwise return from the subroutine (as
+\BEQ t95                \ t95 contains an RTS)
+\
+\JMP HME2               \ Jump to HME2 to let us search for a system, returning
+\                       \ from the subroutine using a tail call
+\
+\.HME1
+\
+\STA T1                 \ Store A (the key that's been pressed) in T1
+\
+\LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
+\AND #%11000000         \ keep going, otherwise jump down to TT107 to skip the
+\BEQ TT107              \ following
+\
+\LDA QQ22+1             \ If the on-screen hyperspace counter is non-zero,
+\BNE TT107              \ then we are already counting down, so jump to TT107
+\                       \ to skip the following
+\
+\LDA T1                 \ Restore the original value of A (the key that's been
+\                       \ pressed) from T1
+\
+\CMP #&36               \ If "O" was pressed, do the following three jumps,
+\BNE ee2                \ otherwise skip to ee2 to continue
+\
+\JSR TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
+\                       \ which will erase the crosshairs currently there
+\
+\JSR ping               \ Set the target system to the current system (which
+\                       \ will move the location in (QQ9, QQ10) to the current
+\                       \ home system
+\
+\JMP TT103              \ Draw small crosshairs at coordinates (QQ9, QQ10),
+\                       \ which will draw the crosshairs at our current home
+\                       \ system, and return from the subroutine using a tail
+\                       \ call
+\
+\.ee2
+\
+\JSR TT16               \ Call TT16 to move the crosshairs by the amount in X
+\                       \ and Y, which were passed to this subroutine as
+\                       \ arguments
+\
+\.TT107
+\
+\LDA QQ22+1             \ If the on-screen hyperspace counter is zero, return
+\BEQ t95                \ from the subroutine (as t95 contains an RTS), as we
+\                       \ are not currently counting down to a hyperspace jump
+\
+\DEC QQ22               \ Decrement the internal hyperspace counter
+\
+\BNE t95                \ If the internal hyperspace counter is still non-zero,
+\                       \ then we are still counting down, so return from the
+\                       \ subroutine (as t95 contains an RTS)
+\
+\                       \ If we get here then the internal hyperspace counter
+\                       \ has just reached zero and it wasn't zero before, so
+\                       \ we need to reduce the on-screen counter and update
+\                       \ the screen. We do this by first printing the next
+\                       \ number in the countdown sequence, and then printing
+\                       \ the old number, which will erase the old number
+\                       \ and display the new one because printing uses EOR
+\                       \ logic
+\
+\LDX QQ22+1             \ Set X = the on-screen hyperspace counter - 1
+\DEX                    \ (i.e. the next number in the sequence)
+\
+\JSR ee3                \ Print the 8-bit number in X at text location (0, 1)
+\
+\LDA #5                 \ Reset the internal hyperspace counter to 5
+\STA QQ22
+\
+\LDX QQ22+1             \ Set X = the on-screen hyperspace counter (i.e. the
+\                       \ current number in the sequence, which is already
+\                       \ shown on-screen)
+\
+\JSR ee3                \ Print the 8-bit number in X at text location (0, 1),
+\                       \ i.e. print the hyperspace countdown in the top-left
+\                       \ corner
+\
+\DEC QQ22+1             \ Decrement the on-screen hyperspace countdown
+\
+\BNE t95                \ If the countdown is not yet at zero, return from the
+\                       \ subroutine (as t95 contains an RTS)
+\
+\JMP TT18               \ Otherwise the countdown has finished, so jump to TT18
+\                       \ to do a hyperspace jump, returning from the subroutine
+\                       \ using a tail call
+\
+\.t95
+\
+\RTS                    \ Return from the subroutine
+\
+\.T95
+\
+\                       \ If we get here, "D" was pressed, so we need to show
+\                       \ the distance to the selected system (if we are in a
+\                       \ chart view)
+\
+\LDA QQ11               \ If the current view is a chart (QQ11 = 64 or 128),
+\AND #%11000000         \ keep going, otherwise return from the subroutine (as
+\BEQ t95                \ t95 contains an RTS)
+\
+\LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
+\JSR DOCOL              \ switch to colour 3, which is white in the chart view
+\
+\JSR hm                 \ Call hm to move the crosshairs to the target system
+\                       \ in (QQ9, QQ10), returning with A = 0
+\
+\STA QQ17               \ Set QQ17 = 0 to switch to ALL CAPS
+\
+\JSR cpl                \ Print control code 3 (the selected system name)
+\
+\LDA #%10000000         \ Set bit 7 of QQ17 to switch to Sentence Case, with the
+\STA QQ17               \ next letter in capitals
+\
+\LDA #10                \ Print a line feed to move the text cursor down a line
+\JSR TT26
+\
+\LDA #1                 \ Move the text cursor to column 1
+\JSR DOXC
+\
+\JSR INCYC              \ Move the text cursor down one line
+\
+\JMP TT146              \ Print the distance to the selected system and return
+\                       \ from the subroutine using a tail call
 
- LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
- JSR DOCOL              \ switch to colour 3, which is white in the chart view
-
- JSR hm                 \ Call hm to move the crosshairs to the target system
-                        \ in (QQ9, QQ10), returning with A = 0
-
- STA QQ17               \ Set QQ17 = 0 to switch to ALL CAPS
-
- JSR cpl                \ Print control code 3 (the selected system name)
-
- LDA #%10000000         \ Set bit 7 of QQ17 to switch to Sentence Case, with the
- STA QQ17               \ next letter in capitals
-
- LDA #10                \ Print a line feed to move the text cursor down a line
- JSR TT26
-
- LDA #1                 \ Move the text cursor to column 1
- JSR DOXC
-
- JSR INCYC              \ Move the text cursor down one line
-
- JMP TT146              \ Print the distance to the selected system and return
-                        \ from the subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -36622,15 +36738,6 @@ ENDIF
  BNE titl8
 
 .titl9
-
-\ Set the following:
-\ player1ShipType, player2ShipType
-\ LASER, player2LASER, +1 for both
-\ ENGY, player2ENGY
-\ NOMSL, player2NOMSL
-\ ECM, player2ECM
-\ JSTK, player2JSTK, player2INWK32, player2NEWB
-\ player1GameType, player2GameType
 
  JMP TLL2               \ Loop back to keep rotating the ships
 
@@ -48010,7 +48117,7 @@ ENDIF
  JSR OSWRCH             \ Send control code 14 or 15 to OSWRCH, to instruct the
                         \ I/O processor to clear the top part of the screen
 
- JMP clsc2              \ Skip the following
+ JMP OLDBOX             \ Skip the following
 
 .clsc1
 
@@ -48021,22 +48128,20 @@ ENDIF
  LDA #11                \ Send control code 11 to OSWRCH, to instruct the I/O
  JSR OSWRCH             \ processor to clear the top part of the screen
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-.clsc2
+\LDX QQ22+1             \ Fetch into X the number that's shown on-screen during
+\                       \ the hyperspace countdown
+\
+\BEQ OLDBOX             \ If the counter is zero then we are not counting down
+\                       \ to hyperspace, so jump to OLDBOX to skip the next
+\                       \ instruction
+\
+\JSR ee3                \ Print the 8-bit number in X at text location (0, 1),
+\                       \ i.e. print the hyperspace countdown in the top-left
+\                       \ corner
 
-                        \ --- End of added code ------------------------------->
-
- LDX QQ22+1             \ Fetch into X the number that's shown on-screen during
-                        \ the hyperspace countdown
-
- BEQ OLDBOX             \ If the counter is zero then we are not counting down
-                        \ to hyperspace, so jump to OLDBOX to skip the next
-                        \ instruction
-
- JSR ee3                \ Print the 8-bit number in X at text location (0, 1),
-                        \ i.e. print the hyperspace countdown in the top-left
-                        \ corner
+                        \ --- End of removed code ----------------------------->
 
 .OLDBOX
 
@@ -48102,16 +48207,14 @@ ENDIF
                         \ We are drawing player 2's view, so move the text
                         \ cursor to the top of the bottom view
 
- LDX player2Score       \ Print player 2's score
- JSR Player2ee3
+ JSR Player2ee3         \ Print player 2's score
 
  JMP tt66               \ Skip the following
 
 .clsc5
 
- LDX player1Score       \ Print player 1's score
- JSR ee3
-
+ JSR ee3                \ Print player 1's score
+ 
                         \ --- End of added code ------------------------------->
 
 .tt66
@@ -55855,9 +55958,33 @@ ENDIF
 
  LDA player1GameType    \ Set A = the game type for player 1
 
- JSR ToggleGameType     \ Toggle the laser
+ JSR ToggleGameType     \ Toggle the game type
 
  STA player1GameType    \ Set the game type for player 1 to the new value
+
+ STZ P+1                \ Set P(1 0) = game type
+ STA P
+
+ ASL P                  \ Set P(1 0) = game type * 2
+ ROL P+1
+
+ LDA P                  \ Set (S R) = P(1 0)
+ STA R
+ LDA P+1
+ STA S
+
+ ASL R                  \ Set (S R) = (S R) * 4
+ ROL S                  \           = P(1 0) * 8
+ ASL R                  \           = game type * 8
+ ROL S
+
+ CLC                    \ Set player1Target(1 0) = (S R) + P(1 0)
+ LDA P                  \                        = game type * 8 + game type * 2
+ ADC R                  \                        = game type * 10
+ STA player1Target
+ LDA P+1
+ ADC S
+ STA player1Target+1
 
  RTS                    \ Return from the subroutine
 
@@ -55865,9 +55992,33 @@ ENDIF
 
  LDA player2GameType    \ Set A = the game type for player 2
 
- JSR ToggleGameType     \ Toggle the laser
+ JSR ToggleGameType     \ Toggle the game type
 
  STA player2GameType    \ Set the game type for player 2 to the new value
+
+ STZ P+1                \ Set P(1 0) = game type
+ STA P
+
+ ASL P                  \ Set P(1 0) = game type * 2
+ ROL P+1
+
+ LDA P                  \ Set (S R) = P(1 0)
+ STA R
+ LDA P+1
+ STA S
+
+ ASL R                  \ Set (S R) = (S R) * 4
+ ROL S                  \           = P(1 0) * 8
+ ASL R                  \           = game type * 8
+ ROL S
+
+ CLC                    \ Set player1Target(1 0) = (S R) + P(1 0)
+ LDA P                  \                        = game type * 8 + game type * 2
+ ADC R                  \                        = game type * 10
+ STA player2Target
+ LDA P+1
+ ADC S
+ STA player2Target+1
 
  RTS                    \ Return from the subroutine
 
@@ -60361,13 +60512,13 @@ ENDMACRO
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
                         \ us making a laser strike on another ship
 
- LDX player2Score       \ Print player 2's score to remove it from the screen
- JSR Player2ee3
+ JSR Player2ee3         \ Print player 2's score to remove it from the screen
 
  INC player2Score       \ Increment player 2's score
+ BNE P%+5
+ INC player2Score+1
 
- LDX player2Score       \ Print player 2's score
- JSR Player2ee3
+ JSR Player2ee3         \ Print player 2's score
 
                         \ Player 1 has been hit, so process player 1's shields
 
