@@ -2047,12 +2047,16 @@ ENDIF
  CHAR 'K'
  EQUB 0
 
- CONT 6                 \ Token 46:     "COMPUTER"
- RTOK 91
+ CONT 8                 \ Token 46:     "AI PILOT"
+ CHAR 'A'
+ CHAR 'I'
+ CHAR ' '
+ CONT 6
  CHAR 'P'
- CHAR 'U'
+ CHAR 'I'
+ CHAR 'L'
+ CHAR 'O'
  CHAR 'T'
- TWOK 'E', 'R'
  EQUB 0
 
  CONT 6                 \ Token 47:     "DELTA14B"
@@ -55414,7 +55418,7 @@ ENDIF
 
  LDX #11                \ Print the ship name for option #11 (player 2 controls)
 
- LDA #45                \ Set A to 45 ("JOYSTICK") or 46 ("COMPUTER") depending
+ LDA #45                \ Set A to 45 ("JOYSTICK") or 46 ("AI PILOT") depending
  LDY player2JSTK        \ on whether player2JSTK is zero
  BEQ P%+4
  LDA #46
@@ -55937,7 +55941,7 @@ ENDIF
 
  STX player2JSTK        \ Set the JSTK value for player 2
 
- CPX #1                 \ If the new value is not "Computer", jump to nocp1 to
+ CPX #1                 \ If the new value is not "AI PILOT", jump to nocp1 to
  BNE nocp1              \ disable ship AI for player 2
 
  LDA #PLAYER2AI         \ Enable ship AI for player 2
