@@ -56004,12 +56004,17 @@ ENDIF
  LDA #PLAYER2NB
  STA player2NEWB
 
+ STZ player2LASER+1     \ Remove rear lasers for AI pilot
+
  RTS                    \ Return from the subroutine
 
 .nocp1
 
  STZ player2INWK32      \ Disable ship AI for player 2
  STZ player2NEWB
+
+ LDA player2LASER       \ Enable rear lasers for non-AI player 2
+ STA player2LASER+1
 
  RTS                    \ Return from the subroutine
 
