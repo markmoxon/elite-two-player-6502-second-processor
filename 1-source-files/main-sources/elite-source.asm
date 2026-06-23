@@ -6618,12 +6618,16 @@ ENDIF
 
 .MA26
 
- LDA NEWB               \ If bit 7 of the ship's NEWB flags is clear, skip the
- BPL P%+5               \ following instruction
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR SCAN               \ Bit 7 of the ship's NEWB flags is set, which means the
-                        \ ship has docked or been scooped, so we draw the ship
-                        \ on the scanner, which has the effect of removing it
+\LDA NEWB               \ If bit 7 of the ship's NEWB flags is clear, skip the
+\BPL P%+5               \ following instruction
+\
+\JSR SCAN               \ Bit 7 of the ship's NEWB flags is set, which means the
+\                       \ ship has docked or been scooped, so we draw the ship
+\                       \ on the scanner, which has the effect of removing it
+
+                        \ --- End of removed code ----------------------------->
 
  LDA QQ11               \ If this is not a space view, jump to MA15 to skip
  BNE MA15               \ missile and laser locking
@@ -6694,9 +6698,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If this is not player 2, jump to main2 to process the
- CMP #2                 \ NPC ship
- BNE main2
+ LDA XSAV               \ If this is not player 2, jump to MA8 to skip the
+ CMP #2                 \ following
+ BNE MA8
 
                         \ Player 2 has been hit, so increment player 1's score
 
@@ -6716,58 +6720,57 @@ ENDIF
 
  JSR Player2OOPS        \ Remove the relevant energy from player 2's shields
 
- JMP MA8                \ Jump to MA8 to skip the following
-
-.main2
-
                         \ --- End of added code ------------------------------->
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA INWK+35            \ Fetch the hit ship's energy from byte #35 and subtract
- SEC                    \ our current laser power, and if the result is greater
- SBC LAS                \ than zero, the other ship has survived the hit, so
- BCS MA14               \ jump down to MA14 to make it angry
+\LDA INWK+35            \ Fetch the hit ship's energy from byte #35 and subtract
+\SEC                    \ our current laser power, and if the result is greater
+\SBC LAS                \ than zero, the other ship has survived the hit, so
+\BCS MA14               \ jump down to MA14 to make it angry
+\
+\ASL INWK+31            \ Set bit 7 of the ship byte #31 to indicate that it has
+\SEC                    \ now been killed
+\ROR INWK+31
+\
+\LDA TYPE               \ Did we just kill an asteroid? If not, jump to nosp,
+\CMP #AST               \ otherwise keep going
+\BNE nosp
+\
+\LDA LAS                \ Did we kill the asteroid using mining lasers? If not,
+\CMP #Mlas              \ jump to nosp, otherwise keep going
+\BNE nosp
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\LDX #SPL               \ Set X to the ship type for a splinter
+\
+\AND #3                 \ Reduce the random number in A to the range 0-3
+\
+\JSR SPIN2              \ Call SPIN2 to spawn A items of type X (i.e. spawn
+\                       \ 0-3 splinters)
+\
+\.nosp
+\
+\LDY #PLT               \ Randomly spawn some alloy plates
+\JSR SPIN
+\
+\LDY #OIL               \ Randomly spawn some cargo canisters
+\JSR SPIN
+\
+\JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
+\                       \ ship (so increase the kill tally, make an explosion
+\                       \ sound and so on)
+\
+\.MA14
+\
+\STA INWK+35            \ Store the hit ship's updated energy in ship byte #35
+\
+\LDA TYPE               \ Call ANGRY to make the target ship or station hostile,
+\JSR ANGRY              \ and if this is a ship, wake up its AI and give it a
+\                       \ kick of speed
 
- ASL INWK+31            \ Set bit 7 of the ship byte #31 to indicate that it has
- SEC                    \ now been killed
- ROR INWK+31
-
- LDA TYPE               \ Did we just kill an asteroid? If not, jump to nosp,
- CMP #AST               \ otherwise keep going
- BNE nosp
-
- LDA LAS                \ Did we kill the asteroid using mining lasers? If not,
- CMP #Mlas              \ jump to nosp, otherwise keep going
- BNE nosp
-
- JSR DORND              \ Set A and X to random numbers
-
- LDX #SPL               \ Set X to the ship type for a splinter
-
- AND #3                 \ Reduce the random number in A to the range 0-3
-
- JSR SPIN2              \ Call SPIN2 to spawn A items of type X (i.e. spawn
-                        \ 0-3 splinters)
-
-.nosp
-
- LDY #PLT               \ Randomly spawn some alloy plates
- JSR SPIN
-
- LDY #OIL               \ Randomly spawn some cargo canisters
- JSR SPIN
-
- JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
-                        \ ship (so increase the kill tally, make an explosion
-                        \ sound and so on)
-
-.MA14
-
- STA INWK+35            \ Store the hit ship's updated energy in ship byte #35
-
- LDA TYPE               \ Call ANGRY to make the target ship or station hostile,
- JSR ANGRY              \ and if this is a ship, wake up its AI and give it a
-                        \ kick of speed
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
