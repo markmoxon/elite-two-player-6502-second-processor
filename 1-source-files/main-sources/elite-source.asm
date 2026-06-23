@@ -4385,7 +4385,8 @@ ENDIF
 
 .titleScreen
 
- SKIP 1                 \ A flag to denote we are drawing the title screen
+ SKIP 1                 \ A flag to denote we are in the title screen rather
+                        \ than the game itself
 
 .endWP
 
@@ -28012,21 +28013,6 @@ ENDIF
 
 .WPSHPS
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
- BPL wipe1
-
- LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
- AND #%10110111         \ player 1 ship as it appears in player 2's view
- STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
-
- JMP WS2                \ Jump to WS2 to keep going
-
-.wipe1
-
-                        \ --- End of added code ------------------------------->
-
  LDX #0                 \ Set up a counter in X to work our way through all the
                         \ ship slots in FRIN
 
@@ -28043,6 +28029,16 @@ ENDIF
                         \ it contains the planet or the sun, so jump down to WS1
                         \ to skip this slot, as the planet and sun don't appear
                         \ on the scanner
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ JSR WipeShip           \ Remove the ship from the scanner
+
+ JMP WS1                \ Jump to WS1 to move on to the next slot
+
+.WipeShip
+
+                        \ --- End of added code ------------------------------->
 
  STA TYPE               \ Store the ship type in TYPE
 
@@ -28073,6 +28069,12 @@ ENDIF
  AND #%10100111         \ from the scanner (bit 4) and stops any lasers firing
  STA (INF),Y            \ (bit 6)
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
 .WS1
 
  INX                    \ Increment X to point to the next ship slot
@@ -28088,6 +28090,14 @@ ENDIF
 \                       \ pointer to 0
 
                         \ --- And replaced by: -------------------------------->
+
+ LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
+ LDA #1                 \ it using the colour for ship type 1 (yellow)
+ JSR WipeShip
+
+ LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
+ AND #%10100111         \ player 1 ship as it appears in player 2's view
+ STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
 
  JSR ResetBallLine      \ Reset the ball line heap for the view we are currently
                         \ drawing
@@ -28369,6 +28379,10 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
+ BIT titleScreen        \ If bit 7 of titleScreen is set then the compass is
+ BMI COMPAS-1           \ disabled for the title screen, so return from the
+                        \ subroutine
+
  JSR Player1DOT         \ Call DOT to redraw (i.e. remove) the current compass
                         \ dot from player 1's compass on the left
 
@@ -28378,7 +28392,7 @@ ENDIF
  JSR Player1SP2         \ Call Player1SP2 to draw XX15 on the left compass
 
  JSR DOT                \ Call DOT to redraw (i.e. remove) the current compass
-                        \ dot from player 2's compass on the left
+                        \ dot from player 2's compass on the right
 
  JSR Player1Vector      \ Call Player1Vector to calculate the vector to player
                         \ 1 and store it in XX15
@@ -33711,6 +33725,9 @@ ENDIF
  STZ player2Score
  STZ player2Score+2
 
+ LDX #%10000000         \ Set bit 7 of titleScreen to denote we are drawing the
+ STX titleScreen        \ title screen, so the compass and scanner are disabled
+
                         \ --- End of added code ------------------------------->
 
  LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
@@ -33888,17 +33905,6 @@ ENDIF
  JSR ECMOF              \ Turn off the E.C.M. sound
 
 .yu
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- SEC                    \ Wipe player 2 ships and reset sun block
- ROR drawPlayerView
-
- JSR WPSHPS             \ Wipe all ships from the scanner
-
- STZ drawPlayerView     \ Wipe player 1 ships and reset sun block
-
-                        \ --- End of added code ------------------------------->
 
  JSR WPSHPS             \ Wipe all ships from the scanner
 
@@ -35806,17 +35812,21 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
-IF _EXECUTIVE
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR DEMON              \ Call DEMON to show the demo
+\IF _EXECUTIVE
+\
+\JSR DEMON              \ Call DEMON to show the demo
+\
+\LDX #&FF               \ Set the stack pointer to &01FF, which is the standard
+\TXS                    \ location for the 6502 stack, so this instruction
+\                       \ effectively resets the stack
+\
+\JSR RESET              \ Call RESET to initialise most of the game variables
+\
+\ENDIF
 
- LDX #&FF               \ Set the stack pointer to &01FF, which is the standard
- TXS                    \ location for the 6502 stack, so this instruction
-                        \ effectively resets the stack
-
- JSR RESET              \ Call RESET to initialise most of the game variables
-
-ENDIF
+                        \ --- End of removed code ----------------------------->
 
                         \ Fall through into DEATH2 to start the game
 
@@ -36204,7 +36214,7 @@ ENDIF
                         \ --- And replaced by: -------------------------------->
 
  STX titleScreen        \ Set bit 7 of titleScreen to denote we are drawing the
-                        \ title screen, so ships are drawin in cyan
+                        \ title screen, so ships are drawn in cyan
 
  LDX player1ShipType    \ Set x = -xShipOffset, so ship starts on left
  LDA xShipOffset,X
@@ -36655,6 +36665,9 @@ ENDIF
  STZ splitScreen        \ Undo the ship clipping used on the title screen and
  STZ drawPlayerView     \ denote we are no longer drawing the title screen
  STZ titleScreen
+
+ STZ FRIN               \ Despawn the title ships
+ STZ FRIN+1
 
  JMP TT102              \ Start the game
 
@@ -40107,9 +40120,20 @@ ENDIF
                         \ message (whose column we stored in messXC when we
                         \ called MESS to put it there in the first place)
 
- LDA #22                \ Move the text cursor to row 22, and set Y = 22
- TAY
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #22                \ Move the text cursor to row 22, and set Y = 22
+\TAY
+\JSR DOYC
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #11                \ Move the text cursor to row 11
  JSR DOYC
+
+ LDY #22                \ Set Y = 22
+
+                        \ --- End of replacement ------------------------------>
 
  PLA                    \ Restore A from the stack
 
@@ -48211,17 +48235,37 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+\LDA # 1                \ Move the text cursor to column 1 to print player
+\JSR DOXC               \ number
+
  BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc5
  BPL clsc5
 
-                        \ We are drawing player 2's view, so move the text
-                        \ cursor to the top of the bottom view
+                        \ We are drawing player 2's view
+
+\LDA #'P'               \ Print "P2"
+\JSR TT27
+\LDA #'2'
+\JSR TT27
+
+\LDA #160+57            \ Print token 56 ("PLAYER 2")
+\JSR TT27
 
  JSR Player2ee3         \ Print player 2's score
 
  JMP tt66               \ Skip the following
 
 .clsc5
+
+                        \ We are drawing player 1's view
+
+\LDA #'P'               \ Print "P1"
+\JSR TT27
+\LDA #'1'
+\JSR TT27
+
+\LDA #160+56            \ Print token 56 ("PLAYER 1")
+\JSR TT27
 
  JSR ee3                \ Print player 1's score
  
@@ -48451,6 +48495,14 @@ ENDIF
 
 .SCAN
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT titleScreen        \ If bit 7 of titleScreen is set then the scanner is
+ BMI SC5                \ disabled for the title screen, so return from the
+                        \ subroutine
+
+                        \ --- End of added code ------------------------------->
+
  LDA INWK+31            \ Fetch the ship's scanner flag from byte #31
 
  AND #%00010000         \ If bit 4 is clear then the ship should not be shown
@@ -48464,23 +48516,20 @@ ENDIF
                         \ scanner, so return from the subroutine (as SC5
                         \ contains an RTS)
 
+ LDA scacol,X           \ Set A to the scanner colour for this ship type from
+                        \ the X-th entry in the scacol table
+
+ STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
+                        \ to the I/O processor with the #onescan command
+
                         \ --- Mod: Code removed for two-player Elite: --------->
 
-\LDA scacol,X           \ Set A to the scanner colour for this ship type from
-\                       \ the X-th entry in the scacol table
-\
-\STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
-\                       \ to the I/O processor with the #onescan command
-\
 \LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 6 or 7,
 \ORA INWK+4             \ then the ship is too far away to be shown on the
 \ORA INWK+7             \ scanner, so return from the subroutine (as SC5
 \AND #%11000000         \ contains an RTS)
 \BNE SC5
                         \ --- And replaced by: -------------------------------->
-
- LDA #CYAN2             \ Set the scanner colour in SCANcol to cyan so it can be
- STA SCANcol            \ sent to the I/O processor with the #onescan command
 
  LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 5, 6, or
  ORA INWK+4             \ 7, then the ship is too far away to be shown on the
