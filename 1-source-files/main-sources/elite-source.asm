@@ -4301,6 +4301,18 @@ ENDIF
 
  SKIP 1                 \ Player 2's NEWB flags
 
+.player2DLY
+
+ SKIP 1                 \ Player 2's DLY value
+
+.player2MCH
+
+ SKIP 1                 \ Player 2's MCH value
+
+.player2messXC
+
+ SKIP 1                 \ Player 2's messXC value
+
 .player1Score
 
  SKIP 2                 \ Player 1's score
@@ -6261,56 +6273,60 @@ ENDIF
 \
 \ ******************************************************************************
 
- LDA INWK+31            \ Fetch the status of this ship from bits 5 (is ship
- AND #%10100000         \ exploding?) and bit 7 (has ship been killed?) from
-                        \ ship byte #31 into A
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR MAS4               \ Or this value with x_hi, y_hi and z_hi
+\LDA INWK+31            \ Fetch the status of this ship from bits 5 (is ship
+\AND #%10100000         \ exploding?) and bit 7 (has ship been killed?) from
+\                       \ ship byte #31 into A
+\
+\JSR MAS4               \ Or this value with x_hi, y_hi and z_hi
+\
+\BNE MA65               \ If this value is non-zero, then either the ship is
+\                       \ far away (i.e. has a non-zero high byte in at least
+\                       \ one of the three axes), or it is already exploding,
+\                       \ or has been flagged as being killed - in which case
+\                       \ jump to MA65 to skip the following, as we can't dock
+\                       \ scoop or collide with it
+\
+\LDA INWK               \ Set A = (x_lo OR y_lo OR z_lo), and if bit 7 of the
+\ORA INWK+3             \ result is set, the ship is still a fair distance
+\ORA INWK+6             \ away (further than 127 in at least one axis), so jump
+\BMI MA65               \ to MA65 to skip the following, as it's too far away to
+\                       \ dock, scoop or collide with
+\
+\LDX TYPE               \ If the current ship type is negative then it's either
+\BMI MA65               \ a planet or a sun, so jump down to MA65 to skip the
+\                       \ following, as we can't dock with it or scoop it
+\
+\CPX #SST               \ If this ship is the space station, jump to ISDK to
+\BEQ ISDK               \ check whether we are docking with it
+\
+\AND #%11000000         \ If bit 6 of (x_lo OR y_lo OR z_lo) is set, then the
+\BNE MA65               \ ship is still a reasonable distance away (further than
+\                       \ 63 in at least one axis), so jump to MA65 to skip the
+\                       \ following, as it's too far away to dock, scoop or
+\                       \ collide with
+\
+\CPX #MSL               \ If this ship is a missile, jump down to MA65 to skip
+\BEQ MA65               \ the following, as we can't scoop or dock with a
+\                       \ missile, and it has its own dedicated collision
+\                       \ checks in the TACTICS routine
+\
+\LDA BST                \ If we have fuel scoops fitted then BST will be &FF,
+\                       \ otherwise it will be 0
+\
+\AND INWK+5             \ Ship byte #5 contains the y_sign of this ship, so a
+\                       \ negative value here means the canister is below us,
+\                       \ which means the result of the AND will be negative if
+\                       \ the canister is below us and we have a fuel scoop
+\                       \ fitted
+\
+\BPL MA58               \ If the result is positive, then we either have no
+\                       \ scoop or the canister is above us, and in both cases
+\                       \ this means we can't scoop the item, so jump to MA58
+\                       \ to process a collision
 
- BNE MA65               \ If this value is non-zero, then either the ship is
-                        \ far away (i.e. has a non-zero high byte in at least
-                        \ one of the three axes), or it is already exploding,
-                        \ or has been flagged as being killed - in which case
-                        \ jump to MA65 to skip the following, as we can't dock
-                        \ scoop or collide with it
-
- LDA INWK               \ Set A = (x_lo OR y_lo OR z_lo), and if bit 7 of the
- ORA INWK+3             \ result is set, the ship is still a fair distance
- ORA INWK+6             \ away (further than 127 in at least one axis), so jump
- BMI MA65               \ to MA65 to skip the following, as it's too far away to
-                        \ dock, scoop or collide with
-
- LDX TYPE               \ If the current ship type is negative then it's either
- BMI MA65               \ a planet or a sun, so jump down to MA65 to skip the
-                        \ following, as we can't dock with it or scoop it
-
- CPX #SST               \ If this ship is the space station, jump to ISDK to
- BEQ ISDK               \ check whether we are docking with it
-
- AND #%11000000         \ If bit 6 of (x_lo OR y_lo OR z_lo) is set, then the
- BNE MA65               \ ship is still a reasonable distance away (further than
-                        \ 63 in at least one axis), so jump to MA65 to skip the
-                        \ following, as it's too far away to dock, scoop or
-                        \ collide with
-
- CPX #MSL               \ If this ship is a missile, jump down to MA65 to skip
- BEQ MA65               \ the following, as we can't scoop or dock with a
-                        \ missile, and it has its own dedicated collision
-                        \ checks in the TACTICS routine
-
- LDA BST                \ If we have fuel scoops fitted then BST will be &FF,
-                        \ otherwise it will be 0
-
- AND INWK+5             \ Ship byte #5 contains the y_sign of this ship, so a
-                        \ negative value here means the canister is below us,
-                        \ which means the result of the AND will be negative if
-                        \ the canister is below us and we have a fuel scoop
-                        \ fitted
-
- BPL MA58               \ If the result is positive, then we either have no
-                        \ scoop or the canister is above us, and in both cases
-                        \ this means we can't scoop the item, so jump to MA58
-                        \ to process a collision
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -6332,82 +6348,86 @@ ENDIF
 \
 \ ******************************************************************************
 
- CPX #OIL               \ If this is a cargo canister, jump to oily to randomly
- BEQ oily               \ decide the canister's contents
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDY #0                 \ Fetch byte #0 of the ship's blueprint
- LDA (XX0),Y
+\CPX #OIL               \ If this is a cargo canister, jump to oily to randomly
+\BEQ oily               \ decide the canister's contents
+\
+\LDY #0                 \ Fetch byte #0 of the ship's blueprint
+\LDA (XX0),Y
+\
+\LSR A                  \ Shift it right four times, so A now contains the high
+\LSR A                  \ nibble (i.e. bits 4-7)
+\LSR A
+\LSR A
+\
+\BEQ MA58               \ If A = 0, jump to MA58 to skip all the docking and
+\                       \ scooping checks
+\
+\                       \ Only the Thargon, alloy plate, splinter and escape pod
+\                       \ have non-zero high nibbles in their blueprint byte #0
+\                       \ so if we get here, our ship is one of those, and the
+\                       \ high nibble gives the market item number of the item
+\                       \ when scooped, less 1
+\
+\ADC #1                 \ Add 1 to the high nibble to get the market item
+\                       \ number
+\
+\BNE slvy2              \ Skip to slvy2 so we scoop the ship as a market item
+\
+\.oily
+\
+\JSR DORND              \ Set A and X to random numbers and reduce A to a
+\AND #7                 \ random number in the range 0-7
+\
+\.slvy2
+\
+\                       \ By the time we get here, we are scooping, and A
+\                       \ contains the type of item we are scooping (a random
+\                       \ number 0-7 if we are scooping a cargo canister, 3 if
+\                       \ we are scooping an escape pod, or 16 if we are
+\                       \ scooping a Thargon). These numbers correspond to the
+\                       \ relevant market items (see QQ23 for a list), so a
+\                       \ cargo canister can contain anything from food to
+\                       \ computers, while escape pods contain slaves, and
+\                       \ Thargons become alien items when scooped
+\
+\JSR tnpr1              \ Call tnpr1 with the scooped cargo type stored in A
+\                       \ to work out whether we have room in the hold for one
+\                       \ tonne of this cargo (A is set to 1 by this call, and
+\                       \ the C flag contains the result)
+\
+\LDY #78                \ This instruction has no effect, so presumably it used
+\                       \ to do something, but didn't get removed
+\
+\BCS MA59               \ If the C flag is set then we have no room in the hold
+\                       \ for the scooped item, so jump down to MA59 make a
+\                       \ sound to indicate failure, before destroying the
+\                       \ canister
+\
+\LDY QQ29               \ Scooping was successful, so set Y to the type of
+\                       \ item we just scooped, which we stored in QQ29 above
+\
+\ADC QQ20,Y             \ Add A (which we set to 1 above) to the number of items
+\STA QQ20,Y             \ of type Y in the cargo hold, as we just successfully
+\                       \ scooped one canister of type Y
+\
+\TYA                    \ Print recursive token 48 + Y as an in-flight token,
+\ADC #208               \ which will be in the range 48 ("FOOD") to 64 ("ALIEN
+\JSR MESS               \ ITEMS"), so this prints the scooped item's name
+\
+\ASL NEWB               \ The item has now been scooped, so set bit 7 of its
+\SEC                    \ NEWB flags to indicate this
+\ROR NEWB
+\
+\.MA65
+\
+\JMP MA26               \ If we get here, then the ship we are processing was
+\                       \ too far away to be scooped, docked or collided with,
+\                       \ so jump to MA26 to skip over the collision routines
+\                       \ and move on to missile targeting
 
- LSR A                  \ Shift it right four times, so A now contains the high
- LSR A                  \ nibble (i.e. bits 4-7)
- LSR A
- LSR A
-
- BEQ MA58               \ If A = 0, jump to MA58 to skip all the docking and
-                        \ scooping checks
-
-                        \ Only the Thargon, alloy plate, splinter and escape pod
-                        \ have non-zero high nibbles in their blueprint byte #0
-                        \ so if we get here, our ship is one of those, and the
-                        \ high nibble gives the market item number of the item
-                        \ when scooped, less 1
-
- ADC #1                 \ Add 1 to the high nibble to get the market item
-                        \ number
-
- BNE slvy2              \ Skip to slvy2 so we scoop the ship as a market item
-
-.oily
-
- JSR DORND              \ Set A and X to random numbers and reduce A to a
- AND #7                 \ random number in the range 0-7
-
-.slvy2
-
-                        \ By the time we get here, we are scooping, and A
-                        \ contains the type of item we are scooping (a random
-                        \ number 0-7 if we are scooping a cargo canister, 3 if
-                        \ we are scooping an escape pod, or 16 if we are
-                        \ scooping a Thargon). These numbers correspond to the
-                        \ relevant market items (see QQ23 for a list), so a
-                        \ cargo canister can contain anything from food to
-                        \ computers, while escape pods contain slaves, and
-                        \ Thargons become alien items when scooped
-
- JSR tnpr1              \ Call tnpr1 with the scooped cargo type stored in A
-                        \ to work out whether we have room in the hold for one
-                        \ tonne of this cargo (A is set to 1 by this call, and
-                        \ the C flag contains the result)
-
- LDY #78                \ This instruction has no effect, so presumably it used
-                        \ to do something, but didn't get removed
-
- BCS MA59               \ If the C flag is set then we have no room in the hold
-                        \ for the scooped item, so jump down to MA59 make a
-                        \ sound to indicate failure, before destroying the
-                        \ canister
-
- LDY QQ29               \ Scooping was successful, so set Y to the type of
-                        \ item we just scooped, which we stored in QQ29 above
-
- ADC QQ20,Y             \ Add A (which we set to 1 above) to the number of items
- STA QQ20,Y             \ of type Y in the cargo hold, as we just successfully
-                        \ scooped one canister of type Y
-
- TYA                    \ Print recursive token 48 + Y as an in-flight token,
- ADC #208               \ which will be in the range 48 ("FOOD") to 64 ("ALIEN
- JSR MESS               \ ITEMS"), so this prints the scooped item's name
-
- ASL NEWB               \ The item has now been scooped, so set bit 7 of its
- SEC                    \ NEWB flags to indicate this
- ROR NEWB
-
-.MA65
-
- JMP MA26               \ If we get here, then the ship we are processing was
-                        \ too far away to be scooped, docked or collided with,
-                        \ so jump to MA26 to skip over the collision routines
-                        \ and move on to missile targeting
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -6435,52 +6455,56 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ISDK
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA K%+NI%+36          \ 1. Fetch the NEWB flags (byte #36) of the second ship
- AND #%00000100         \ in the ship data workspace at K%, which is reserved
- BNE MA62               \ for the sun or the space station (in this case it's
-                        \ the latter), and if bit 2 is set, meaning the station
-                        \ is hostile, jump down to MA62 to fail docking (so
-                        \ trying to dock at a station that we have annoyed does
-                        \ not end well)
+\.ISDK
+\
+\LDA K%+NI%+36          \ 1. Fetch the NEWB flags (byte #36) of the second ship
+\AND #%00000100         \ in the ship data workspace at K%, which is reserved
+\BNE MA62               \ for the sun or the space station (in this case it's
+\                       \ the latter), and if bit 2 is set, meaning the station
+\                       \ is hostile, jump down to MA62 to fail docking (so
+\                       \ trying to dock at a station that we have annoyed does
+\                       \ not end well)
+\
+\LDA INWK+14            \ 2. If nosev_z_hi < 214, jump down to MA62 to fail
+\CMP #214               \ docking, as the angle of approach is greater than 26
+\BCC MA62               \ degrees
+\
+\JSR SPS1               \ Call SPS1 to calculate the vector to the planet and
+\                       \ store it in XX15
+\
+\LDA XX15+2             \ Set A to the z-axis of the vector
+\
+\                       \ This version of Elite omits check 3 (which would check
+\                       \ the sign of the z-axis)
+\
+\CMP #89                \ 4. If z-axis < 89, jump to MA62 to fail docking, as
+\BCC MA62               \ we are not in the 22.0 degree safe cone of approach
+\
+\LDA INWK+16            \ 5. If |roofv_x_hi| < 80, jump to MA62 to fail docking,
+\AND #%01111111         \ as the slot is more than 36.6 degrees from horizontal
+\CMP #80
+\BCC MA62
+\
+\.GOIN
+\
+\                       \ If we arrive here, we just docked successfully
+\
+\JMP DOENTRY            \ Go to the docking bay (i.e. show the ship hangar)
+\
+\.MA62
+\
+\                       \ If we arrive here, docking has just failed
+\
+\LDA DELTA              \ If the ship's speed is < 5, jump to MA67 to register
+\CMP #5                 \ some damage, but not a huge amount
+\BCC MA67
+\
+\JMP DEATH              \ Otherwise we have just crashed into the station, so
+\                       \ process our death
 
- LDA INWK+14            \ 2. If nosev_z_hi < 214, jump down to MA62 to fail
- CMP #214               \ docking, as the angle of approach is greater than 26
- BCC MA62               \ degrees
-
- JSR SPS1               \ Call SPS1 to calculate the vector to the planet and
-                        \ store it in XX15
-
- LDA XX15+2             \ Set A to the z-axis of the vector
-
-                        \ This version of Elite omits check 3 (which would check
-                        \ the sign of the z-axis)
-
- CMP #89                \ 4. If z-axis < 89, jump to MA62 to fail docking, as
- BCC MA62               \ we are not in the 22.0 degree safe cone of approach
-
- LDA INWK+16            \ 5. If |roofv_x_hi| < 80, jump to MA62 to fail docking,
- AND #%01111111         \ as the slot is more than 36.6 degrees from horizontal
- CMP #80
- BCC MA62
-
-.GOIN
-
-                        \ If we arrive here, we just docked successfully
-
- JMP DOENTRY            \ Go to the docking bay (i.e. show the ship hangar)
-
-.MA62
-
-                        \ If we arrive here, docking has just failed
-
- LDA DELTA              \ If the ship's speed is < 5, jump to MA67 to register
- CMP #5                 \ some damage, but not a huge amount
- BCC MA67
-
- JMP DEATH              \ Otherwise we have just crashed into the station, so
-                        \ process our death
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -6504,63 +6528,67 @@ ENDIF
 \
 \ ******************************************************************************
 
-.MA59
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-                        \ If we get here then scooping failed
+\.MA59
+\
+\                       \ If we get here then scooping failed
+\
+\JSR EXNO3              \ Make the sound of the cargo canister being destroyed
+\                       \ and fall through into MA60 to remove the canister
+\                       \ from our local bubble
+\
+\.MA60
+\
+\                       \ If we get here then scooping was successful
+\
+\ASL INWK+31            \ Set bit 7 of the scooped or destroyed item, to denote
+\SEC                    \ that it has been killed and should be removed from
+\ROR INWK+31            \ the local bubble
+\
+\.MA61
+\
+\BNE MA26               \ Jump to MA26 to skip over the collision routines and
+\                       \ to move on to missile targeting (this BNE is
+\                       \ effectively a JMP as A will never be zero)
+\
+\.MA67
+\
+\                       \ If we get here then we have collided with something,
+\                       \ but not fatally
+\
+\LDA #1                 \ Set the speed in DELTA to 1 (i.e. a sudden stop)
+\STA DELTA
+\
+\LDA #5                 \ Set the amount of damage in A to 5 (a small dent) and
+\BNE MA63               \ jump down to MA63 to process the damage (this BNE is
+\                       \ effectively a JMP as A will never be zero)
+\
+\.MA58
+\
+\                       \ If we get here, we have collided with something in a
+\                       \ potentially fatal way
+\
+\ASL INWK+31            \ Set bit 7 of the ship we just collided with, to
+\SEC                    \ denote that it has been killed and should be removed
+\ROR INWK+31            \ from the local bubble
+\
+\LDA INWK+35            \ Load A with the energy level of the ship we just hit
+\
+\SEC                    \ Set the amount of damage in A to 128 + A / 2, so
+\ROR A                  \ this is quite a big dent, and colliding with higher
+\                       \ energy ships will cause more damage
+\
+\.MA63
+\
+\JSR OOPS               \ The amount of damage is in A, so call OOPS to reduce
+\                       \ our shields, and if the shields are gone, there's a
+\                       \ chance of cargo loss or even death
+\
+\JSR EXNO3              \ Make the sound of colliding with the other ship and
+\                       \ fall through into MA26 to try targeting a missile
 
- JSR EXNO3              \ Make the sound of the cargo canister being destroyed
-                        \ and fall through into MA60 to remove the canister
-                        \ from our local bubble
-
-.MA60
-
-                        \ If we get here then scooping was successful
-
- ASL INWK+31            \ Set bit 7 of the scooped or destroyed item, to denote
- SEC                    \ that it has been killed and should be removed from
- ROR INWK+31            \ the local bubble
-
-.MA61
-
- BNE MA26               \ Jump to MA26 to skip over the collision routines and
-                        \ to move on to missile targeting (this BNE is
-                        \ effectively a JMP as A will never be zero)
-
-.MA67
-
-                        \ If we get here then we have collided with something,
-                        \ but not fatally
-
- LDA #1                 \ Set the speed in DELTA to 1 (i.e. a sudden stop)
- STA DELTA
-
- LDA #5                 \ Set the amount of damage in A to 5 (a small dent) and
- BNE MA63               \ jump down to MA63 to process the damage (this BNE is
-                        \ effectively a JMP as A will never be zero)
-
-.MA58
-
-                        \ If we get here, we have collided with something in a
-                        \ potentially fatal way
-
- ASL INWK+31            \ Set bit 7 of the ship we just collided with, to
- SEC                    \ denote that it has been killed and should be removed
- ROR INWK+31            \ from the local bubble
-
- LDA INWK+35            \ Load A with the energy level of the ship we just hit
-
- SEC                    \ Set the amount of damage in A to 128 + A / 2, so
- ROR A                  \ this is quite a big dent, and colliding with higher
-                        \ energy ships will cause more damage
-
-.MA63
-
- JSR OOPS               \ The amount of damage is in A, so call OOPS to reduce
-                        \ our shields, and if the shields are gone, there's a
-                        \ chance of cargo loss or even death
-
- JSR EXNO3              \ Make the sound of colliding with the other ship and
-                        \ fall through into MA26 to try targeting a missile
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -6926,7 +6954,6 @@ ENDIF
  JMP MA22
                         \ --- End of replacement ------------------------------>
 
-
  LDX ENERGY             \ Fetch our ship's energy levels and skip to b if bit 7
  BPL b                  \ is not set, i.e. only charge the shields from the
                         \ energy banks if they are at more than 50% charge
@@ -7185,187 +7212,202 @@ ELIF _EXECUTIVE
 
 ENDIF
 
- LDY #&FF               \ Set our altitude in ALTIT to &FF, the maximum
- STY ALTIT
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
- INY                    \ Set Y = 0
+ LDA #50                \ If our energy bank status in ENERGY is >= 50, skip
+ CMP player2ENERGY      \ printing the following message (so the message is
+ BCC P%+6               \ only shown if our energy is low)
 
- JSR m                  \ Call m to calculate the maximum distance to the
-                        \ planet in any of the three axes, returned in A
+ ASL A                  \ Print recursive token 100 ("ENERGY LOW{beep}") as an
+ JSR Player2MESS        \ in-flight message
 
- BNE MA23               \ If A > 0 then we are a fair distance away from the
-                        \ planet in at least one axis, so jump to MA23 to skip
-                        \ the rest of the altitude check
+                        \ --- End of added code ------------------------------->
 
- JSR MAS3               \ Set A = x_hi^2 + y_hi^2 + z_hi^2, so using Pythagoras
-                        \ we now know that A now contains the square of the
-                        \ distance between our ship (at the origin) and the
-                        \ centre of the planet at (x_hi, y_hi, z_hi)
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- BCS MA23               \ If the C flag was set by MAS3, then the result
-                        \ overflowed (was greater than &FF) and we are still a
-                        \ fair distance from the planet, so jump to MA23 as we
-                        \ haven't crashed into the planet
+\LDY #&FF               \ Set our altitude in ALTIT to &FF, the maximum
+\STY ALTIT
+\
+\INY                    \ Set Y = 0
+\
+\JSR m                  \ Call m to calculate the maximum distance to the
+\                       \ planet in any of the three axes, returned in A
+\
+\BNE MA23               \ If A > 0 then we are a fair distance away from the
+\                       \ planet in at least one axis, so jump to MA23 to skip
+\                       \ the rest of the altitude check
+\
+\JSR MAS3               \ Set A = x_hi^2 + y_hi^2 + z_hi^2, so using Pythagoras
+\                       \ we now know that A now contains the square of the
+\                       \ distance between our ship (at the origin) and the
+\                       \ centre of the planet at (x_hi, y_hi, z_hi)
+\
+\BCS MA23               \ If the C flag was set by MAS3, then the result
+\                       \ overflowed (was greater than &FF) and we are still a
+\                       \ fair distance from the planet, so jump to MA23 as we
+\                       \ haven't crashed into the planet
+\
+\SBC #36                \ Subtract 37 from x_hi^2 + y_hi^2 + z_hi^2
+\                       \
+\                       \ The SBC subtracts 37 as we just passed through a BCS
+\                       \ so we know the C flag is clear
+\                       \
+\                       \ When we do the 3D Pythagoras calculation, we only use
+\                       \ the high bytes of the coordinates, so that's x_hi,
+\                       \ y_hi and z_hi and
+\                       \
+\                       \ The planet radius is (0 96 0), as defined in the
+\                       \ PLANET routine, so the high byte is 96
+\                       \
+\                       \ When we square the coordinates above and add them,
+\                       \ the result gets divided by 256 (otherwise the result
+\                       \ wouldn't fit into one byte), so if we do the same for
+\                       \ the planet's radius, we get:
+\                       \
+\                       \   96 * 96 / 256 = 36
+\                       \
+\                       \ So for the planet, the equivalent figure to test the
+\                       \ sum of the _hi bytes against is 36, so A now contains
+\                       \ the high byte of our altitude above the planet
+\                       \ surface, squared, with an extra 1 subtracted so the
+\                       \ test in the next instruction will ensure we crash
+\                       \ even if we are exactly one planet radius away
+\
+\BCC MA28               \ If A < 0 then jump to MA28 as we have crashed into
+\                       \ the planet
+\
+\STA R                  \ We are getting close to the planet, so we need to
+\JSR LL5                \ work out how close. We know from the above that A
+\                       \ contains our altitude squared, so we store A in R
+\                       \ and call LL5 to calculate:
+\                       \
+\                       \   Q = SQRT(R Q) = SQRT(A Q)
+\                       \
+\                       \ Interestingly, Q doesn't appear to be set to 0 for
+\                       \ this calculation, so presumably this doesn't make a
+\                       \ difference
+\
+\LDA Q                  \ Store the result in ALTIT, our altitude
+\STA ALTIT
+\
+\BNE MA23               \ If our altitude is non-zero then we haven't crashed,
+\                       \ so jump to MA23 to skip to the next section
+\
+\.MA28
+\
+\JMP DEATH              \ If we get here then we just crashed into the planet
+\                       \ or got too close to the sun, so jump to DEATH to start
+\                       \ the funeral preparations and return from the main
+\                       \ flight loop using a tail call
+\
+\.MA29
+\
+\CMP #15                \ If this is the 15th iteration in this block of 32,
+\BNE MA33               \ do the following, otherwise jump to MA33 to skip the
+\                       \ docking computer manoeuvring
+\
+\LDA auto               \ If auto is zero, then the docking computer is not
+\BEQ MA23               \ activated, so jump to MA23 to skip to the next
+\                       \ section
+\
+\LDA #123               \ Set A = 123 and jump down to MA34 to print token 123
+\BNE MA34               \ ("DOCKING COMPUTERS ON") as an in-flight message
+\
+\.MA33
+\
+\CMP #20                \ If this is the 20th iteration in this block of 32,
+\BNE MA23               \ do the following, otherwise jump to MA23 to skip the
+\                       \ sun altitude check
+\
+\LDA #30                \ Set CABTMP to 30, the cabin temperature in deep space
+\STA CABTMP             \ (i.e. one notch on the dashboard bar)
+\
+\LDA SSPR               \ If we are inside the space station safe zone, jump to
+\BNE MA23               \ MA23 to skip the following, as we can't have both the
+\                       \ sun and space station at the same time, so we clearly
+\                       \ can't be flying near the sun
+\
+\LDY #NI%               \ Set Y to NI%, which is the offset in K% for the sun's
+\                       \ data block, as the second block at K% is reserved for
+\                       \ the sun (or space station)
+\
+\JSR MAS2               \ Call MAS2 to calculate the largest distance to the
+\BNE MA23               \ sun in any of the three axes, and if it's non-zero,
+\                       \ jump to MA23 to skip the following, as we are too far
+\                       \ from the sun for scooping or temperature changes
+\
+\JSR MAS3               \ Set (A ?) = x_hi^2 + y_hi^2 + z_hi^2, so using
+\                       \ Pythagoras we now know that A now contains the high
+\                       \ byte of the square of the distance between our ship
+\                       \ (at the origin) and the heart of the sun at coordinate
+\                       \ (x_hi, y_hi, z_hi)
+\                       \
+\                       \ If the calculation overflows so it doesn't fit into
+\                       \ one byte, then A is set to &FF and the C flag is set
+\
+\EOR #%11111111         \ Invert A, so A is now small if we are far from the
+\                       \ sun and large if we are close to the sun, in the
+\                       \ range 0 = far away to &FF = extremely close, ouch,
+\                       \ hot, hot, hot!
+\
+\ADC #30                \ Add the minimum cabin temperature of 30, plus the C
+\                       \ flag, so we get one of the following:
+\                       \
+\                       \   * If the MAS3 calculation overflowed then we are a
+\                       \     long way from the sun, A will be zero and the C
+\                       \     flag will be set, so this addition sets A = 31
+\                       \     and clears the C flag
+\                       \
+\                       \   * If the result of the MAS3 calculation fitted into
+\                       \     one byte, then A will be in the range 0 to 255 and
+\                       \     the C flag will be clear, so this addition has a
+\                       \     result in the range 0 to 285, with the higher
+\                       \     values overflowing the addition and setting the
+\                       \     C flag
+\                       \
+\                       \ So the C flag is set if the cabin temperature is too
+\                       \ hot to handle, and if it's clear then A contains the
+\                       \ cabin temperature
+\
+\STA CABTMP             \ Store the updated cabin temperature
+\
+\BCS MA28               \ If the C flag is set then jump to MA28 to die, as
+\                       \ our temperature is off the scale
+\
+\CMP #224               \ If the cabin temperature < 224 then jump to MA23 to
+\BCC MA23               \ skip fuel scooping, as we aren't close enough
+\
+\LDA BST                \ If we don't have fuel scoops fitted, jump to BA23 to
+\BEQ MA23               \ skip fuel scooping, as we can't scoop without fuel
+\                       \ scoops
+\
+\LDA DELT4+1            \ We are now successfully fuel scooping, so it's time
+\LSR A                  \ to work out how much fuel we're scooping. Fetch the
+\                       \ high byte of DELT4, which contains our current speed
+\                       \ divided by 4, and halve it to get our current speed
+\                       \ divided by 8 (so it's now a value between 1 and 5, as
+\                       \ our speed is normally between 1 and 40). This gives
+\                       \ us the amount of fuel that's being scooped in A, so
+\                       \ the faster we go, the more fuel we scoop, and because
+\                       \ the fuel levels are stored as 10 * the fuel in light
+\                       \ years, that means we just scooped between 0.1 and 0.5
+\                       \ light years of free fuel
+\
+\ADC QQ14               \ Set A = A + the current fuel level * 10 (from QQ14)
+\
+\CMP #70                \ If A > 70 then set A = 70 (as 70 is the maximum fuel
+\BCC P%+4               \ level, or 7.0 light years)
+\LDA #70
+\
+\STA QQ14               \ Store the updated fuel level in QQ14
+\
+\LDA #160               \ Set A to token 160 ("FUEL SCOOPS ON")
+\
+\.MA34
+\
+\JSR MESS               \ Print the token in A as an in-flight message
 
- SBC #36                \ Subtract 37 from x_hi^2 + y_hi^2 + z_hi^2
-                        \
-                        \ The SBC subtracts 37 as we just passed through a BCS
-                        \ so we know the C flag is clear
-                        \
-                        \ When we do the 3D Pythagoras calculation, we only use
-                        \ the high bytes of the coordinates, so that's x_hi,
-                        \ y_hi and z_hi and
-                        \
-                        \ The planet radius is (0 96 0), as defined in the
-                        \ PLANET routine, so the high byte is 96
-                        \
-                        \ When we square the coordinates above and add them,
-                        \ the result gets divided by 256 (otherwise the result
-                        \ wouldn't fit into one byte), so if we do the same for
-                        \ the planet's radius, we get:
-                        \
-                        \   96 * 96 / 256 = 36
-                        \
-                        \ So for the planet, the equivalent figure to test the
-                        \ sum of the _hi bytes against is 36, so A now contains
-                        \ the high byte of our altitude above the planet
-                        \ surface, squared, with an extra 1 subtracted so the
-                        \ test in the next instruction will ensure we crash
-                        \ even if we are exactly one planet radius away
-
- BCC MA28               \ If A < 0 then jump to MA28 as we have crashed into
-                        \ the planet
-
- STA R                  \ We are getting close to the planet, so we need to
- JSR LL5                \ work out how close. We know from the above that A
-                        \ contains our altitude squared, so we store A in R
-                        \ and call LL5 to calculate:
-                        \
-                        \   Q = SQRT(R Q) = SQRT(A Q)
-                        \
-                        \ Interestingly, Q doesn't appear to be set to 0 for
-                        \ this calculation, so presumably this doesn't make a
-                        \ difference
-
- LDA Q                  \ Store the result in ALTIT, our altitude
- STA ALTIT
-
- BNE MA23               \ If our altitude is non-zero then we haven't crashed,
-                        \ so jump to MA23 to skip to the next section
-
-.MA28
-
- JMP DEATH              \ If we get here then we just crashed into the planet
-                        \ or got too close to the sun, so jump to DEATH to start
-                        \ the funeral preparations and return from the main
-                        \ flight loop using a tail call
-
-.MA29
-
- CMP #15                \ If this is the 15th iteration in this block of 32,
- BNE MA33               \ do the following, otherwise jump to MA33 to skip the
-                        \ docking computer manoeuvring
-
- LDA auto               \ If auto is zero, then the docking computer is not
- BEQ MA23               \ activated, so jump to MA23 to skip to the next
-                        \ section
-
- LDA #123               \ Set A = 123 and jump down to MA34 to print token 123
- BNE MA34               \ ("DOCKING COMPUTERS ON") as an in-flight message
-
-.MA33
-
- CMP #20                \ If this is the 20th iteration in this block of 32,
- BNE MA23               \ do the following, otherwise jump to MA23 to skip the
-                        \ sun altitude check
-
- LDA #30                \ Set CABTMP to 30, the cabin temperature in deep space
- STA CABTMP             \ (i.e. one notch on the dashboard bar)
-
- LDA SSPR               \ If we are inside the space station safe zone, jump to
- BNE MA23               \ MA23 to skip the following, as we can't have both the
-                        \ sun and space station at the same time, so we clearly
-                        \ can't be flying near the sun
-
- LDY #NI%               \ Set Y to NI%, which is the offset in K% for the sun's
-                        \ data block, as the second block at K% is reserved for
-                        \ the sun (or space station)
-
- JSR MAS2               \ Call MAS2 to calculate the largest distance to the
- BNE MA23               \ sun in any of the three axes, and if it's non-zero,
-                        \ jump to MA23 to skip the following, as we are too far
-                        \ from the sun for scooping or temperature changes
-
- JSR MAS3               \ Set (A ?) = x_hi^2 + y_hi^2 + z_hi^2, so using
-                        \ Pythagoras we now know that A now contains the high
-                        \ byte of the square of the distance between our ship
-                        \ (at the origin) and the heart of the sun at coordinate
-                        \ (x_hi, y_hi, z_hi)
-                        \
-                        \ If the calculation overflows so it doesn't fit into
-                        \ one byte, then A is set to &FF and the C flag is set
-
- EOR #%11111111         \ Invert A, so A is now small if we are far from the
-                        \ sun and large if we are close to the sun, in the
-                        \ range 0 = far away to &FF = extremely close, ouch,
-                        \ hot, hot, hot!
-
- ADC #30                \ Add the minimum cabin temperature of 30, plus the C
-                        \ flag, so we get one of the following:
-                        \
-                        \   * If the MAS3 calculation overflowed then we are a
-                        \     long way from the sun, A will be zero and the C
-                        \     flag will be set, so this addition sets A = 31
-                        \     and clears the C flag
-                        \
-                        \   * If the result of the MAS3 calculation fitted into
-                        \     one byte, then A will be in the range 0 to 255 and
-                        \     the C flag will be clear, so this addition has a
-                        \     result in the range 0 to 285, with the higher
-                        \     values overflowing the addition and setting the
-                        \     C flag
-                        \
-                        \ So the C flag is set if the cabin temperature is too
-                        \ hot to handle, and if it's clear then A contains the
-                        \ cabin temperature
-
- STA CABTMP             \ Store the updated cabin temperature
-
- BCS MA28               \ If the C flag is set then jump to MA28 to die, as
-                        \ our temperature is off the scale
-
- CMP #224               \ If the cabin temperature < 224 then jump to MA23 to
- BCC MA23               \ skip fuel scooping, as we aren't close enough
-
- LDA BST                \ If we don't have fuel scoops fitted, jump to BA23 to
- BEQ MA23               \ skip fuel scooping, as we can't scoop without fuel
-                        \ scoops
-
- LDA DELT4+1            \ We are now successfully fuel scooping, so it's time
- LSR A                  \ to work out how much fuel we're scooping. Fetch the
-                        \ high byte of DELT4, which contains our current speed
-                        \ divided by 4, and halve it to get our current speed
-                        \ divided by 8 (so it's now a value between 1 and 5, as
-                        \ our speed is normally between 1 and 40). This gives
-                        \ us the amount of fuel that's being scooped in A, so
-                        \ the faster we go, the more fuel we scoop, and because
-                        \ the fuel levels are stored as 10 * the fuel in light
-                        \ years, that means we just scooped between 0.1 and 0.5
-                        \ light years of free fuel
-
- ADC QQ14               \ Set A = A + the current fuel level * 10 (from QQ14)
-
- CMP #70                \ If A > 70 then set A = 70 (as 70 is the maximum fuel
- BCC P%+4               \ level, or 7.0 light years)
- LDA #70
-
- STA QQ14               \ Store the updated fuel level in QQ14
-
- LDA #160               \ Set A to token 160 ("FUEL SCOOPS ON")
-
-.MA34
-
- JSR MESS               \ Print the token in A as an in-flight message
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -15439,6 +15481,24 @@ ENDIF
                         \ from reducing the shields and energy, all the way to
                         \ losing cargo or dying (if the latter, we don't come
                         \ back from this subroutine)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If this is not player 2, skip the following
+ CMP #2
+ BNE tact3
+
+ JSR Player2ee3         \ Print player 2's score to remove it from the screen
+
+ INC player2Score       \ Increment player 2's score (as player 2 is the AI)
+ BNE P%+5
+ INC player2Score+1
+
+ JSR Player2ee3         \ Print player 2's score
+
+.tact3
+
+                        \ --- End of added code ------------------------------->
 
  DEC INWK+28            \ Halve the attacking ship's acceleration in byte #28
 
@@ -34032,6 +34092,31 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2me2
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Remove an in-flight message from the space view
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2me2
+
+ LDA player2MCH         \ Fetch the token number of the current message into A
+
+ JSR Player2MESS        \ Call MESS to print the token, which will remove it
+                        \ from the screen as printing uses EOR logic
+
+ LDA #0                 \ Set the delay in DLY to 0, so any new in-flight
+ STA player2DLY         \ messages will be shown instantly
+
+ JMP Player2me3         \ Jump back into the main spawning loop at me3
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: me2
 \       Type: Subroutine
 \   Category: Flight
@@ -34314,6 +34399,21 @@ ENDIF
                         \ and need to increment DLY back to 0
 
 .me3
+
+ DEC player2DLY         \ Decrement the delay counter in DLY, so any in-flight
+                        \ messages get removed once the counter reaches zero
+
+ BEQ Player2me2         \ If DLY is now 0, jump to me2 to remove any in-flight
+                        \ message from the space view, and once done, return to
+                        \ me3 below, skipping the following two instructions
+
+ BPL Player2me3         \ If DLY is positive, jump to me3 to skip the next
+                        \ instruction
+
+ INC player2DLY         \ If we get here, DLY is negative, so we have gone too
+                        \ and need to increment DLY back to 0
+
+.Player2me3
 
  DEC MCNT               \ Decrement the main loop counter in MCNT
 
@@ -40128,7 +40228,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDA #11                \ Move the text cursor to row 11
+ LDA #10                \ Move the text cursor to row 10
  JSR DOYC
 
  LDY #22                \ Set Y = 22
@@ -40294,6 +40394,153 @@ ENDIF
                         \ or "DOCKING COMPUTERS") as an in-flight message,
                         \ followed by " DESTROYED", and return from the
                         \ subroutine using a tail call
+
+
+\ ******************************************************************************
+\
+\       Name: Player2me1
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Erase an old in-flight message and display a new one
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   A                   The text token to be printed
+\
+\   X                   Must be set to 0
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2me1
+
+ STX player2DLY         \ Set the message delay in DLY to 0, so any new
+                        \ in-flight messages will be shown instantly
+
+ PHA                    \ Store the new message token we want to print
+
+ LDA player2MCH         \ Set A to the token number of the message that is
+ JSR mes9               \ currently on-screen, and call mes9 to print it (which
+                        \ will remove it from the screen, as printing is done
+                        \ using EOR logic)
+
+ PLA                    \ Restore the new message token
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: Player2MESS
+\       Type: Subroutine
+\   Category: Flight
+\    Summary: Display an in-flight message
+\
+\ ------------------------------------------------------------------------------
+\
+\ Display an in-flight message in capitals at the bottom of the space view,
+\ erasing any existing in-flight message first.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   A                   The text token to be printed
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2MESS
+
+ PHA                    \ Store A on the stack so we can restore it after the
+                        \ call to DOCOL
+
+ LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
+ JSR DOCOL              \ switch to colour 1, which is yellow
+
+ PLA                    \ Restore A from the stack
+
+ LDX #0                 \ Set QQ17 = 0 to switch to ALL CAPS
+ STX QQ17
+
+ PHA                    \ Store A on the stack so we can restore it after the
+                        \ calls to DOXC and DOYC
+
+ LDA player2messXC      \ Move the text cursor to column messXC, in case we
+ JSR DOXC               \ jump to me1 below to erase the current in-flight
+                        \ message (whose column we stored in messXC when we
+                        \ called MESS to put it there in the first place)
+
+ LDA #22                \ Move the text cursor to row 22, and set Y = 22
+ TAY
+ JSR DOYC
+
+ PLA                    \ Restore A from the stack
+
+ CPX player2DLY         \ If the message delay in DLY is not zero, jump up to
+ BNE Player2me1         \ me1 to erase the current message first (whose token
+                        \ number will be in MCH)
+
+ STY player2DLY         \ Set the message delay in DLY to 22
+
+ STA player2MCH         \ Set MCH to the token we are about to display
+
+                        \ Before we fall through into mes9 to print the token,
+                        \ we need to work out the starting column for the
+                        \ message we want to print, so it's centred on-screen,
+                        \ so the following doesn't print anything, it just uses
+                        \ the justified text mechanism to work out the number of
+                        \ characters in the message we are going to print
+
+ LDA #%11000000         \ Set the DTW4 flag to %11000000 (justify text, buffer
+ STA DTW4               \ entire token including carriage returns)
+
+ LDA de                 \ Set the C flag to bit 1 of the destruction flag in de
+ LSR A
+
+ LDA #0                 \ Set A = 0
+
+ BCC P%+4               \ If the destruction flag in de is not set, skip the
+                        \ following instruction
+
+ LDA #10                \ Set A = 10
+
+ STA DTW5               \ Store A in DTW5, so DTW5 (which holds the size of the
+                        \ justified text buffer at BUF) is set to 0 if the
+                        \ destruction flag is not set, or 10 if it is (10 being
+                        \ the number of characters in the " DESTROYED" token)
+
+ LDA player2MCH         \ Call TT27 to print the token in MCH into the buffer
+ JSR TT27               \ (this doesn't print it on-screen, it just puts it into
+                        \ the buffer and moves the DTW5 pointer along, so DTW5
+                        \ now contains the size of the message we want to print,
+                        \ including the " DESTROYED" part if that's going to be
+                        \ included)
+
+ LDA #32                \ Set A = (32 - DTW5) / 2
+ SEC                    \
+ SBC DTW5               \ so A now contains the column number we need to print
+ LSR A                  \ our message at for it to be centred on-screen (as
+                        \ there are 32 columns)
+
+ STA player2messXC      \ Store A in messXC, so when we erase the message via
+                        \ the branch to me1 above, messXC will tell us where to
+                        \ print it
+
+ JSR DOXC               \ Move the text cursor to column messXC
+
+ JSR MT15               \ Call MT15 to switch to left-aligned text when printing
+                        \ extended tokens disabling the justify text setting we
+                        \ set above
+
+ LDA player2MCH         \ Set MCH to the token we are about to display
+
+ JMP mes9               \ Jump to mes9 to print the token in A
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -48131,6 +48378,14 @@ ENDIF
  STZ DLY                \ Set the delay in DLY to 0, to indicate that we are
                         \ no longer showing an in-flight message, so any new
                         \ in-flight messages will be shown instantly
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STZ player2DLY         \ Set the delay in DLY to 0, to indicate that we are
+                        \ no longer showing an in-flight message, so any new
+                        \ in-flight messages will be shown instantly
+
+                        \ --- End of added code ------------------------------->
 
  STZ de                 \ Clear de, the flag that appends " DESTROYED" to the
                         \ end of the next text token, so that it doesn't
