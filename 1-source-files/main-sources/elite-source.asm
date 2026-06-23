@@ -6832,36 +6832,40 @@ ENDIF
  BEQ MAC1               \ ship is no longer exploding, so jump to MAC1 to skip
                         \ the following
 
- LDA NEWB               \ Extract bit 6 of the ship's NEWB flags, so A = 64 if
- AND #%01000000         \ bit 6 is set, or 0 if it is clear. Bit 6 is set if
-                        \ this ship is a cop, so A = 64 if we just killed a
-                        \ policeman, otherwise it is 0
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- ORA FIST               \ Update our FIST flag ("fugitive/innocent status") to
- STA FIST               \ at least the value in A, which will instantly make us
-                        \ a fugitive if we just shot the sheriff, but won't
-                        \ affect our status if the enemy wasn't a copper
+\LDA NEWB               \ Extract bit 6 of the ship's NEWB flags, so A = 64 if
+\AND #%01000000         \ bit 6 is set, or 0 if it is clear. Bit 6 is set if
+\                       \ this ship is a cop, so A = 64 if we just killed a
+\                       \ policeman, otherwise it is 0
+\
+\ORA FIST               \ Update our FIST flag ("fugitive/innocent status") to
+\STA FIST               \ at least the value in A, which will instantly make us
+\                       \ a fugitive if we just shot the sheriff, but won't
+\                       \ affect our status if the enemy wasn't a copper
+\
+\LDA DLY                \ If we already have an in-flight message on-screen (in
+\ORA MJ                 \ which case DLY > 0), or we are in witchspace (in
+\BNE KS1S               \ which case MJ > 0), jump to KS1S to skip showing an
+\                       \ on-screen bounty for this kill
+\
+\LDY #10                \ Fetch byte #10 of the ship's blueprint, which is the
+\LDA (XX0),Y            \ low byte of the bounty awarded when this ship is
+\BEQ KS1S               \ killed (in Cr * 10), and if it's zero jump to KS1S as
+\                       \ there is no on-screen bounty to display
+\
+\TAX                    \ Put the low byte of the bounty into X
+\
+\INY                    \ Fetch byte #11 of the ship's blueprint, which is the
+\LDA (XX0),Y            \ high byte of the bounty awarded (in Cr * 10), and put
+\TAY                    \ it into Y
+\
+\JSR MCASH              \ Call MCASH to add (Y X) to the cash pot
+\
+\LDA #0                 \ Print control code 0 (current cash, right-aligned to
+\JSR MESS               \ width 9, then " CR", newline) as an in-flight message
 
- LDA DLY                \ If we already have an in-flight message on-screen (in
- ORA MJ                 \ which case DLY > 0), or we are in witchspace (in
- BNE KS1S               \ which case MJ > 0), jump to KS1S to skip showing an
-                        \ on-screen bounty for this kill
-
- LDY #10                \ Fetch byte #10 of the ship's blueprint, which is the
- LDA (XX0),Y            \ low byte of the bounty awarded when this ship is
- BEQ KS1S               \ killed (in Cr * 10), and if it's zero jump to KS1S as
-                        \ there is no on-screen bounty to display
-
- TAX                    \ Put the low byte of the bounty into X
-
- INY                    \ Fetch byte #11 of the ship's blueprint, which is the
- LDA (XX0),Y            \ high byte of the bounty awarded (in Cr * 10), and put
- TAY                    \ it into Y
-
- JSR MCASH              \ Call MCASH to add (Y X) to the cash pot
-
- LDA #0                 \ Print control code 0 (current cash, right-aligned to
- JSR MESS               \ width 9, then " CR", newline) as an in-flight message
+                        \ --- End of removed code ----------------------------->
 
 .KS1S
 
