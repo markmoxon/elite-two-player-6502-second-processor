@@ -7183,10 +7183,20 @@ ENDIF
 
 .MA93
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CMP #10                \ If this is the tenth iteration in this block of 32,
+\BNE MA29               \ do the following, otherwise jump to MA29 to skip the
+\                       \ planet altitude check and move on to the sun distance
+\                       \ check
+
+                        \ --- And replaced by: -------------------------------->
+
  CMP #10                \ If this is the tenth iteration in this block of 32,
- BNE MA29               \ do the following, otherwise jump to MA29 to skip the
-                        \ planet altitude check and move on to the sun distance
-                        \ check
+ BNE MA23               \ do the following, otherwise jump to MA23 to skip the
+                        \ energy checks
+
+                        \ --- End of replacement ------------------------------>
 
 IF _SNG45 OR _SOURCE_DISC
 
@@ -14004,79 +14014,83 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ESCAPE
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR RES2               \ Reset a number of flight variables and workspaces
+\.ESCAPE
+\
+\JSR RES2               \ Reset a number of flight variables and workspaces
+\
+\LDX #CYL               \ Set the current ship type to a Cobra Mk III, so we
+\STX TYPE               \ can show our ship disappear into the distance when we
+\                       \ eject in our pod
+\
+\JSR FRS1               \ Call FRS1 to launch the Cobra Mk III straight ahead,
+\                       \ like a missile launch, but with our ship instead
+\
+\BCS ES1                \ If the Cobra was successfully added to the local
+\                       \ bubble, jump to ES1 to skip the following instructions
+\
+\LDX #CYL2              \ The Cobra wasn't added to the local bubble for some
+\JSR FRS1               \ reason, so try launching a pirate Cobra Mk III instead
+\
+\.ES1
+\
+\LDA #8                 \ Set the Cobra's byte #27 (speed) to 8
+\STA INWK+27
+\
+\LDA #194               \ Set the Cobra's byte #30 (pitch counter) to 194, so it
+\STA INWK+30            \ pitches up as we pull away
+\
+\LSR A                  \ Set the Cobra's byte #32 (AI flag) to %01100001, so it
+\STA INWK+32            \ has no AI, and we can use this value as a counter to
+\                       \ do the following loop 97 times
+\
+\.ESL1
+\
+\JSR MVEIT              \ Call MVEIT to move the Cobra in space
+\
+\JSR LL9                \ Call LL9 to draw the Cobra on-screen
+\
+\DEC INWK+32            \ Decrement the counter in byte #32
+\
+\BNE ESL1               \ Loop back to keep moving the Cobra until the AI flag
+\                       \ is 0, which gives it time to drift away from our pod
+\
+\JSR SCAN               \ Call SCAN to remove the Cobra from the scanner (by
+\                       \ redrawing it)
+\
+\LDA #0                 \ Set A = 0 so we can use it to zero the contents of
+\                       \ the cargo hold
+\
+\LDX #16                \ We lose all our cargo when using our escape pod, so
+\                       \ up a counter in X so we can zero the 17 cargo slots
+\                       \ in QQ20
+\
+\.ESL2
+\
+\STA QQ20,X             \ Set the X-th byte of QQ20 to zero, so we no longer
+\                       \ have any of item type X in the cargo hold
+\
+\DEX                    \ Decrement the counter
+\
+\BPL ESL2               \ Loop back to ESL2 until we have emptied the entire
+\                       \ cargo hold
+\
+\STA FIST               \ Launching an escape pod also clears our criminal
+\                       \ record, so set our legal status in FIST to 0 ("clean")
+\
+\STA ESCP               \ The escape pod is a one-use item, so set ESCP to 0 so
+\                       \ we no longer have one fitted
+\
+\LDA #70                \ Our replacement ship is delivered with a full tank of
+\STA QQ14               \ fuel, so set the current fuel level in QQ14 to 70, or
+\                       \ 7.0 light years
+\
+\JMP GOIN               \ Go to the docking bay (i.e. show the ship hangar
+\                       \ screen) and return from the subroutine with a tail
+\                       \ call
 
- LDX #CYL               \ Set the current ship type to a Cobra Mk III, so we
- STX TYPE               \ can show our ship disappear into the distance when we
-                        \ eject in our pod
-
- JSR FRS1               \ Call FRS1 to launch the Cobra Mk III straight ahead,
-                        \ like a missile launch, but with our ship instead
-
- BCS ES1                \ If the Cobra was successfully added to the local
-                        \ bubble, jump to ES1 to skip the following instructions
-
- LDX #CYL2              \ The Cobra wasn't added to the local bubble for some
- JSR FRS1               \ reason, so try launching a pirate Cobra Mk III instead
-
-.ES1
-
- LDA #8                 \ Set the Cobra's byte #27 (speed) to 8
- STA INWK+27
-
- LDA #194               \ Set the Cobra's byte #30 (pitch counter) to 194, so it
- STA INWK+30            \ pitches up as we pull away
-
- LSR A                  \ Set the Cobra's byte #32 (AI flag) to %01100001, so it
- STA INWK+32            \ has no AI, and we can use this value as a counter to
-                        \ do the following loop 97 times
-
-.ESL1
-
- JSR MVEIT              \ Call MVEIT to move the Cobra in space
-
- JSR LL9                \ Call LL9 to draw the Cobra on-screen
-
- DEC INWK+32            \ Decrement the counter in byte #32
-
- BNE ESL1               \ Loop back to keep moving the Cobra until the AI flag
-                        \ is 0, which gives it time to drift away from our pod
-
- JSR SCAN               \ Call SCAN to remove the Cobra from the scanner (by
-                        \ redrawing it)
-
- LDA #0                 \ Set A = 0 so we can use it to zero the contents of
-                        \ the cargo hold
-
- LDX #16                \ We lose all our cargo when using our escape pod, so
-                        \ up a counter in X so we can zero the 17 cargo slots
-                        \ in QQ20
-
-.ESL2
-
- STA QQ20,X             \ Set the X-th byte of QQ20 to zero, so we no longer
-                        \ have any of item type X in the cargo hold
-
- DEX                    \ Decrement the counter
-
- BPL ESL2               \ Loop back to ESL2 until we have emptied the entire
-                        \ cargo hold
-
- STA FIST               \ Launching an escape pod also clears our criminal
-                        \ record, so set our legal status in FIST to 0 ("clean")
-
- STA ESCP               \ The escape pod is a one-use item, so set ESCP to 0 so
-                        \ we no longer have one fitted
-
- LDA #70                \ Our replacement ship is delivered with a full tank of
- STA QQ14               \ fuel, so set the current fuel level in QQ14 to 70, or
-                        \ 7.0 light years
-
- JMP GOIN               \ Go to the docking bay (i.e. show the ship hangar
-                        \ screen) and return from the subroutine with a tail
-                        \ call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -34280,74 +34294,74 @@ ENDIF
 
 .MTT4
 
- JSR DORND              \ Set A and X to random numbers
-
- LSR A                  \ Clear bit 7 of our random number in A and set the C
-                        \ flag to bit 0 of A, which is random
-
- STA INWK+32            \ Store this in the ship's AI flag, so this ship does
-                        \ not have AI
-
- STA INWK+29            \ Store A in the ship's roll counter, giving it a
-                        \ clockwise roll (as bit 7 is clear), and a 1 in 127
-                        \ chance of it having no damping
-
- ROL INWK+31            \ This instruction would appear to set bit 0 of the
-                        \ ship's missile count randomly (as the C flag was set),
-                        \ giving the ship either no missiles or one missile
-                        \
-                        \ However, INWK+31 is overwritten in the call to the
-                        \ NWSHP routine below, where it is set to the number of
-                        \ missiles from the ship blueprint, and the value of the
-                        \ C flag is not used, so this instruction actually has
-                        \ no effect
-                        \
-                        \ Interestingly, the original source code for the NWSPS
-                        \ routine also has an instruction that sets INWK+31 and
-                        \ which gets overwritten when it falls through into
-                        \ NWSHP, but in this case the instruction is commented
-                        \ out in the source. Perhaps the original version of
-                        \ NWSHP didn't set the missile count and instead relied
-                        \ on the calling code to set it, and when the authors
-                        \ changed it, they commented out the INWK+31 instruction
-                        \ in NWSPS and forgot about this one. Who knows?
-
- AND #31                \ Set the ship speed to our random number, set to a
- ORA #16                \ minimum of 16 and a maximum of 31
- STA INWK+27
-
- JSR DORND              \ Set A and X to random numbers, plus the C flag
-
- BMI nodo               \ If A is negative (50% chance), jump to nodo to skip
-                        \ the following
-
-                        \ If we get here then we are going to spawn a ship that
-                        \ is minding its own business and trying to dock
-
- LDA INWK+32            \ Set bits 6 and 7 of A, so the ship has AI (bit 7) and
- ORA #%11000000         \ an aggression level of at least 32 out of 63 (this
- STA INWK+32            \ makes the ship more likely to turn towards its target,
-                        \ which in this case is the space station, as we are
-                        \ about to set the ship flags so it is docking)
-
- LDX #%00010000         \ Set bit 4 of the ship's NEWB flags, to indicate that
- STX NEWB               \ this ship is docking
-
-.nodo
-
- AND #2                 \ This reduces A to a random value of either 0 or 2
-
- ADC #CYL               \ Set A = A + C + #CYL
-                        \
-                        \ where A is 0 or 2 and C is 0 or 1, so this gives us a
-                        \ ship type from the following: Cobra Mk III, Python,
-                        \ Boa or Anaconda
-
- CMP #HER               \ If A is now the ship type of a rock hermit, jump to
- BEQ TT100              \ TT100 to skip the following instruction
-
- JSR NWSHP              \ Add a new ship of type A to the local bubble and fall
-                        \ through into the main game loop again
+\JSR DORND              \ Set A and X to random numbers
+\
+\LSR A                  \ Clear bit 7 of our random number in A and set the C
+\                       \ flag to bit 0 of A, which is random
+\
+\STA INWK+32            \ Store this in the ship's AI flag, so this ship does
+\                       \ not have AI
+\
+\STA INWK+29            \ Store A in the ship's roll counter, giving it a
+\                       \ clockwise roll (as bit 7 is clear), and a 1 in 127
+\                       \ chance of it having no damping
+\
+\ROL INWK+31            \ This instruction would appear to set bit 0 of the
+\                       \ ship's missile count randomly (as the C flag was set),
+\                       \ giving the ship either no missiles or one missile
+\                       \
+\                       \ However, INWK+31 is overwritten in the call to the
+\                       \ NWSHP routine below, where it is set to the number of
+\                       \ missiles from the ship blueprint, and the value of the
+\                       \ C flag is not used, so this instruction actually has
+\                       \ no effect
+\                       \
+\                       \ Interestingly, the original source code for the NWSPS
+\                       \ routine also has an instruction that sets INWK+31 and
+\                       \ which gets overwritten when it falls through into
+\                       \ NWSHP, but in this case the instruction is commented
+\                       \ out in the source. Perhaps the original version of
+\                       \ NWSHP didn't set the missile count and instead relied
+\                       \ on the calling code to set it, and when the authors
+\                       \ changed it, they commented out the INWK+31 instruction
+\                       \ in NWSPS and forgot about this one. Who knows?
+\
+\AND #31                \ Set the ship speed to our random number, set to a
+\ORA #16                \ minimum of 16 and a maximum of 31
+\STA INWK+27
+\
+\JSR DORND              \ Set A and X to random numbers, plus the C flag
+\
+\BMI nodo               \ If A is negative (50% chance), jump to nodo to skip
+\                       \ the following
+\
+\                       \ If we get here then we are going to spawn a ship that
+\                       \ is minding its own business and trying to dock
+\
+\LDA INWK+32            \ Set bits 6 and 7 of A, so the ship has AI (bit 7) and
+\ORA #%11000000         \ an aggression level of at least 32 out of 63 (this
+\STA INWK+32            \ makes the ship more likely to turn towards its target,
+\                       \ which in this case is the space station, as we are
+\                       \ about to set the ship flags so it is docking)
+\
+\LDX #%00010000         \ Set bit 4 of the ship's NEWB flags, to indicate that
+\STX NEWB               \ this ship is docking
+\
+\.nodo
+\
+\AND #2                 \ This reduces A to a random value of either 0 or 2
+\
+\ADC #CYL               \ Set A = A + C + #CYL
+\                       \
+\                       \ where A is 0 or 2 and C is 0 or 1, so this gives us a
+\                       \ ship type from the following: Cobra Mk III, Python,
+\                       \ Boa or Anaconda
+\
+\CMP #HER               \ If A is now the ship type of a rock hermit, jump to
+\BEQ TT100              \ TT100 to skip the following instruction
+\
+\JSR NWSHP              \ Add a new ship of type A to the local bubble and fall
+\                       \ through into the main game loop again
 
 \ ******************************************************************************
 \
@@ -34432,125 +34446,129 @@ ENDIF
  JMP MLOOP              \ Jump down to MLOOP to do some end-of-loop tidying and
                         \ restart the main loop
 
-                        \ We only get here once every 256 iterations of the
-                        \ main loop. If we aren't in witchspace and don't
-                        \ already have 3 or more asteroids in our local bubble,
-                        \ then this section has a 13% chance of spawning
-                        \ something benign (the other 87% of the time we jump
-                        \ down to consider spawning cops, pirates and bounty
-                        \ hunters)
-                        \
-                        \ If we are in that 13%, then 50% of the time this will
-                        \ be a trader, and the other 50% of the time it will
-                        \ either be an asteroid (98.5% chance) or, very rarely,
-                        \ a cargo canister (1.5% chance)
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA MJ                 \ If we are in witchspace following a mis-jump, skip the
- BNE ytq                \ following by jumping down to MLOOP (via ytq above)
+\                       \ We only get here once every 256 iterations of the
+\                       \ main loop. If we aren't in witchspace and don't
+\                       \ already have 3 or more asteroids in our local bubble,
+\                       \ then this section has a 13% chance of spawning
+\                       \ something benign (the other 87% of the time we jump
+\                       \ down to consider spawning cops, pirates and bounty
+\                       \ hunters)
+\                       \
+\                       \ If we are in that 13%, then 50% of the time this will
+\                       \ be a trader, and the other 50% of the time it will
+\                       \ either be an asteroid (98.5% chance) or, very rarely,
+\                       \ a cargo canister (1.5% chance)
+\
+\LDA MJ                 \ If we are in witchspace following a mis-jump, skip the
+\BNE ytq                \ following by jumping down to MLOOP (via ytq above)
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #35                \ If A >= 35 (87% chance), jump down to MTT1 to skip
+\BCS MTT1               \ the spawning of an asteroid or cargo canister and
+\                       \ potentially spawn something else
+\
+\LDA JUNK               \ If we already have 3 or more bits of junk in the local
+\CMP #3                 \ bubble, jump down to MTT1 to skip the following and
+\BCS MTT1               \ potentially spawn something else
+\
+\JSR ZINF               \ Call ZINF to reset the INWK ship workspace
+\
+\LDA #38                \ Set z_hi = 38 (far away)
+\STA INWK+7
+\
+\JSR DORND              \ Set A, X and C flag to random numbers
+\
+\STA INWK               \ Set x_lo = random
+\
+\STX INWK+3             \ Set y_lo = random
+\                       \
+\                       \ Note that because we use the value of X returned by
+\                       \ DORND, and X contains the value of A returned by the
+\                       \ previous call to DORND, this does not set the new ship
+\                       \ to a totally random location
+\
+\AND #%10000000         \ Set x_sign = bit 7 of x_lo
+\STA INWK+2
+\
+\TXA                    \ Set y_sign = bit 7 of y_lo
+\AND #%10000000
+\STA INWK+5
+\
+\ROL INWK+1             \ Set bit 1 of x_hi to the C flag, which is random, so
+\ROL INWK+1             \ this randomly moves us off-centre by 512 (as if x_hi
+\                       \ is %00000010, then (x_hi x_lo) is 512 + x_lo)
+\
+\JSR DORND              \ Set A, X and V flag to random numbers
+\
+\BVS MTT4               \ If V flag is set (50% chance), jump up to MTT4 to
+\                       \ spawn a trader
+\
+\ORA #%01101111         \ Take the random number in A and set bits 0-3 and 5-6,
+\STA INWK+29            \ so the result has a 50% chance of being positive or
+\                       \ negative, and a 50% chance of bits 0-6 being 127.
+\                       \ Storing this number in the roll counter therefore
+\                       \ gives our new ship a fast roll speed with a 50%
+\                       \ chance of having no damping, plus a 50% chance of
+\                       \ rolling clockwise or anti-clockwise
+\
+\LDA SSPR               \ If we are inside the space station safe zone, jump
+\BNE MTT1               \ down to MTT1 to skip the following and potentially
+\                       \ spawn something else
+\
+\TXA                    \ Set A to the random X we set above, which we haven't
+\BCS MTT2               \ used yet, and if the C flag is set (50% chance) jump
+\                       \ down to MTT2 to skip the following
+\
+\AND #31                \ Set the ship speed to our random number, set to a
+\ORA #16                \ minimum of 16 and a maximum of 31
+\STA INWK+27
+\
+\BCC MTT3               \ Jump down to MTT3, skipping the following (this BCC
+\                       \ is effectively a JMP as we know the C flag is clear,
+\                       \ having passed through the BCS above)
+\
+\.MTT2
+\
+\ORA #%01111111         \ Set bits 0-6 of A to 127, leaving bit 7 as random, so
+\STA INWK+30            \ storing this number in the pitch counter means we have
+\                       \ full pitch with no damping, with a 50% chance of
+\                       \ pitching up or down
+\
+\.MTT3
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #252               \ If random A < 252 (98.8% of the time), jump to thongs
+\BCC thongs             \ to skip the following
+\
+\LDA #HER               \ Set A to #HER so we spawn a rock hermit 1.2% of the
+\                       \ time
+\
+\STA INWK+32            \ Set byte #32 to %00001111 to give the rock hermit an
+\                       \ E.C.M.
+\
+\BNE whips              \ Jump to whips (this BNE is effectively a JMP as A will
+\                       \ never be zero)
+\
+\.thongs
+\
+\CMP #10                \ If random A >= 10 (96% of the time), set the C flag
+\
+\AND #1                 \ Reduce A to a random number that's 0 or 1
+\
+\ADC #OIL               \ Set A = #OIL + A + C, so there's a 2% chance of us
+\                       \ spawning a cargo canister (#OIL), a 50% chance of
+\                       \ us spawning a boulder (#OIL + 1), and a 48% chance of
+\                       \ us spawning an asteroid (#OIL + 2)
+\
+\.whips
+\
+\JSR NWSHP              \ Add our new asteroid or canister to the universe
 
- JSR DORND              \ Set A and X to random numbers
-
- CMP #35                \ If A >= 35 (87% chance), jump down to MTT1 to skip
- BCS MTT1               \ the spawning of an asteroid or cargo canister and
-                        \ potentially spawn something else
-
- LDA JUNK               \ If we already have 3 or more bits of junk in the local
- CMP #3                 \ bubble, jump down to MTT1 to skip the following and
- BCS MTT1               \ potentially spawn something else
-
- JSR ZINF               \ Call ZINF to reset the INWK ship workspace
-
- LDA #38                \ Set z_hi = 38 (far away)
- STA INWK+7
-
- JSR DORND              \ Set A, X and C flag to random numbers
-
- STA INWK               \ Set x_lo = random
-
- STX INWK+3             \ Set y_lo = random
-                        \
-                        \ Note that because we use the value of X returned by
-                        \ DORND, and X contains the value of A returned by the
-                        \ previous call to DORND, this does not set the new ship
-                        \ to a totally random location
-
- AND #%10000000         \ Set x_sign = bit 7 of x_lo
- STA INWK+2
-
- TXA                    \ Set y_sign = bit 7 of y_lo
- AND #%10000000
- STA INWK+5
-
- ROL INWK+1             \ Set bit 1 of x_hi to the C flag, which is random, so
- ROL INWK+1             \ this randomly moves us off-centre by 512 (as if x_hi
-                        \ is %00000010, then (x_hi x_lo) is 512 + x_lo)
-
- JSR DORND              \ Set A, X and V flag to random numbers
-
- BVS MTT4               \ If V flag is set (50% chance), jump up to MTT4 to
-                        \ spawn a trader
-
- ORA #%01101111         \ Take the random number in A and set bits 0-3 and 5-6,
- STA INWK+29            \ so the result has a 50% chance of being positive or
-                        \ negative, and a 50% chance of bits 0-6 being 127.
-                        \ Storing this number in the roll counter therefore
-                        \ gives our new ship a fast roll speed with a 50%
-                        \ chance of having no damping, plus a 50% chance of
-                        \ rolling clockwise or anti-clockwise
-
- LDA SSPR               \ If we are inside the space station safe zone, jump
- BNE MTT1               \ down to MTT1 to skip the following and potentially
-                        \ spawn something else
-
- TXA                    \ Set A to the random X we set above, which we haven't
- BCS MTT2               \ used yet, and if the C flag is set (50% chance) jump
-                        \ down to MTT2 to skip the following
-
- AND #31                \ Set the ship speed to our random number, set to a
- ORA #16                \ minimum of 16 and a maximum of 31
- STA INWK+27
-
- BCC MTT3               \ Jump down to MTT3, skipping the following (this BCC
-                        \ is effectively a JMP as we know the C flag is clear,
-                        \ having passed through the BCS above)
-
-.MTT2
-
- ORA #%01111111         \ Set bits 0-6 of A to 127, leaving bit 7 as random, so
- STA INWK+30            \ storing this number in the pitch counter means we have
-                        \ full pitch with no damping, with a 50% chance of
-                        \ pitching up or down
-
-.MTT3
-
- JSR DORND              \ Set A and X to random numbers
-
- CMP #252               \ If random A < 252 (98.8% of the time), jump to thongs
- BCC thongs             \ to skip the following
-
- LDA #HER               \ Set A to #HER so we spawn a rock hermit 1.2% of the
-                        \ time
-
- STA INWK+32            \ Set byte #32 to %00001111 to give the rock hermit an
-                        \ E.C.M.
-
- BNE whips              \ Jump to whips (this BNE is effectively a JMP as A will
-                        \ never be zero)
-
-.thongs
-
- CMP #10                \ If random A >= 10 (96% of the time), set the C flag
-
- AND #1                 \ Reduce A to a random number that's 0 or 1
-
- ADC #OIL               \ Set A = #OIL + A + C, so there's a 2% chance of us
-                        \ spawning a cargo canister (#OIL), a 50% chance of
-                        \ us spawning a boulder (#OIL + 1), and a 48% chance of
-                        \ us spawning an asteroid (#OIL + 2)
-
-.whips
-
- JSR NWSHP              \ Add our new asteroid or canister to the universe
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
