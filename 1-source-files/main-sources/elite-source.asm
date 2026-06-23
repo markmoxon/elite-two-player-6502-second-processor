@@ -55785,8 +55785,8 @@ ENDIF
  STX XSAV
  JSR GetShipDataToINWK
 
- LDA #%10000000
- STA NEWB
+ LDA #%10000000         \ Set bit 7 of NEWB so that LL9 removes the ship from
+ STA NEWB               \ the screen
  JSR LL9
 
  PLX
@@ -55797,7 +55797,7 @@ ENDIF
  STA INWK+7
  STA K%+7
 
- STZ NEWB
+ STZ NEWB               \ Zero bit 7 so LL9 returns to normal
 
  TXA
  ASL A                  \ Set Y = ship type * 2
@@ -55811,7 +55811,7 @@ ENDIF
  LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
  STA XX0+1              \ blueprint and store it in XX0+1
 
- JSR LL9
+ JSR LL9                \ Draw the new ship on-screen
 
  RTS
 
