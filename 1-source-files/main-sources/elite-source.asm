@@ -40107,9 +40107,20 @@ ENDIF
                         \ message (whose column we stored in messXC when we
                         \ called MESS to put it there in the first place)
 
- LDA #22                \ Move the text cursor to row 22, and set Y = 22
- TAY
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #22                \ Move the text cursor to row 22, and set Y = 22
+\TAY
+\JSR DOYC
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #11                \ Move the text cursor to row 11
  JSR DOYC
+
+ LDY #22                \ Set Y = 22
+
+                        \ --- End of replacement ------------------------------>
 
  PLA                    \ Restore A from the stack
 
@@ -48211,17 +48222,37 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+\LDA # 1                \ Move the text cursor to column 1 to print player
+\JSR DOXC               \ number
+
  BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc5
  BPL clsc5
 
-                        \ We are drawing player 2's view, so move the text
-                        \ cursor to the top of the bottom view
+                        \ We are drawing player 2's view
+
+\LDA #'P'               \ Print "P2"
+\JSR TT27
+\LDA #'2'
+\JSR TT27
+
+\LDA #160+57            \ Print token 56 ("PLAYER 2")
+\JSR TT27
 
  JSR Player2ee3         \ Print player 2's score
 
  JMP tt66               \ Skip the following
 
 .clsc5
+
+                        \ We are drawing player 1's view
+
+\LDA #'P'               \ Print "P1"
+\JSR TT27
+\LDA #'1'
+\JSR TT27
+
+\LDA #160+56            \ Print token 56 ("PLAYER 1")
+\JSR TT27
 
  JSR ee3                \ Print player 1's score
  
