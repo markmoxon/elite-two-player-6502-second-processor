@@ -6913,35 +6913,35 @@ ENDIF
 
 .MA18
 
- LDA BOMB               \ If we set off our energy bomb (see MA24 above), then
- BPL MA77               \ BOMB is now negative, so this skips to MA21 if our
-                        \ energy bomb is not going off
-
- ASL BOMB               \ We set off our energy bomb, so rotate BOMB to the
-                        \ left by one place. BOMB was rotated left once already
-                        \ during this iteration of the main loop, back at MA24,
-                        \ so if this is the first pass it will already be
-                        \ %11111110, and this will shift it to %11111100 - so
-                        \ if we set off an energy bomb, it stays activated
-                        \ (BOMB > 0) for four iterations of the main loop
-
- JSR WSCAN              \ Call WSCAN to wait for the vertical sync, so the whole
-                        \ screen gets drawn and the following palette change
-                        \ won't kick in while the screen is still refreshing
-
- LDA #DOFE21            \ Send a #DOFE21 %00110000 command to the I/O processor
- JSR OSWRCH             \ to map logical colour 0 to physical colour 7 (white),
- LDA #%00110000         \ but with only one mapping (rather than the 7
- JSR OSWRCH             \ mappings required to do the mapping properly). This
-                        \ makes the space screen flash with coloured stripes.
-                        \ See page 382 of the "Advanced User Guide for the BBC
-                        \ Micro" by Bray, Dickens and Holmes for details of why
-                        \ this single palette change creates a special effect
-
-.MA77
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\LDA BOMB               \ If we set off our energy bomb (see MA24 above), then
+\BPL MA77               \ BOMB is now negative, so this skips to MA21 if our
+\                       \ energy bomb is not going off
+\
+\ASL BOMB               \ We set off our energy bomb, so rotate BOMB to the
+\                       \ left by one place. BOMB was rotated left once already
+\                       \ during this iteration of the main loop, back at MA24,
+\                       \ so if this is the first pass it will already be
+\                       \ %11111110, and this will shift it to %11111100 - so
+\                       \ if we set off an energy bomb, it stays activated
+\                       \ (BOMB > 0) for four iterations of the main loop
+\
+\JSR WSCAN              \ Call WSCAN to wait for the vertical sync, so the whole
+\                       \ screen gets drawn and the following palette change
+\                       \ won't kick in while the screen is still refreshing
+\
+\LDA #DOFE21            \ Send a #DOFE21 %00110000 command to the I/O processor
+\JSR OSWRCH             \ to map logical colour 0 to physical colour 7 (white),
+\LDA #%00110000         \ but with only one mapping (rather than the 7
+\JSR OSWRCH             \ mappings required to do the mapping properly). This
+\                       \ makes the space screen flash with coloured stripes.
+\                       \ See page 382 of the "Advanced User Guide for the BBC
+\                       \ Micro" by Bray, Dickens and Holmes for details of why
+\                       \ this single palette change creates a special effect
+\
+\.MA77
+\
 \LDA MCNT               \ Fetch the main loop counter and calculate MCNT mod 8,
 \AND #7                 \ jumping to MA22 if it is non-zero (so the following
 \BNE MA22               \ code only runs every 8 iterations of the main loop)
