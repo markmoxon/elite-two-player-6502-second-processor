@@ -6688,16 +6688,32 @@ ENDMACRO
  LDY #11                \ Store the high byte of the joystick Y value in byte
  STA (OSSC),Y           \ #11 of the block pointed to by OSSC
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+\LDX #3                 \ Call OSBYTE with A = 128 to fetch the 16-bit value
+\LDA #128               \ from ADC channel 3 (the Bitstik rotation value),
+\JSR OSBYTE             \ returning the value in (Y X)
+\
+\TYA                    \ Copy Y to A, so the result is now in (A X)
+\
+\LDY #12                \ Store the high byte of the Bitstik rotation value in
+\STA (OSSC),Y           \ byte #12 of the block pointed to by OSSC
+
+\LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
+\LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
+\STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
+\                       \ byte #14 of the block pointed to by OSSC
+
+                        \ --- And replaced by: -------------------------------->
+
  LDX #3                 \ Call OSBYTE with A = 128 to fetch the 16-bit value
- LDA #128               \ from ADC channel 3 (the Bitstik rotation value),
+ LDA #128               \ from ADC channel 3 (the joystick 2 X value),
  JSR OSBYTE             \ returning the value in (Y X)
 
  TYA                    \ Copy Y to A, so the result is now in (A X)
 
- LDY #12                \ Store the high byte of the Bitstik rotation value in
+ LDY #12                \ Store the high byte of the joystick 2 X value in
  STA (OSSC),Y           \ byte #12 of the block pointed to by OSSC
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
 
  LDX #4                 \ Call OSBYTE with A = 128 to fetch the 16-bit value
  LDA #128               \ from ADC channel 4 (the joystick 2 Y value),
@@ -6708,12 +6724,13 @@ ENDMACRO
  LDY #13                \ Store the high byte of the joystick 2 Y value in
  STA (OSSC),Y           \ byte #13 of the block pointed to by OSSC
 
-                        \ --- End of added code ------------------------------->
 
  LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
  LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
  STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
                         \ byte #14 of the block pointed to by OSSC
+
+                        \ --- End of replacement ------------------------------>
 
 .DK2
 
