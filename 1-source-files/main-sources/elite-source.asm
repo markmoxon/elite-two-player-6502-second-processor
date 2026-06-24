@@ -2008,6 +2008,17 @@ ENDIF
 \TWOK 'A', 'R'          \
 \TWOK 'G', 'E'          \ Encoded as:   "L<138><131>"
 \EQUB 0
+\
+\CHAR 'F'               \ Token 68:     "FIERCE"
+\CHAR 'I'               \
+\TWOK 'E', 'R'          \ Encoded as:   "FI<144><133>"
+\TWOK 'C', 'E'
+\EQUB 0
+\
+\CHAR 'S'               \ Token 69:     "SMALL"
+\TWOK 'M', 'A'          \
+\RTOK 129               \ Encoded as:   "S<139>[129]"
+\EQUB 0
 
                         \ --- And replaced by: -------------------------------->
 
@@ -2218,18 +2229,24 @@ ENDIF
  CHAR 'S'
  EQUB 0
 
+ CHAR 'G'               \ Token 68:     "GAME OVER"
+ CHAR 'A'
+ CHAR 'M'
+ CHAR 'E'
+ CHAR ' '
+ CHAR 'O'
+ TWOK 'V', 'E'
+ CHAR 'R'
+ EQUB 0
+
+ CHAR 'W'               \ Token 69:     "WINNER!"
+ TWOK 'I', 'N'
+ CHAR 'N'
+ TWOK 'E', 'R'
+ CHAR '!'
+ EQUB 0
+
                         \ --- End of replacement ------------------------------>
-
- CHAR 'F'               \ Token 68:     "FIERCE"
- CHAR 'I'               \
- TWOK 'E', 'R'          \ Encoded as:   "FI<144><133>"
- TWOK 'C', 'E'
- EQUB 0
-
- CHAR 'S'               \ Token 69:     "SMALL"
- TWOK 'M', 'A'          \
- RTOK 129               \ Encoded as:   "S<139>[129]"
- EQUB 0
 
  CHAR 'G'               \ Token 70:     "GREEN"
  TWOK 'R', 'E'          \
@@ -6718,6 +6735,22 @@ ENDIF
  INC player1Score+1
 
  JSR ee3                \ Print player 1's score
+
+ LDA player1GameType    \ If player 1 is playing survival, they don't have a
+ BEQ nwin1              \ score, so jump to nwin1 to keep playing
+
+ LDA player1Score+1     \ If the score is less than the target, jump to nwin1 to
+ CMP player1Target+1    \ keep playing
+ BCC nwin1
+ LDA player1Score
+ CMP player1Target
+ BCC nwin1
+
+ LDA #1                 \ If we get here then player 1 has reached their target,
+ JMP DEATH              \ so set A to indicate that player 1 has won and jump to
+                        \ DEATH to end the game
+
+.nwin1
 
                         \ Player 2 has been hit, so process player 2's shields
 
@@ -15531,6 +15564,20 @@ ENDIF
  INC player2Score+1
 
  JSR Player2ee3         \ Print player 2's score
+
+ LDA player2GameType    \ If player 2 is playing survival, they don't have a
+ BEQ tact3              \ score, so jump to tact3 to keep playing
+
+ LDA player2Score+1     \ If the score is less than the target, jump to tact3 to
+ CMP player2Target+1    \ keep playing
+ BCC tact3
+ LDA player2Score
+ CMP player2Target
+ BCC tact3
+
+ LDA #2                 \ If we get here then player 2 has reached their target,
+ JMP DEATH              \ so set A to indicate that player 2 has won and jump to
+                        \ DEATH to end the game
 
 .tact3
 
@@ -28967,20 +29014,20 @@ ENDIF
                         \ appear to drain away four times faster than the
                         \ shields did)
 
- BEQ P%+4               \ If we have just run out of energy, skip the next
-                        \ instruction to jump straight to our death
-
- BCS P%+5               \ If the C flag is set, then subtracting the damage from
-                        \ the energy banks didn't underflow, so we had enough
-                        \ energy to survive, and we can skip the next
-                        \ instruction to make a sound and take some damage
-
- JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
-                        \ and in either case that means we jump to our DEATH,
-                        \ returning from the subroutine using a tail call
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\BEQ P%+4               \ If we have just run out of energy, skip the next
+\                       \ instruction to jump straight to our death
+\
+\BCS P%+5               \ If the C flag is set, then subtracting the damage from
+\                       \ the energy banks didn't underflow, so we had enough
+\                       \ energy to survive, and we can skip the next
+\                       \ instruction to make a sound and take some damage
+\
+\JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
+\                       \ and in either case that means we jump to our DEATH,
+\                       \ returning from the subroutine using a tail call
+\
 \JSR EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
 \                       \ collision
 \
@@ -28988,6 +29035,25 @@ ENDIF
 \                       \ subroutine using a tail call
 
                         \ --- And replaced by: -------------------------------->
+
+ BEQ oops1              \ If we have just run out of energy, skip the next
+                        \ instruction to jump straight to our death
+
+ BCS oops2              \ If the C flag is set, then subtracting the damage from
+                        \ the energy banks didn't underflow, so we had enough
+                        \ energy to survive, and we can jump to oops2 to make a
+                        \ sound and take some damage
+
+.oops1
+
+ LDA #2                 \ Set A to indicate that player 2 has won (as player 1
+                        \ just ran out of energy)
+
+ JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
+                        \ and in either case that means we jump to our DEATH,
+                        \ returning from the subroutine using a tail call
+
+.oops2
 
  JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
                         \ collision and return from the subroutine using a tail
@@ -29082,13 +29148,18 @@ ENDIF
                         \ appear to drain away four times faster than the
                         \ shields did)
 
- BEQ P%+4               \ If we have just run out of energy, skip the next
+ BEQ oops1              \ If we have just run out of energy, skip the next
                         \ instruction to jump straight to our death
 
- BCS P%+5               \ If the C flag is set, then subtracting the damage from
+ BCS oops2              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
-                        \ energy to survive, and we can skip the next
-                        \ instruction to make a sound and take some damage
+                        \ energy to survive, and we can jump to oops2 to make a
+                        \ sound and take some damage
+
+.oops1
+
+ LDA #1                 \ Set A to indicate that player 1 has won (as player 2
+                        \ just ran out of energy)
 
  JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
                         \ and in either case that means we jump to our DEATH,
@@ -35733,156 +35804,190 @@ ENDIF
 
 .DEATH
 
+ PHA                    \ Store the winning player number on the stack
+
  JSR EXNO3              \ Make the sound of us dying
 
- JSR RES2               \ Reset a number of flight variables and workspaces
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- ASL DELTA              \ Divide our speed in DELTA by 4
- ASL DELTA
+\JSR RES2               \ Reset a number of flight variables and workspaces
+\
+\ASL DELTA              \ Divide our speed in DELTA by 4
+\ASL DELTA
+\
+\LDX #24                \ Set the screen to only show 24 text rows, which hides
+\JSR DET1               \ the dashboard, setting A to 6 in the process
+\
+\JSR TT66               \ Clear the top part of the screen, draw a border box,
+\                       \ and set the current view type in QQ11 to 6 (death
+\                       \ screen)
+\
+\JSR BOX                \ Call BOX to redraw the same border box (BOX is part
+\                       \ of TT66), which removes the border as it is drawn
+\                       \ using EOR logic
+\
+\JSR nWq                \ Create a cloud of stardust containing the correct
+\                       \ number of dust particles (i.e. NOSTM of them)
+\
+\LDA #12                \ Move the text cursor to column 12 on row 12
+\JSR DOYC
+\JSR DOXC
+\
+\LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
+\JSR DOCOL              \ change the current colour to yellow
+\
+\LDA #146               \ Print recursive token 146 ("{all caps}GAME OVER")
+\JSR ex
+\
+\.D1
+\
+\JSR Ze                 \ Call Ze to initialise INWK to a fairly aggressive
+\                       \ ship, and set A and X to random values
+\
+\LSR A                  \ Set A = A / 4, so A is now between 0 and 63, and
+\LSR A                  \ store in byte #0 (x_lo)
+\STA INWK
+\
+\LDY #0                 \ Set the following to 0: the current view in QQ11
+\STY QQ11               \ (space view), x_hi, y_hi, z_hi and the AI flag (no AI
+\STY INWK+1             \ or E.C.M. and zero aggression)
+\STY INWK+4
+\STY INWK+7
+\STY INWK+32
+\
+\DEY                    \ Set Y = 255
+\
+\STY MCNT               \ Reset the main loop counter to 255, so all timer-based
+\                       \ calls will be stopped
+\
+\EOR #%00101010         \ Flip bits 1, 3 and 5 in A (x_lo) to get another number
+\STA INWK+3             \ between 48 and 63, and store in byte #3 (y_lo)
+\
+\ORA #%01010000         \ Set bits 4 and 6 of A to bump it up to between 112 and
+\STA INWK+6             \ 127, and store in byte #6 (z_lo)
+\
+\TXA                    \ Set A to the random number in X and keep bits 0-3 and
+\AND #%10001111         \ the sign in bit 7 to get a number between -15 and +15,
+\STA INWK+29            \ and store in byte #29 (roll counter) to give our ship
+\                       \ a gentle roll with damping
+\
+\STY LASCT              \ Set the laser count to 127 to act as a counter in the
+\LSR LASCT              \ D2 loop below, so this setting determines how long the
+\                       \ death animation lasts (it's 127 iterations of the main
+\                       \ flight loop)
+\
+\ROR A                  \ The C flag is randomly set from the above call to Ze,
+\AND #%10000111         \ so this sets A to a number between -7 and +7, which
+\STA INWK+30            \ we store in byte #30 (the pitch counter) to give our
+\                       \ ship a very gentle pitch with damping
+\
+\LDX #OIL               \ Set X to #OIL, the ship type for a cargo canister
+\
+\LDA XX21-1+2*PLT       \ Fetch the byte from location XX21 - 1 + 2 * PLT, which
+\                       \ equates to XX21 + 7 (the high byte of the address of
+\                       \ SHIP_PLATE), which seems a bit odd. It might make more
+\                       \ sense to do LDA (XX21-2+2*PLT) as this would fetch the
+\                       \ first byte of the alloy plate's blueprint (which
+\                       \ determines what happens when alloys are destroyed),
+\                       \ but there aren't any brackets, so instead this always
+\                       \ returns &D0, which is never zero, so the following
+\                       \ BEQ is never true. (If the brackets were there, then
+\                       \ we could stop plates from spawning on death by setting
+\                       \ byte #0 of the blueprint to 0... but then scooping
+\                       \ plates wouldn't give us alloys, so who knows what this
+\                       \ is all about?)
+\
+\BEQ D3                 \ If A = 0, jump to D3 to skip the following instruction
+\
+\BCC D3                 \ If the C flag is clear, which will be random following
+\                       \ the above call to Ze, jump to D3 to skip the following
+\                       \ instruction
+\
+\DEX                    \ Decrement X, which sets it to #PLT, the ship type for
+\                       \ an alloy plate
+\
+\.D3
+\
+\JSR fq1                \ Call fq1 with X set to #OIL or #PLT, which adds a new
+\                       \ cargo canister or alloy plate to our local bubble of
+\                       \ universe and points it away from us with double DELTA
+\                       \ speed (i.e. 6, as DELTA was set to 3 by the call to
+\                       \ RES2 above). INF is set to point to the new arrival's
+\                       \ ship data block in K%
+\
+\JSR DORND              \ Set A and X to random numbers and extract bit 7 from A
+\AND #%10000000
+\
+\LDY #31                \ Store this in byte #31 of the ship's data block, so it
+\STA (INF),Y            \ has a 50% chance of marking our new arrival as being
+\                       \ killed (so it will explode)
+\
+\LDA FRIN+4             \ The call we made to RES2 before we entered the loop at
+\BEQ D1                 \ D1 will have reset all the ship slots at FRIN, so this
+\                       \ checks to see if the fifth slot is empty, and if it
+\                       \ is we loop back to D1 to add another canister, until
+\                       \ we have added five of them
+\
+\JSR U%                 \ Clear the key logger, which also sets A = 0
+\
+\STA DELTA              \ Set our speed in DELTA to 0, as we aren't going
+\                       \ anywhere any more
+\
+\.D2
+\
+\JSR M%                 \ Call the M% routine to do the main flight loop once,
+\                       \ which will display our exploding canister scene and
+\                       \ move everything about, as well as decrementing the
+\                       \ value in LASCT
+\
+\DEC LASCT              \ Decrement the counter in LASCT, which we set above,
+\                       \ so for each loop around D2, we decrement LASCT by 5
+\                       \ (the main loop decrements it by 4, and this one makes
+\                       \ it 5)
+\
+\BNE D2                 \ Loop back to call the main flight loop again, until we
+\                       \ have called it 127 times
+\
+\LDX #31                \ Set the screen to show all 31 text rows, which shows
+\JSR DET1               \ the dashboard
 
- LDX #24                \ Set the screen to only show 24 text rows, which hides
- JSR DET1               \ the dashboard, setting A to 6 in the process
-
- JSR TT66               \ Clear the top part of the screen, draw a border box,
-                        \ and set the current view type in QQ11 to 6 (death
-                        \ screen)
-
- JSR BOX                \ Call BOX to redraw the same border box (BOX is part
-                        \ of TT66), which removes the border as it is drawn
-                        \ using EOR logic
-
- JSR nWq                \ Create a cloud of stardust containing the correct
-                        \ number of dust particles (i.e. NOSTM of them)
-
- LDA #12                \ Move the text cursor to column 12 on row 12
- JSR DOYC
- JSR DOXC
-
- LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
- JSR DOCOL              \ change the current colour to yellow
-
- LDA #146               \ Print recursive token 146 ("{all caps}GAME OVER")
- JSR ex
-
-.D1
-
- JSR Ze                 \ Call Ze to initialise INWK to a fairly aggressive
-                        \ ship, and set A and X to random values
-
- LSR A                  \ Set A = A / 4, so A is now between 0 and 63, and
- LSR A                  \ store in byte #0 (x_lo)
- STA INWK
-
- LDY #0                 \ Set the following to 0: the current view in QQ11
- STY QQ11               \ (space view), x_hi, y_hi, z_hi and the AI flag (no AI
- STY INWK+1             \ or E.C.M. and zero aggression)
- STY INWK+4
- STY INWK+7
- STY INWK+32
-
- DEY                    \ Set Y = 255
-
- STY MCNT               \ Reset the main loop counter to 255, so all timer-based
-                        \ calls will be stopped
-
- EOR #%00101010         \ Flip bits 1, 3 and 5 in A (x_lo) to get another number
- STA INWK+3             \ between 48 and 63, and store in byte #3 (y_lo)
-
- ORA #%01010000         \ Set bits 4 and 6 of A to bump it up to between 112 and
- STA INWK+6             \ 127, and store in byte #6 (z_lo)
-
- TXA                    \ Set A to the random number in X and keep bits 0-3 and
- AND #%10001111         \ the sign in bit 7 to get a number between -15 and +15,
- STA INWK+29            \ and store in byte #29 (roll counter) to give our ship
-                        \ a gentle roll with damping
-
- STY LASCT              \ Set the laser count to 127 to act as a counter in the
- LSR LASCT              \ D2 loop below, so this setting determines how long the
-                        \ death animation lasts (it's 127 iterations of the main
-                        \ flight loop)
-
- ROR A                  \ The C flag is randomly set from the above call to Ze,
- AND #%10000111         \ so this sets A to a number between -7 and +7, which
- STA INWK+30            \ we store in byte #30 (the pitch counter) to give our
-                        \ ship a very gentle pitch with damping
-
- LDX #OIL               \ Set X to #OIL, the ship type for a cargo canister
-
- LDA XX21-1+2*PLT       \ Fetch the byte from location XX21 - 1 + 2 * PLT, which
-                        \ equates to XX21 + 7 (the high byte of the address of
-                        \ SHIP_PLATE), which seems a bit odd. It might make more
-                        \ sense to do LDA (XX21-2+2*PLT) as this would fetch the
-                        \ first byte of the alloy plate's blueprint (which
-                        \ determines what happens when alloys are destroyed),
-                        \ but there aren't any brackets, so instead this always
-                        \ returns &D0, which is never zero, so the following
-                        \ BEQ is never true. (If the brackets were there, then
-                        \ we could stop plates from spawning on death by setting
-                        \ byte #0 of the blueprint to 0... but then scooping
-                        \ plates wouldn't give us alloys, so who knows what this
-                        \ is all about?)
-
- BEQ D3                 \ If A = 0, jump to D3 to skip the following instruction
-
- BCC D3                 \ If the C flag is clear, which will be random following
-                        \ the above call to Ze, jump to D3 to skip the following
-                        \ instruction
-
- DEX                    \ Decrement X, which sets it to #PLT, the ship type for
-                        \ an alloy plate
-
-.D3
-
- JSR fq1                \ Call fq1 with X set to #OIL or #PLT, which adds a new
-                        \ cargo canister or alloy plate to our local bubble of
-                        \ universe and points it away from us with double DELTA
-                        \ speed (i.e. 6, as DELTA was set to 3 by the call to
-                        \ RES2 above). INF is set to point to the new arrival's
-                        \ ship data block in K%
-
- JSR DORND              \ Set A and X to random numbers and extract bit 7 from A
- AND #%10000000
-
- LDY #31                \ Store this in byte #31 of the ship's data block, so it
- STA (INF),Y            \ has a 50% chance of marking our new arrival as being
-                        \ killed (so it will explode)
-
- LDA FRIN+4             \ The call we made to RES2 before we entered the loop at
- BEQ D1                 \ D1 will have reset all the ship slots at FRIN, so this
-                        \ checks to see if the fifth slot is empty, and if it
-                        \ is we loop back to D1 to add another canister, until
-                        \ we have added five of them
-
- JSR U%                 \ Clear the key logger, which also sets A = 0
-
- STA DELTA              \ Set our speed in DELTA to 0, as we aren't going
-                        \ anywhere any more
-
-.D2
-
- JSR M%                 \ Call the M% routine to do the main flight loop once,
-                        \ which will display our exploding canister scene and
-                        \ move everything about, as well as decrementing the
-                        \ value in LASCT
-
- DEC LASCT              \ Decrement the counter in LASCT, which we set above,
-                        \ so for each loop around D2, we decrement LASCT by 5
-                        \ (the main loop decrements it by 4, and this one makes
-                        \ it 5)
-
- BNE D2                 \ Loop back to call the main flight loop again, until we
-                        \ have called it 127 times
-
- LDX #31                \ Set the screen to show all 31 text rows, which shows
- JSR DET1               \ the dashboard
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
+                        \ --- And replaced by: -------------------------------->
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
  LDA #1                 \ it using the colour for ship type 1 (yellow)
  JSR WipeShip
 
-                        \ --- End of added code ------------------------------->
+ PLA                    \ Set A to the winning player
+
+ CMP #2                 \ If A = 2 then player 2 has won, so jump to deaf1 to
+ BEQ deaf1              \ process this
+
+                        \ Player 1 wins
+
+ LDA #160+69            \ Print recursive token 69 ("WINNER!") as a player 1
+ JSR MESS               \ in-flight message
+
+ LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 2
+ JSR Player2MESS        \ in-flight message
+
+ JMP deaf2              \ Jump to deaf2 to wait for a key press
+
+.deaf1
+
+                        \ Player 2 wins
+
+ LDA #160+69            \ Print recursive token 69 ("WINNER!") as a player 2
+ JSR Player2MESS        \ in-flight message
+
+ LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
+ JSR MESS               \ in-flight message
+
+.deaf2
+
+ JSR t                  \ Scan the keyboard until a key is pressed, returning
+                        \ the ASCII code in A and X
+
+                        \ --- End of replacement ------------------------------>
 
  JMP DEATH2             \ Jump to DEATH2 to reset and restart the game
 
@@ -60960,18 +61065,18 @@ ENDMACRO
 
  LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
  CMP #2                 \ the ship setup
- BNE dshp8
+ BNE dshp9
 
  LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31  
  STA player1INWK31  
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp7              \ the laser power, so if this is zero, jump down to
-                        \ dshp7 to skip the following
+ BEQ dshp8              \ the laser power, so if this is zero, jump down to
+                        \ dshp8 to skip the following
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp7              \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp7 to skip the
+ BCC dshp8              \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp8 to skip the
                         \ following)
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
@@ -60986,6 +61091,22 @@ ENDMACRO
 
  JSR Player2ee3         \ Print player 2's score
 
+ LDA player2GameType    \ If player 2 is playing survival, they don't have a
+ BEQ dshp7              \ score, so jump to dshp7 to keep playing
+
+ LDA player2Score+1     \ If the score is less than the target, jump to dshp7 to
+ CMP player2Target+1    \ keep playing
+ BCC dshp7
+ LDA player2Score
+ CMP player2Target
+ BCC dshp7
+
+ LDA #2                 \ If we get here then player 2 has reached their target,
+ JMP DEATH              \ so set A to indicate that player 2 has won and jump to
+                        \ DEATH to end the game
+
+.dshp7
+
                         \ Player 1 has been hit, so process player 1's shields
 
  LDX player2VIEW        \ Fetch the power of the current laser and clear the
@@ -60995,7 +61116,7 @@ ENDMACRO
 
  JSR OOPS               \ Remove the relevant energy from player 1's shields
 
-.dshp7
+.dshp8
 
  LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
@@ -61011,7 +61132,7 @@ ENDMACRO
  LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
  STA XX0+1              \ blueprint and store it in XX0+1
 
-.dshp8
+.dshp9
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
