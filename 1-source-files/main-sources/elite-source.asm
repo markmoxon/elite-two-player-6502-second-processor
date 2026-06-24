@@ -40377,11 +40377,23 @@ ENDIF
                         \ including the " DESTROYED" part if that's going to be
                         \ included)
 
- LDA #32                \ Set A = (32 - DTW5) / 2
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #32                \ Set A = (32 - DTW5) / 2
+\SEC                    \
+\SBC DTW5               \ so A now contains the column number we need to print
+\LSR A                  \ our message at for it to be centred on-screen (as
+\                       \ there are 32 columns)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #34                \ Set A = (34 - DTW5) / 2
  SEC                    \
  SBC DTW5               \ so A now contains the column number we need to print
- LSR A                  \ our message at for it to be centred on-screen (as
-                        \ there are 32 columns)
+ LSR A                  \ our message at for it to be centred on-screen, moved
+                        \ to the left by one character
+
+                        \ --- End of replacement ------------------------------>
 
  STA messXC             \ Store A in messXC, so when we erase the message via
                         \ the branch to me1 above, messXC will tell us where to
@@ -40620,11 +40632,23 @@ ENDIF
                         \ including the " DESTROYED" part if that's going to be
                         \ included)
 
- LDA #32                \ Set A = (32 - DTW5) / 2
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA #32                \ Set A = (32 - DTW5) / 2
+\SEC                    \
+\SBC DTW5               \ so A now contains the column number we need to print
+\LSR A                  \ our message at for it to be centred on-screen (as
+\                       \ there are 32 columns)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #34                \ Set A = (34 - DTW5) / 2
  SEC                    \
  SBC DTW5               \ so A now contains the column number we need to print
- LSR A                  \ our message at for it to be centred on-screen (as
-                        \ there are 32 columns)
+ LSR A                  \ our message at for it to be centred on-screen, moved
+                        \ to the left by one character
+
+                        \ --- End of replacement ------------------------------>
 
  STA player2messXC      \ Store A in messXC, so when we erase the message via
                         \ the branch to me1 above, messXC will tell us where to
