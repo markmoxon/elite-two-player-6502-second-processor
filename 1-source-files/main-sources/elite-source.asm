@@ -36829,6 +36829,11 @@ ENDIF
  STZ FRIN               \ Despawn the title ships
  STZ FRIN+1
 
+ LDA #LO(LS%)           \ Reset the ship line heap
+ STA SLSP
+ LDA #HI(LS%)
+ STA SLSP+1
+
  JSR ZEKTRAN            \ Reset the key logger buffer that gets returned from
  JSR U%                 \ the I/O processor and the key logger itself, to stop
                         \ the game starting with any logged key presses left
