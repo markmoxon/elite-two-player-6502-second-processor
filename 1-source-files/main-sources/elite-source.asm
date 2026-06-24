@@ -36829,7 +36829,13 @@ ENDIF
  STZ FRIN               \ Despawn the title ships
  STZ FRIN+1
 
- JMP TT102              \ Start the game
+ JSR ZEKTRAN            \ Reset the key logger buffer that gets returned from
+ JSR U%                 \ the I/O processor and the key logger itself, to stop
+                        \ the game starting with any logged key presses left
+                        \ over from the above
+
+ LDA #f0                \ Start the game by "pressing" f0
+ JMP FRCE
 
 .titl3
 
@@ -38280,6 +38286,13 @@ ENDIF
 \ ******************************************************************************
 
 .ZEKTRAN
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #%00110000         \ Reset the joystick fire entry to "not pressed"
+ STA KTRAN+12
+
+                        \ --- End of added code ------------------------------->
 
  LDX #11                \ We use the first 12 bytes of the key logger buffer at
                         \ KTRAN, so set a loop counter accordingly
