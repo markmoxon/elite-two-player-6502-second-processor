@@ -37373,25 +37373,25 @@ ENDIF
 .yShipOffset
 
  SKIP 11
- EQUB 24                \ Cobra Mk III
- EQUB 24                \ Python
+ EQUB 18                \ Cobra Mk III
+ EQUB 18                \ Python
  EQUB 0
- EQUB 24                \ Anaconda
+ EQUB 18                \ Anaconda
  EQUB 0
- EQUB 12                \ Viper
- EQUB 12                \ Sidewinder
- EQUB 12                \ Mamba
- EQUB 24                \ Krait
- EQUB 0
- EQUB 0
+ EQUB 6                 \ Viper
+ EQUB 6                 \ Sidewinder
+ EQUB 6                 \ Mamba
+ EQUB 18                \ Krait
  EQUB 0
  EQUB 0
  EQUB 0
  EQUB 0
  EQUB 0
  EQUB 0
- EQUB 12                \ Moray
- EQUB 24                \ Thargoid
+ EQUB 0
+ EQUB 0
+ EQUB 6                 \ Moray
+ EQUB 18                \ Thargoid
 
                         \ --- End of added code ------------------------------->
 
