@@ -4153,6 +4153,43 @@ ENDIF
 
  SKIP 0                 \ A marker for the start of the player workspace
 
+.player2ECMP
+
+ SKIP 1                 \ Storage for player 2's ECMP setting
+
+.player2LAS2
+
+ SKIP 1                 \ Player 2's LAS2 value
+
+.player2MSAR
+
+ SKIP 1                 \ Player 2's MSAR value
+
+.player2VIEW
+
+ SKIP 1                 \ Storage for player 2's VIEW setting
+
+.player2LASCT
+
+ SKIP 1                 \ Player 2's LASCT value
+
+.player2GNTMP
+
+ SKIP 1                 \ Player 2's GNTMP value
+
+.player2DLY
+
+ SKIP 1                 \ Player 2's DLY value
+
+.player2Firing
+
+ SKIP 1                 \ Player 2's laser status when an NPC
+
+.endZero
+
+ SKIP 0                 \ The end of the player variables that are zeroed in
+                        \ the ZERO routine
+
 .heightInCHKON
 
  SKIP 1                 \ The height of the screen to check circles against in
@@ -4199,10 +4236,6 @@ ENDIF
                         \
                         \  * Bit 7: 0 = ship has not been killed
                         \           1 = ship has been killed 
-
-.player2VIEW
-
- SKIP 1                 \ Storage for player 2's VIEW setting
 
 .player2ALPHA
 
@@ -4260,10 +4293,6 @@ ENDIF
 
  SKIP 1                 \ Player 2's LAS value
 
-.player2LAS2
-
- SKIP 1                 \ Player 2's LAS2 value
-
 .player2LASX
 
  SKIP 1                 \ Player 2's LASX value
@@ -4271,14 +4300,6 @@ ENDIF
 .player2LASY
 
  SKIP 1                 \ Player 2's LASY value
-
-.player2LASCT
-
- SKIP 1                 \ Player 2's LASCT value
-
-.player2GNTMP
-
- SKIP 1                 \ Player 2's GNTMP value
 
 .player2ENERGY
 
@@ -4321,10 +4342,6 @@ ENDIF
 
  SKIP 1                 \ Player 2's NEWB flags
 
-.player2DLY
-
- SKIP 1                 \ Player 2's DLY value
-
 .player2MCH
 
  SKIP 1                 \ Player 2's MCH value
@@ -4348,10 +4365,6 @@ ENDIF
 .player2Target
 
  SKIP 2                 \ Player 2's target score
-
-.player2Firing
-
- SKIP 1                 \ Player 2's laser status when an NPC
 
 .player1COMX
 
@@ -37462,6 +37475,23 @@ ENDIF
 
  BPL ZEL2               \ Loop back to zero the next variable until we have done
                         \ them all
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX #(endZero-startWP) \ We're going to zero the workspace variables from
+                        \ startWP to endZero, so set a counter in X for the
+                        \ correct number of bytes
+
+.ZEL2a
+
+ STA startWP,X          \ Zero the X-th byte of startWP to endZero
+
+ DEX                    \ Decrement the loop counter
+
+ BPL ZEL2a              \ Loop back to zero the next variable until we have done
+                        \ them all
+
+                        \ --- End of added code ------------------------------->
 
  RTS                    \ Return from the subroutine
 
