@@ -46921,6 +46921,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ BIT titleScreen        \ If bit 7 of titleScreen is set then this is the title
+ BMI move3              \ screen, so skip straight to tidying
+
  LDA XSAV               \ If this is not the planet, jump to move1 to keep
  BNE move1              \ checking
 
