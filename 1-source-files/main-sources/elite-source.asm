@@ -28102,6 +28102,21 @@ ENDIF
 
 .WPSHPS
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, skip the following
+ BPL wipe1
+
+ LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
+ AND #%10110111         \ player 1 ship as it appears in player 2's view
+ STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
+
+ JMP WS2                \ Jump to WS2 to keep going
+
+.wipe1
+
+                        \ --- End of added code ------------------------------->
+
  LDX #0                 \ Set up a counter in X to work our way through all the
                         \ ship slots in FRIN
 
@@ -28179,14 +28194,6 @@ ENDIF
 \                       \ pointer to 0
 
                         \ --- And replaced by: -------------------------------->
-
- LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA #1                 \ it using the colour for ship type 1 (yellow)
- JSR WipeShip
-
- LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
- AND #%10100111         \ player 1 ship as it appears in player 2's view
- STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
 
  JSR ResetBallLine      \ Reset the ball line heap for the view we are currently
                         \ drawing
@@ -35852,6 +35859,14 @@ ENDIF
  LDX #31                \ Set the screen to show all 31 text rows, which shows
  JSR DET1               \ the dashboard
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
+ LDA #1                 \ it using the colour for ship type 1 (yellow)
+ JSR WipeShip
+
+                        \ --- End of added code ------------------------------->
+
  JMP DEATH2             \ Jump to DEATH2 to reset and restart the game
 
 \ ******************************************************************************
@@ -39974,17 +39989,26 @@ ENDIF
 
  INY                    \ Increment Y to point to the next toggle key
 
-IF _SNG45 OR _SOURCE_DISC
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CPY #&47               \ The last toggle key is &46 (K), so check whether we
+\IF _SNG45 OR _SOURCE_DISC
+\
+\CPY #&47               \ The last toggle key is &46 (K), so check whether we
+\                       \ have just done that one
+\
+\ELIF _EXECUTIVE
+\
+\CPY #&49               \ The last toggle key is &48 (:), so check whether we
+\                       \ have just done that one
+\
+\ENDIF
+
+                        \ --- And replaced by: -------------------------------->
+
+ CPY #&46               \ The last toggle key is &45 (J), so check whether we
                         \ have just done that one
 
-ELIF _EXECUTIVE
-
- CPY #&49               \ The last toggle key is &48 (:), so check whether we
-                        \ have just done that one
-
-ENDIF
+                        \ --- End of replacement ------------------------------>
 
  BNE DKL4               \ If not, loop back to check for the next toggle key
 
@@ -39996,27 +40020,45 @@ ENDIF
 
 .DK7
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CPX #&70               \ If ESCAPE is not being pressed, skip over the next
+\BNE P%+5               \ instruction
+\
+\JMP DEATH2             \ ESCAPE is being pressed, so jump to DEATH2 to end
+\                       \ the game
+\
+\CPX #&64               \ If "B" is not being pressed, skip to nobit
+\BNE nobit
+\
+\LDA BSTK               \ Toggle the value of BSTK between 0 and &FF
+\EOR #&FF
+\STA BSTK
+\
+\STA JSTK               \ Configure JSTK to the same value, so when the Bitstik
+\                       \ is enabled, so is the joystick
+\
+\STA JSTE               \ Configure JSTE to the same value, so when the Bitstik
+\                       \ is enabled, the joystick is configured with reversed
+\                       \ channels
+\
+\.nobit
+
+                        \ --- And replaced by: -------------------------------->
+
  CPX #&70               \ If ESCAPE is not being pressed, skip over the next
- BNE P%+5               \ instruction
+ BNE deat1              \ set of instructions
+
+ LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
+ LDA #1                 \ it using the colour for ship type 1 (yellow)
+ JSR WipeShip
 
  JMP DEATH2             \ ESCAPE is being pressed, so jump to DEATH2 to end
                         \ the game
 
- CPX #&64               \ If "B" is not being pressed, skip to nobit
- BNE nobit
+.deat1
 
- LDA BSTK               \ Toggle the value of BSTK between 0 and &FF
- EOR #&FF
- STA BSTK
-
- STA JSTK               \ Configure JSTK to the same value, so when the Bitstik
-                        \ is enabled, so is the joystick
-
- STA JSTE               \ Configure JSTE to the same value, so when the Bitstik
-                        \ is enabled, the joystick is configured with reversed
-                        \ channels
-
-.nobit
+                        \ --- End of replacement ------------------------------>
 
  CPX #&32               \ If "D" is being pressed, jump to savscr to save a
  BEQ savscr             \ screenshot
@@ -49310,10 +49352,10 @@ ENDIF
 \
 \ ******************************************************************************
 
-.DEMON
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\.DEMON
+\
 \LDA #1                 \ Clear the top part of the screen, draw a border box,
 \JSR TT66               \ and set the current view type in QQ11 to 1
 \
@@ -49719,12 +49761,10 @@ ENDIF
 \
 \JMP DEATH2             \ Jump to DEATH2 to reset most of the game and restart
 \                       \ from the title screen
+\
+\RTS                    \ Return from the subroutine
 
-                        \ --- And replaced by: -------------------------------->
-
-RTS                     \ Return from the subroutine
-
-                        \ --- End of replacement ------------------------------>
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
