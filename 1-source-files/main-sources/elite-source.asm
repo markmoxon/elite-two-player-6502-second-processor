@@ -29958,7 +29958,15 @@ ENDIF
 
 .msbpars
 
- EQUB 4                 \ The number of bytes to transmit with this command
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB 4                 \ The number of bytes to transmit with this command
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB 5                 \ The number of bytes to transmit with this command
+
+                        \ --- End of replacement ------------------------------>
 
  EQUB 0                 \ The number of bytes to receive with this command
 
@@ -29966,9 +29974,22 @@ ENDIF
 
  EQUB 0                 \ The colour of the missile indicator
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ EQUB 0                 \ The player number (1 or 2), passed in A
+
+                        \ --- End of added code ------------------------------->
+
  EQUB 0                 \ End of the parameter block
 
 .MSBAR
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STA msbpars+4          \ Store the player number in byte #4 of the parameter
+                        \ block above
+
+                        \ --- End of added code ------------------------------->
 
  PHX                    \ Store the indicator number on the stack so we can
                         \ retrieve it later
@@ -34207,6 +34228,12 @@ ENDIF
                         \ the rest of them are present and should be drawn in
                         \ green
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #1                 \ Set A to draw player 1's indicators
+
+                        \ --- End of added code ------------------------------->
+
  LDY #0                 \ Draw the missile indicator at position X in black
  JSR MSBAR
 
@@ -34218,12 +34245,54 @@ ENDIF
 
 .SAL8
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #1                 \ Set A to draw player 1's indicators
+
+                        \ --- End of added code ------------------------------->
+
  LDY #GREEN2            \ Draw the missile indicator at position X in green
  JSR MSBAR
 
  DEX                    \ Decrement the counter to point to the next missile
 
  BNE SAL8               \ Loop back to SAL8 if we still have missiles to draw
+
+{
+
+ LDX #4                 \ Set up a loop counter in X to count through all four
+                        \ missile indicators
+
+.ss
+
+ CPX player2NOMSL       \ If the counter is equal to the number of missiles,
+ BEQ SAL8               \ jump down to SAL8 to draw the remaining missiles, as
+                        \ the rest of them are present and should be drawn in
+                        \ green
+
+ LDA #2                 \ Set A to draw player 2's indicators
+
+ LDY #0                 \ Draw the missile indicator at position X in black
+ JSR MSBAR
+
+ DEX                    \ Decrement the counter to point to the next missile
+
+ BNE ss                 \ Loop back to ss if we still have missiles to draw
+
+ RTS                    \ Return from the subroutine
+
+.SAL8
+
+ LDA #2                 \ Set A to draw player 2's indicators
+
+ LDY #GREEN2            \ Draw the missile indicator at position X in green
+ JSR MSBAR
+
+ DEX                    \ Decrement the counter to point to the next missile
+
+ BNE SAL8               \ Loop back to SAL8 if we still have missiles to draw
+
+}
 
  RTS                    \ Return from the subroutine
 
@@ -56484,6 +56553,8 @@ ENDIF
  STX NOMSL              \ Set the number of missiles for player 1 to the new
                         \ value
 
+ JSR msblob             \ Update the missiles in the dashboard
+
  RTS                    \ Return from the subroutine
 
 .ToggleOption07
@@ -56496,6 +56567,8 @@ ENDIF
 
  STX player2NOMSL       \ Set the number of missiles for player 2 to the new
                         \ value
+
+ JSR msblob             \ Update the missiles in the dashboard
 
  RTS                    \ Return from the subroutine
 

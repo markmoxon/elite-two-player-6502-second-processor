@@ -6912,6 +6912,16 @@ ENDMACRO
 
 .MSBAR
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDY #4                 \ Fetch byte #4 from the parameter block (the number of
+ LDA (OSSC),Y           \ the player) into A
+
+ CMP #2                 \ If this is player 2, jump to msbr1 to draw the
+ BEQ msbr1              \ indicator on the right-hand side
+
+                        \ --- End of added code ------------------------------->
+
  LDY #2                 \ Fetch byte #2 from the parameter block (the number of
  LDA (OSSC),Y           \ the missile indicator) into A
 
@@ -6994,6 +7004,81 @@ ENDMACRO
  BNE MBL2               \ Loop back to MBL2 if have more rows to draw
 
  RTS                    \ Return from the subroutine
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.msbr1
+
+{
+
+ LDY #2                 \ Fetch byte #2 from the parameter block (the number of
+ LDA (OSSC),Y           \ the missile indicator) into A
+
+ ASL A                  \ Set T = A * 16
+ ASL A
+ ASL A
+ ASL A
+ STA T
+
+ LDA #96+6*8            \ Set SC = 96 + 6*8 + T
+ ADC T                  \        = 96 + 6*8 + (X * 16)
+ STA SC
+
+ LDA #&7D               \ Set the high byte of SC(1 0) to &7D, the character row
+ STA SCH                \ that contains the righthand  set of missile indicators
+                        \ (i.e. the bottom-right row of the screen)
+
+ LDY #3                 \ Fetch byte #2 from the parameter block (the indicator
+ LDA (OSSC),Y           \ colour) into A. This is one of #GREEN2, #YELLOW2 or
+                        \ #RED2, or 0 for black, so this is a two-pixel wide
+                        \ mode 2 character row byte in the specified colour
+
+ PHA                    \ Store the two-pixel mask on the stack
+
+ AND #%01010101         \ Mask the character row to plot just the second pixel
+                        \ in the next character block, for the left half of the
+                        \ indicator
+
+ LDY #5                 \ We now want to draw this line five times to do the
+                        \ left pixel of the indicator, so set a counter in Y
+
+.MBL1
+
+ STA (SC),Y             \ Draw the five-pixel row, and as we do not use EOR
+                        \ logic, this will overwrite anything that is already
+                        \ there (so drawing a black missile will delete what's
+                        \ there)
+
+ DEY                    \ Decrement the counter for the next row
+
+ BNE MBL1               \ Loop back to MBL1 if have more rows to draw
+
+ LDA SC                 \ Set SC = SC + 8
+ CLC                    \
+ ADC #8                 \ so SC(1 0) now points to the next character block on
+ STA SC                 \ the row (for the right half of the indicator)
+
+ PLA                    \ Retrieve the two-pixel colour byte from the stack
+
+ LDY #5                 \ We now want to draw this line five times, so set a
+                        \ counter in Y
+
+.MBL2
+
+ STA (SC),Y             \ Draw the one-pixel row, and as we do not use EOR
+                        \ logic, this will overwrite anything that is already
+                        \ there (so drawing a black missile will delete what's
+                        \ there)
+
+ DEY                    \ Decrement the counter for the next row
+
+ BNE MBL2               \ Loop back to MBL2 if have more rows to draw
+
+ RTS                    \ Return from the subroutine
+
+}
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
