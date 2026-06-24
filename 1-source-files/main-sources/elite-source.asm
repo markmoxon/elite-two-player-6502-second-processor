@@ -4972,7 +4972,15 @@ ENDIF
  EQUB 0                 \ QQ20+15 = Amount of gem-stones in cargo hold, #38
  EQUB 0                 \ QQ20+16 = Amount of alien items in cargo hold, #39
 
- EQUB Q%                \ ECM = E.C.M. system, #40
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB Q%                \ ECM = E.C.M. system, #40
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB &FF               \ ECM = E.C.M. system, #40
+
+                        \ --- End of replacement ------------------------------>
 
  EQUB Q%                \ BST = Fuel scoops ("barrel status"), #41
 
@@ -36307,6 +36315,9 @@ ENDIF
 
  LDX #3                 \ Set player 2's missiles to 3 by default
  STX player2NOMSL
+
+ LDX #&FF               \ Give player 2 an E.C.M.
+ STX player2ECM
 
  JSR DFAULT             \ Call DFAULT to reset the current commander data block
                         \ to the last saved commander
