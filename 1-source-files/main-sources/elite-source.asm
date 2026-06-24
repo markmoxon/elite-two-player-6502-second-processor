@@ -4255,7 +4255,7 @@ ENDIF
                         \
                         \   * Bit 7 set = draw player 2's view (bottom)
 
-.player1INWK31  
+.player1INWK31
 
  SKIP 1                 \ Storage for player 1's INWK+31 byte for in player 2's
                         \ view
@@ -4277,7 +4277,7 @@ ENDIF
                         \           1 = explosion has been drawn
                         \
                         \  * Bit 7: 0 = ship has not been killed
-                        \           1 = ship has been killed 
+                        \           1 = ship has been killed
 
 .player2ALPHA
 
@@ -9911,7 +9911,7 @@ ENDIF
 
  LDA Y1                 \ This is player 2's view, so move the line to the bottom
  CLC                    \ half of the screen
- ADC #Y 
+ ADC #Y
  STA HBUF+2,Y
 
  JMP hlin2              \ Jump to hlin2 to draw the line
@@ -10812,12 +10812,12 @@ ENDIF
  STA (LSY2S),Y          \ didn't fit on-screen, so put the &FF marker into the
                         \ heap for this point, so the next call to BLINE starts
                         \ a new segment
-           
+
  LDA (LSPS)             \ Increment LSP to point to the next point in the heap
  CLC
  ADC #1
  STA (LSPS)
- 
+
                         \ --- End of replacement ------------------------------>
 
  BNE BL7                \ Jump to BL7 to tidy up and return from the subroutine
@@ -43044,7 +43044,7 @@ ENDIF
                         \ so that LSNUM2 gets set to 0 below (as there are no
                         \ existing coordinates on the ship line heap for this
                         \ ship)
- 
+
  EQUB &2C               \ Skip the next instruction by turning it into
                         \ &2C &B1 &BD, or BIT &BDB1 which does nothing apart
                         \ from affect the flags
@@ -47553,7 +47553,7 @@ ENDIF
 
                         \ If we get here then we are moving player 2's ship and
                         \ player 2 is human-controlled, so we need to rotate the
-                        \ ship according to player 2's pitch and roll 
+                        \ ship according to player 2's pitch and roll
 
                         \ Apply player 2's pitch and roll to player 2's ship
                         \
@@ -49100,7 +49100,7 @@ ENDIF
 \JSR TT27
 
  JSR ee3                \ Print player 1's score
- 
+
                         \ --- End of added code ------------------------------->
 
 .tt66
@@ -56117,7 +56117,7 @@ ENDIF
 
 .PrintOptionA
 
- ASL A                  \ Set Y = A * 2   
+ ASL A                  \ Set Y = A * 2
  TAY
 
  LDA optionJumpTable,Y  \ Set the address of the JSR at opta1 to the Y-th
@@ -60984,7 +60984,7 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
                         \                c3 = z
 
  LDY #v1                \ First do nosev_x * x, so calculate:
- LDX #c1                \ 
+ LDX #c1                \
  JSR Multiply16x24      \   K(3 2 1 0) = nosev_x * x
                         \
                         \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
@@ -61007,7 +61007,7 @@ MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
 .rotc1
 
  LDY #v2                \ Next do nosev_y * y, so calculate:
- LDX #c2                \ 
+ LDX #c2                \
  JSR Multiply16x24      \   K(3 2 1 0) = nosev_y * y
                         \
                         \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
@@ -61132,7 +61132,7 @@ ENDMACRO
 
  JSR RESTORE            \ Fetch the ship's coordinates in slot #12
 
- LDA player1INWK31      \ Set the scan visiblilty flag from player1INWK31  
+ LDA player1INWK31      \ Set the scan visiblilty flag from player1INWK31
  STA INWK+31
 
  LDA #1                 \ Set TYPE purely to control the colour on the scanner
@@ -61142,7 +61142,7 @@ ENDMACRO
 
  LDA player1INWK31      \ From this point on we want to draw the ship on the
  ORA #%00010000         \ scanner, so set bit 4 = visible on scanner
- STA player1INWK31  
+ STA player1INWK31
 
 .dshp1
 
@@ -61394,8 +61394,8 @@ ENDMACRO
  CMP #2                 \ the ship setup
  BNE dshp9
 
- LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31  
- STA player1INWK31  
+ LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31
+ STA player1INWK31
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
  BEQ dshp8              \ the laser power, so if this is zero, jump down to
@@ -61589,7 +61589,7 @@ ENDMACRO
 \      + |sidev_x_lo| * (x_sign x_hi x_lo) >> 8
 \
 \ and then we apply the sign bit of x_sign EOR sidev_x_hi to the result.
-\ 
+\
 \ We do each multiplication using MULT3, which calculates the following:
 \
 \   K(3 2 1 0) = (A P+1 P) * Q
@@ -61770,7 +61770,7 @@ ENDMACRO
 
  LDA XX15+3             \ If operands have different signs, jump to adds2
  EOR K+3
- BMI adds2 
+ BMI adds2
 
  LDA XX15+3             \ Set S to the sign bit of XX15(3 2 1)
  AND #%10000000
