@@ -3113,9 +3113,29 @@ ENDIF
                         \ This is also set when the joystick fire button has
                         \ been pressed
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\.KY12
+\
+\SKIP 1                 \ TAB is being pressed (energy bomb)
+\                       \
+\                       \   * 0 = no
+\                       \
+\                       \   * Non-zero = yes
+\
+\.KY13
+\
+\SKIP 1                 \ ESCAPE is being pressed (launch escape pod)
+\                       \
+\                       \   * 0 = no
+\                       \
+\                       \   * Non-zero = yes
+
+                        \ --- And replaced by: -------------------------------->
+
 .KY12
 
- SKIP 1                 \ TAB is being pressed (energy bomb)
+ SKIP 1                 \ "[" is being pressed (player 2 arm missile)
                         \
                         \   * 0 = no
                         \
@@ -3123,11 +3143,13 @@ ENDIF
 
 .KY13
 
- SKIP 1                 \ ESCAPE is being pressed (launch escape pod)
+ SKIP 1                 \ "@" is being pressed (player 2 fire missile)
                         \
                         \   * 0 = no
                         \
                         \   * Non-zero = yes
+
+                        \ --- End of replacement ------------------------------>
 
 .KY14
 
@@ -3191,7 +3213,7 @@ ENDIF
 
 .KY18
 
- SKIP 1                 \ Player 2 fire button is being pressed
+ SKIP 1                 \ "\" is being pressed (player 2 E.C.M.)
                         \
                         \   * 0 = no
                         \
@@ -3208,6 +3230,22 @@ ENDIF
 .KY20
 
  SKIP 1                 \ "]" is being pressed (player 2 slow down)
+                        \
+                        \   * 0 = no
+                        \
+                        \   * Non-zero = yes
+
+.KY21
+
+ SKIP 1                 \ "_" is being pressed (player 2 unarm missile)
+                        \
+                        \   * 0 = no
+                        \
+                        \   * Non-zero = yes
+
+.KY22
+
+ SKIP 1                 \ Player 2 fire button is being pressed
                         \
                         \   * 0 = no
                         \
@@ -4152,6 +4190,10 @@ ENDIF
 .startWP
 
  SKIP 0                 \ A marker for the start of the player workspace
+
+.player2ECMA
+
+ SKIP 1                 \ Storage for player 2's ECMA setting
 
 .player2ECMP
 
@@ -5910,28 +5952,61 @@ ENDIF
 \BEQ P%+5               \ the next instruction
 \
 \JSR WARP               \ Call the WARP routine to do an in-system jump
-\
-\LDA KY17               \ If "E" is being pressed and we have an E.C.M. fitted,
-\AND ECM                \ keep going, otherwise jump down to MA64 to skip the
-\BEQ MA64               \ following
-\
-\LDA ECMA               \ If ECMA is non-zero, that means an E.C.M. is already
-\BNE MA64               \ operating and is counting down (this can be either
-\                       \ our E.C.M. or an opponent's), so jump down to MA64 to
-\                       \ skip the following (as we can't have two E.C.M.
-\                       \ systems operating at the same time)
-\
-\DEC ECMP               \ The E.C.M. button is being pressed and nobody else
-\                       \ is operating their E.C.M., so decrease the value of
-\                       \ ECMP to make it non-zero, to denote that our E.C.M.
-\                       \ is now on
-\
-\JSR ECBLB2             \ Call ECBLB2 to light up the E.C.M. indicator bulb on
-\                       \ the dashboard, set the E.C.M. countdown timer to 32,
-\                       \ and start making the E.C.M. sound
-\
-\.MA64
-\
+
+                        \ --- End of removed code ----------------------------->
+
+ LDA KY17               \ If "E" is being pressed and we have an E.C.M. fitted,
+ AND ECM                \ keep going, otherwise jump down to MA64 to skip the
+ BEQ MA64               \ following
+
+ LDA ECMA               \ If ECMA is non-zero, that means an E.C.M. is already
+ BNE MA64               \ operating and is counting down (this can be either
+                        \ our E.C.M. or an opponent's), so jump down to MA64 to
+                        \ skip the following (as we can't have two E.C.M.
+                        \ systems operating at the same time)
+
+ DEC ECMP               \ The E.C.M. button is being pressed and nobody else
+                        \ is operating their E.C.M., so decrease the value of
+                        \ ECMP to make it non-zero, to denote that our E.C.M.
+                        \ is now on
+
+ JSR ECBLB2             \ Call ECBLB2 to light up the E.C.M. indicator bulb on
+                        \ the dashboard, set the E.C.M. countdown timer to 32,
+                        \ and start making the E.C.M. sound
+
+.MA64
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA KY18               \ If "\" is being pressed and we have an E.C.M. fitted,
+ AND player2ECM         \ keep going, otherwise jump down to MA64 to skip the
+ BEQ MA64               \ following
+
+ LDA player2ECMA        \ If ECMA is non-zero, that means an E.C.M. is already
+ BNE MA64               \ operating and is counting down (this can be either
+                        \ our E.C.M. or an opponent's), so jump down to MA64 to
+                        \ skip the following (as we can't have two E.C.M.
+                        \ systems operating at the same time)
+
+ DEC player2ECMP        \ The E.C.M. button is being pressed and nobody else
+                        \ is operating their E.C.M., so decrease the value of
+                        \ ECMP to make it non-zero, to denote that our E.C.M.
+                        \ is now on
+
+ JSR Player2ECBLB2      \ Call ECBLB2 to light up the E.C.M. indicator bulb on
+                        \ the dashboard, set the E.C.M. countdown timer to 32,
+                        \ and start making the E.C.M. sound
+
+.MA64
+
+}
+
+                        \ --- End of added code ------------------------------->
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
 \LDA KY19               \ If "C" is being pressed, and we have a docking
 \AND DKCMP              \ computer fitted, keep going, otherwise jump down to
 \BEQ MA68               \ MA68 to skip the following
@@ -5965,7 +6040,7 @@ ENDIF
  BPL main1              \ following
 
  LDA #&FF               \ Fire the NPC's front lasers
- STA KY18
+ STA KY22
 
 .main1
 
@@ -5984,7 +6059,7 @@ ENDIF
  BNE MA3                \ a pulse laser that is between pulses, so jump down to
                         \ MA3 to skip the following
 
- LDA KY18               \ If the player 2 fire button is being pressed, keep
+ LDA KY22               \ If the player 2 fire button is being pressed, keep
  BEQ MA3                \ going, otherwise jump down to MA3 to skip the
                         \ following
 
@@ -7605,6 +7680,39 @@ ENDIF
                         \ off the E.C.M.
 
 .MA66
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA player2ECMP        \ If our E.C.M is not on, skip to MA69, otherwise keep
+ BEQ MA69               \ going to drain some energy
+
+ JSR Player2DENGY       \ Call DENGY to deplete our energy banks by 1
+
+ BEQ MA70               \ If we have no energy left, jump to MA70 to turn our
+                        \ E.C.M. off
+
+.MA69
+
+ LDA player2ECMA        \ If an E.C.M is going off (ours or an opponent's) then
+ BEQ MA66               \ keep going, otherwise skip to MA66
+
+ DEC player2ECMA        \ Decrement the E.C.M. countdown timer, and if it has
+ BNE MA66               \ reached zero, keep going, otherwise skip to MA66
+
+.MA70
+
+ JSR Player2ECMOF       \ If we get here then either we have either run out of
+                        \ energy, or the E.C.M. timer has run down, so switch
+                        \ off the E.C.M.
+
+.MA66
+
+}
+
+                        \ --- End of added code ------------------------------->
+
 
  LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
  BNE oh                 \ then jump to oh to return from the main flight loop
@@ -29854,6 +29962,30 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2ECBLB2
+\       Type: Subroutine
+\   Category: Dashboard
+\    Summary: Start up the E.C.M. (light up the indicator, start the countdown
+\             and make the E.C.M. sound)
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2ECBLB2
+
+ LDA #32                \ Set the E.C.M. countdown timer in ECMA to 32
+ STA player2ECMA
+
+ ASL A                  \ Call the NOISE routine with A = 64 to make the sound
+ JSR NOISE              \ of the E.C.M. being switched on
+
+ JMP SPBLB              \ Jump to SPBLB to light up the E.C.M. bulb
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: ECBLB2
 \       Type: Subroutine
 \   Category: Dashboard
@@ -33962,6 +34094,8 @@ ENDIF
 
  STA player2BETA        \ Zero player 2's movement variables
  STA player2BET1
+
+ STA player2ECMA        \ Turn off player 2's E.C.M.
 
                         \ --- End of added code ------------------------------->
 
@@ -39092,6 +39226,38 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: Player2ECMOF
+\       Type: Subroutine
+\   Category: Dashboard
+\    Summary: Switch off the E.C.M. and turn off the dashboard bulb
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2ECMOF
+
+ LDA #0                 \ Set ECMA and ECMP to 0 to indicate that no E.C.M. is
+ STA player2ECMA        \ currently running
+ STA player2ECMP
+
+ JSR SPBLB              \ Update the E.C.M. indicator bulb on the dashboard
+
+ LDA ECMA               \ If player 1's E.C.M. is active, leave the sound
+ BEQ ecmb1              \ running
+ RTS
+
+.ecmb1
+
+ LDA #72                \ Call the NOISE routine with A = 72 to make the sound
+ BNE NOISE              \ of the E.C.M. being turned off and return from the
+                        \ subroutine using a tail call (this BNE is effectively
+                        \ a JMP as A will never be zero)
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: ECMOF
 \       Type: Subroutine
 \   Category: Dashboard
@@ -39106,6 +39272,15 @@ ENDIF
  STA ECMP
 
  JSR ECBLB              \ Update the E.C.M. indicator bulb on the dashboard
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player2ECMA        \ If player 2's E.C.M. is active, leave the sound
+ BEQ ecma1              \ running
+ RTS
+
+.ecma1
+                        \ --- End of added code ------------------------------->
 
  LDA #72                \ Call the NOISE routine with A = 72 to make the sound
  BNE NOISE              \ of the E.C.M. being turned off and return from the
@@ -39496,25 +39671,31 @@ ENDIF
 
                         \ These are the secondary flight controls:
 
- EQUB &60               \ TAB       KYTB+8      Energy bomb
- EQUB &70               \ ESCAPE    KYTB+9      Launch escape pod
- EQUB &23               \ T         KYTB+10     Arm missile
- EQUB &35               \ U         KYTB+11     Unarm missile
- EQUB &65               \ M         KYTB+12     Fire missile
- EQUB &22               \ E         KYTB+13     E.C.M.
- EQUB &45               \ J         KYTB+14     In-system jump
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
+\EQUB &60               \ TAB       KYTB+8      Energy bomb
+\EQUB &70               \ ESCAPE    KYTB+9      Launch escape pod
+\EQUB &23               \ T         KYTB+10     Arm missile
+\EQUB &35               \ U         KYTB+11     Unarm missile
+\EQUB &65               \ M         KYTB+12     Fire missile
+\EQUB &22               \ E         KYTB+13     E.C.M.
+\EQUB &45               \ J         KYTB+14     In-system jump
 \EQUB &52               \ C         KYTB+15     Docking computer
 
 \EQUB &37               \ P         KYTB+16     Cancel docking computer
 
                         \ --- And replaced by: -------------------------------->
 
+ EQUB &38               \ [         KYTB+8      Player 2 arm missile
+ EQUB &47               \ @         KYTB+9      Player 2 fire missile
+ EQUB &23               \ T         KYTB+10     Arm missile
+ EQUB &35               \ U         KYTB+11     Unarm missile
+ EQUB &65               \ M         KYTB+12     Fire missile
+ EQUB &22               \ E         KYTB+13     E.C.M.
+ EQUB &78               \ \         KYTB+14     Player 2 E.C.M.
  EQUB &49               \ RETURN    KYTB+15     Player 2 speed up
-
  EQUB &58               \ ]         KYTB+16     Player 2 slow down
+ EQUB &28               \ _         KYTB+17     Player unarm missile
 
                         \ --- End of replacement ------------------------------>
 
@@ -39807,8 +39988,8 @@ ENDIF
                         \ the value of IRB with %100000 extracts this bit
 
  EOR #%00100000         \ Flip bit 5 so that it's set if the fire button has
- STA KY18               \ been pressed, and store the result in the keyboard
-                        \ logger at location KY18
+ STA KY22               \ been pressed, and store the result in the keyboard
+                        \ logger at location KY22
 
  LDX #3                 \ Call DKS2 to fetch the value of ADC channel 3 (the
  JSR DKS2               \ joystick 2 X value) into (A X), and OR A with 1. This
@@ -39850,8 +40031,17 @@ ENDIF
  LDA #0                 \ Set A to 0, as this means "key not pressed" in the
                         \ key logger at KL
 
- LDY #16                \ We want to clear the 16 key logger locations from
-                        \ KY1 to KY20, so set a counter in Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #16                \ We want to clear the 16 key logger locations from
+\                       \ KY1 to KY20, so set a counter in Y
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDY #18                \ We want to clear the 17 key logger locations from
+                        \ KY1 to KY22, so set a counter in Y
+
+                        \ --- End of replacement ------------------------------>
 
 .DKL3
 
@@ -39942,8 +40132,8 @@ ENDIF
                         \ the value of IRB with %10000 extracts this bit
 
  EOR #%00010000         \ Flip bit 4 so that it's set if the fire button has
- STA KY18               \ been pressed, and store the result in the keyboard
-                        \ logger at location KY18
+ STA KY22               \ been pressed, and store the result in the keyboard
+                        \ logger at location KY22
 
  LDX #1                 \ Call DKS2 to fetch the value of ADC channel 1 (the
  JSR DKS2               \ joystick 1 X value) into (A X), and OR A with 1. This
@@ -39974,155 +40164,159 @@ ENDIF
  BNE DKL2               \ Loop back until we have copied all seven primary
                         \ flight control key presses to KL
 
- LDA auto               \ If auto is 0, then the docking computer is not
- BEQ DK15               \ currently activated, so jump to DK15 to skip the
-                        \ docking computer manoeuvring code below
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-.auton
+\LDA auto               \ If auto is 0, then the docking computer is not
+\BEQ DK15               \ currently activated, so jump to DK15 to skip the
+\                       \ docking computer manoeuvring code below
+\
+\.auton
+\
+\JSR ZINF               \ Call ZINF to reset the INWK ship workspace
+\
+\LDA #96                \ Set nosev_z_hi = 96
+\STA INWK+14
+\
+\ORA #%10000000         \ Set sidev_x_hi = -96
+\STA INWK+22
+\
+\STA TYPE               \ Set the ship type to -96, so the negative value will
+\                       \ let us check in the DOCKIT routine whether this is our
+\                       \ ship that is activating its docking computer, rather
+\                       \ than an NPC ship docking
+\
+\LDA DELTA              \ Set the ship speed to DELTA (our speed)
+\STA INWK+27
+\
+\JSR DOCKIT             \ Call DOCKIT to calculate the docking computer's moves
+\                       \ and update INWK with the results
+\
+\                       \ We now "press" the relevant flight keys, depending on
+\                       \ the results from DOCKIT, starting with the pitch keys
+\
+\LDA INWK+27            \ Fetch the updated ship speed from byte #27 into A
+\
+\CMP #22                \ If A < 22, skip the next instruction
+\BCC P%+4
+\
+\LDA #22                \ Set A = 22, so the maximum speed during docking is 22
+\
+\STA DELTA              \ Update DELTA to the new value in A
+\
+\LDA #&FF               \ Set A = &FF, which we can insert into the key logger
+\                       \ to "fake" the docking computer working the keyboard
+\
+\LDX #0                 \ Set X = 0, so we "press" KY1 below ("?", slow down)
+\
+\LDY INWK+28            \ If the updated acceleration in byte #28 is zero, skip
+\BEQ DK11               \ to DK11
+\
+\BMI P%+3               \ If the updated acceleration is negative, skip the
+\                       \ following instruction
+\
+\INX                    \ The updated acceleration is positive, so increment X
+\                       \ to 1, so we "press" KY2 below (Space, speed up)
+\
+\STA KY1,X              \ Store &FF in either KY1 or KY2 to "press" the relevant
+\                       \ key, depending on whether the updated acceleration is
+\                       \ negative (in which case we "press" KY1, "?", to slow
+\                       \ down) or positive (in which case we "press" KY2,
+\                       \ Space, to speed up)
+\
+\.DK11
+\
+\                       \ We now "press" the relevant roll keys, depending on
+\                       \ the results from DOCKIT
+\
+\LDA #128               \ Set A = 128, which indicates no change in roll when
+\                       \ stored in JSTX (i.e. the centre of the roll indicator)
+\
+\LDX #0                 \ Set X = 0, so we "press" KY3 below ("<", increase
+\                       \ roll)
+\
+\ASL INWK+29            \ Shift ship byte #29 left, which shifts bit 7 of the
+\                       \ updated roll counter (i.e. the roll direction) into
+\                       \ the C flag
+\
+\BEQ DK12               \ If the remains of byte #29 is zero, then the updated
+\                       \ roll counter is zero, so jump to DK12 set JSTX to 128,
+\                       \ to indicate there's no change in the roll
+\
+\BCC P%+3               \ If the C flag is clear, skip the following instruction
+\
+\INX                    \ The C flag is set, i.e. the direction of the updated
+\                       \ roll counter is negative, so increment X to 1 so we
+\                       \ "press" KY4 below (">", decrease roll)
+\
+\BIT INWK+29            \ We shifted the updated roll counter to the left above,
+\BPL DK14               \ so this tests bit 6 of the original value, and if it
+\                       \ is clear (i.e. the magnitude is less than 64), jump to
+\                       \ DK14 to "press" the key and leave JSTX unchanged
+\
+\LDA #64                \ The magnitude of the updated roll is 64 or more, so
+\STA JSTX               \ set JSTX to 64 (so the roll decreases at half the
+\                       \ maximum rate)
+\
+\LDA #0                 \ And set A = 0 so we do not "press" any keys (so if the
+\                       \ docking computer needs to make a serious roll, it does
+\                       \ so by setting JSTX directly rather than by "pressing"
+\                       \ a key)
+\
+\.DK14
+\
+\STA KY3,X              \ Store A in either KY3 or KY4, depending on whether
+\                       \ the updated roll rate is increasing (KY3) or
+\                       \ decreasing (KY4)
+\
+\LDA JSTX               \ Fetch A from JSTX so the next instruction has no
+\                       \ effect
+\
+\.DK12
+\
+\STA JSTX               \ Store A in JSTX to update the current roll rate
+\
+\                       \ We now "press" the relevant pitch keys, depending on
+\                       \ the results from DOCKIT
+\
+\LDA #128               \ Set A = 128, which indicates no change in pitch when
+\                       \ stored in JSTX (i.e. the centre of the pitch
+\                       \ indicator)
+\
+\LDX #0                 \ Set X = 0, so we "press" KY5 below ("X", decrease
+\                       \ pitch, pulling the nose up)
+\
+\ASL INWK+30            \ Shift ship byte #30 left, which shifts bit 7 of the
+\                       \ updated pitch counter (i.e. the pitch direction) into
+\                       \ the C flag
+\
+\BEQ DK13               \ If the remains of byte #30 is zero, then the updated
+\                       \ pitch counter is zero, so jump to DK13 set JSTY to
+\                       \ 128, to indicate there's no change in the pitch
+\
+\BCS P%+3               \ If the C flag is set, skip the following instruction
+\
+\INX                    \ The C flag is clear, i.e. the direction of the updated
+\                       \ pitch counter is positive (dive), so increment X to 1
+\                       \ so we "press" KY6 below ("S", increase pitch, so the
+\                       \ nose dives)
+\
+\STA KY5,X              \ Store 128 in either KY5 or KY6 to "press" the relevant
+\                       \ key, depending on whether the pitch direction is
+\                       \ negative (in which case we "press" KY5, "X", to
+\                       \ decrease the pitch, pulling the nose up) or positive
+\                       \ (in which case we "press" KY6, "S", to increase the
+\                       \ pitch, pushing the nose down)
+\
+\LDA JSTY               \ Fetch A from JSTY so the next instruction has no
+\                       \ effect
+\
+\.DK13
+\
+\STA JSTY               \ Store A in JSTY to update the current pitch rate
+\
+\.DK15
 
- JSR ZINF               \ Call ZINF to reset the INWK ship workspace
-
- LDA #96                \ Set nosev_z_hi = 96
- STA INWK+14
-
- ORA #%10000000         \ Set sidev_x_hi = -96
- STA INWK+22
-
- STA TYPE               \ Set the ship type to -96, so the negative value will
-                        \ let us check in the DOCKIT routine whether this is our
-                        \ ship that is activating its docking computer, rather
-                        \ than an NPC ship docking
-
- LDA DELTA              \ Set the ship speed to DELTA (our speed)
- STA INWK+27
-
- JSR DOCKIT             \ Call DOCKIT to calculate the docking computer's moves
-                        \ and update INWK with the results
-
-                        \ We now "press" the relevant flight keys, depending on
-                        \ the results from DOCKIT, starting with the pitch keys
-
- LDA INWK+27            \ Fetch the updated ship speed from byte #27 into A
-
- CMP #22                \ If A < 22, skip the next instruction
- BCC P%+4
-
- LDA #22                \ Set A = 22, so the maximum speed during docking is 22
-
- STA DELTA              \ Update DELTA to the new value in A
-
- LDA #&FF               \ Set A = &FF, which we can insert into the key logger
-                        \ to "fake" the docking computer working the keyboard
-
- LDX #0                 \ Set X = 0, so we "press" KY1 below ("?", slow down)
-
- LDY INWK+28            \ If the updated acceleration in byte #28 is zero, skip
- BEQ DK11               \ to DK11
-
- BMI P%+3               \ If the updated acceleration is negative, skip the
-                        \ following instruction
-
- INX                    \ The updated acceleration is positive, so increment X
-                        \ to 1, so we "press" KY2 below (Space, speed up)
-
- STA KY1,X              \ Store &FF in either KY1 or KY2 to "press" the relevant
-                        \ key, depending on whether the updated acceleration is
-                        \ negative (in which case we "press" KY1, "?", to slow
-                        \ down) or positive (in which case we "press" KY2,
-                        \ Space, to speed up)
-
-.DK11
-
-                        \ We now "press" the relevant roll keys, depending on
-                        \ the results from DOCKIT
-
- LDA #128               \ Set A = 128, which indicates no change in roll when
-                        \ stored in JSTX (i.e. the centre of the roll indicator)
-
- LDX #0                 \ Set X = 0, so we "press" KY3 below ("<", increase
-                        \ roll)
-
- ASL INWK+29            \ Shift ship byte #29 left, which shifts bit 7 of the
-                        \ updated roll counter (i.e. the roll direction) into
-                        \ the C flag
-
- BEQ DK12               \ If the remains of byte #29 is zero, then the updated
-                        \ roll counter is zero, so jump to DK12 set JSTX to 128,
-                        \ to indicate there's no change in the roll
-
- BCC P%+3               \ If the C flag is clear, skip the following instruction
-
- INX                    \ The C flag is set, i.e. the direction of the updated
-                        \ roll counter is negative, so increment X to 1 so we
-                        \ "press" KY4 below (">", decrease roll)
-
- BIT INWK+29            \ We shifted the updated roll counter to the left above,
- BPL DK14               \ so this tests bit 6 of the original value, and if it
-                        \ is clear (i.e. the magnitude is less than 64), jump to
-                        \ DK14 to "press" the key and leave JSTX unchanged
-
- LDA #64                \ The magnitude of the updated roll is 64 or more, so
- STA JSTX               \ set JSTX to 64 (so the roll decreases at half the
-                        \ maximum rate)
-
- LDA #0                 \ And set A = 0 so we do not "press" any keys (so if the
-                        \ docking computer needs to make a serious roll, it does
-                        \ so by setting JSTX directly rather than by "pressing"
-                        \ a key)
-
-.DK14
-
- STA KY3,X              \ Store A in either KY3 or KY4, depending on whether
-                        \ the updated roll rate is increasing (KY3) or
-                        \ decreasing (KY4)
-
- LDA JSTX               \ Fetch A from JSTX so the next instruction has no
-                        \ effect
-
-.DK12
-
- STA JSTX               \ Store A in JSTX to update the current roll rate
-
-                        \ We now "press" the relevant pitch keys, depending on
-                        \ the results from DOCKIT
-
- LDA #128               \ Set A = 128, which indicates no change in pitch when
-                        \ stored in JSTX (i.e. the centre of the pitch
-                        \ indicator)
-
- LDX #0                 \ Set X = 0, so we "press" KY5 below ("X", decrease
-                        \ pitch, pulling the nose up)
-
- ASL INWK+30            \ Shift ship byte #30 left, which shifts bit 7 of the
-                        \ updated pitch counter (i.e. the pitch direction) into
-                        \ the C flag
-
- BEQ DK13               \ If the remains of byte #30 is zero, then the updated
-                        \ pitch counter is zero, so jump to DK13 set JSTY to
-                        \ 128, to indicate there's no change in the pitch
-
- BCS P%+3               \ If the C flag is set, skip the following instruction
-
- INX                    \ The C flag is clear, i.e. the direction of the updated
-                        \ pitch counter is positive (dive), so increment X to 1
-                        \ so we "press" KY6 below ("S", increase pitch, so the
-                        \ nose dives)
-
- STA KY5,X              \ Store 128 in either KY5 or KY6 to "press" the relevant
-                        \ key, depending on whether the pitch direction is
-                        \ negative (in which case we "press" KY5, "X", to
-                        \ decrease the pitch, pulling the nose up) or positive
-                        \ (in which case we "press" KY6, "S", to increase the
-                        \ pitch, pushing the nose down)
-
- LDA JSTY               \ Fetch A from JSTY so the next instruction has no
-                        \ effect
-
-.DK13
-
- STA JSTY               \ Store A in JSTY to update the current pitch rate
-
-.DK15
+                        \ --- End of removed code ----------------------------->
 
  LDX JSTX               \ Set X = JSTX, the current roll rate (as shown in the
                         \ RL indicator on the dashboard)
@@ -40316,12 +40510,28 @@ ENDIF
  BNE out                \ view), return from the subroutine (as out contains
                         \ an RTS)
 
- LDY #16                \ This is a space view, so now we want to check for all
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #16                \ This is a space view, so now we want to check for all
+\                       \ the secondary flight keys. The internal key numbers
+\                       \ are in the keyboard table KYTB from KYTB+8 to
+\                       \ KYTB+16, and their key logger locations are from KL+8
+\                       \ to KL+16. So set a decreasing counter in Y for the
+\                       \ index, starting at 16, so we can loop through them
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDY #17                \ This is a space view, so now we want to check for all
                         \ the secondary flight keys. The internal key numbers
                         \ are in the keyboard table KYTB from KYTB+8 to
-                        \ KYTB+16, and their key logger locations are from KL+8
-                        \ to KL+16. So set a decreasing counter in Y for the
-                        \ index, starting at 16, so we can loop through them
+                        \ KYTB+17, and their key logger locations are from KL+8
+                        \ to KL+17. So set a decreasing counter in Y for the
+                        \ index, starting at 17, so we can loop through them
+                        \
+                        \ We don't check for KY22 (at offset 18) as that is for
+                        \ the joystick fire button
+
+                        \ --- End of replacement ------------------------------>
 
  LDA #&FF               \ Set A to &FF so we can store this in the keyboard
                         \ logger for keys that are being pressed

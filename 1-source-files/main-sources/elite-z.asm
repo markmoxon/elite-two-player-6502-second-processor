@@ -1736,24 +1736,33 @@ ENDIF
                         \ there are two character blocks' worth, each with eight
                         \ lines of one byte, so set a counter in Y for 16 bytes
 
-.BULL
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA SPBT,Y             \ Fetch the Y-th byte of the bulb bitmap
+\.BULL
+\
+\LDA SPBT,Y             \ Fetch the Y-th byte of the bulb bitmap
+\
+\EOR (SC),Y             \ EOR the byte with the current contents of screen
+\                       \ memory, so drawing the bulb when it is already
+\                       \ on-screen will erase it
+\
+\STA (SC),Y             \ Store the Y-th byte of the bulb bitmap in screen
+\                       \ memory
+\
+\DEY                    \ Decrement the loop counter
+\
+\BPL BULL               \ Loop back to poke the next byte until we have done
+\                       \ all 16 bytes across two character blocks
+\
+\JMP PUTBACK            \ Jump to PUTBACK to restore the USOSWRCH handler and
+\                       \ return from the subroutine using a tail call
 
- EOR (SC),Y             \ EOR the byte with the current contents of screen
-                        \ memory, so drawing the bulb when it is already
-                        \ on-screen will erase it
+                        \ --- And replaced by: -------------------------------->
 
- STA (SC),Y             \ Store the Y-th byte of the bulb bitmap in screen
-                        \ memory
+ JMP BULL2              \ Draw the E.C.M. bulb on the right-hand side of the
+                        \ dashboard
 
- DEY                    \ Decrement the loop counter
-
- BPL BULL               \ Loop back to poke the next byte until we have done
-                        \ all 16 bytes across two character blocks
-
- JMP PUTBACK            \ Jump to PUTBACK to restore the USOSWRCH handler and
-                        \ return from the subroutine using a tail call
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
