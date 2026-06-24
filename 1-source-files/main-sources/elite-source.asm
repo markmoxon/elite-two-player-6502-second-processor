@@ -520,21 +520,7 @@ ENDIF
 \                       \ during the countdown. It counts down from 15 to 1, and
 \                       \ when it hits 0, the hyperspace engines kick in
 
-                        \ --- And replaced by: -------------------------------->
-
-.LSOS
-
- SKIP 0                 \ The address of LSO or LSOa, depending on which
-                        \ player view we are drawing (LSO is an alias of LSX,
-                        \ so the address is the same as LSXS)
-
-.LSXS
-
- SKIP 2                 \ The address of LSX or LSXa, depending on which
-                        \ player view we are drawing (LSX is an alias of LSO,
-                        \ so the address is the same as LSOS)
-
-                        \ --- End of replacement ------------------------------>
+                        \ --- End of moved code ----------------------------->
 
 .ECMA
 
@@ -551,6 +537,22 @@ ENDIF
                         \ reaches zero, at which point the E.C.M. switches off.
                         \ Only one E.C.M. can be active at any one time, so
                         \ there is only one counter
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.LSOS
+
+ SKIP 0                 \ The address of LSO or LSOa, depending on which
+                        \ player view we are drawing (LSO is an alias of LSX,
+                        \ so the address is the same as LSXS)
+
+.LSXS
+
+ SKIP 2                 \ The address of LSX or LSXa, depending on which
+                        \ player view we are drawing (LSX is an alias of LSO,
+                        \ so the address is the same as LSOS)
+
+                        \ --- End of added code ------------------------------->
 
 .ALP1
 
@@ -4147,6 +4149,7 @@ ENDIF
                         \   * Bit 7 set = draw into split-screen
                         \
                         \   * Bit 7 clear = full screen
+
 .drawPlayerView
 
  SKIP 1                 \ Determines which player's view to draw in the split
@@ -33826,7 +33829,17 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
+
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #4                 \ Set up a counter for zeroing BETA through BETA+4 (as
+                        \ we have moved the unused QQ22 elsewhere
+
+                        \ --- End of replacement ------------------------------>
 
 .SAL3
 
