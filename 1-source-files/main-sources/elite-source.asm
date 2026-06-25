@@ -61583,6 +61583,11 @@ ENDMACRO
 
 .dshp4
 
+ LDX XSAV               \ TEST CODE: this skips the calculations for missiles as
+ CPX #3                 \ they will need their own maths
+ BCC P%+3
+ RTS
+
  LDX XSAV               \ Refetch the current ship data so that it's the correct
  JSR GetShipDataToINWK  \ way around for the following calculation, even if
                         \ player 1 has changed view (so this reverts any PLUT
