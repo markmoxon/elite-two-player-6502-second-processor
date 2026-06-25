@@ -36529,7 +36529,7 @@ ENDIF
                         \ --- And replaced by: -------------------------------->
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA #1                 \ it using the colour for ship type 1 (yellow)
+ LDA #127               \ it in yellow (A = 127)
  JSR WipeShip
 
  PLA                    \ Set A to the winning player
@@ -40866,7 +40866,7 @@ ENDIF
  BNE deat1              \ set of instructions
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA #1                 \ it using the colour for ship type 1 (yellow)
+ LDA #127               \ it in yellow (A = 127)
  JSR WipeShip
 
  JMP DEATH2             \ ESCAPE is being pressed, so jump to DEATH2 to end
@@ -49717,8 +49717,25 @@ ENDIF
                         \ scanner, so return from the subroutine (as SC5
                         \ contains an RTS)
 
- LDA scacol,X           \ Set A to the scanner colour for this ship type from
-                        \ the X-th entry in the scacol table
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA scacol,X           \ Set A to the scanner colour for this ship type from
+\                       \ the X-th entry in the scacol table
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA #CYAN2             \ Set the colour of the ship on the scanner as cyan by
+                        \ default, for player 1's scanner
+
+ CPX #127               \ If the ship type is not 127, then we are not drawing
+ BNE scan1              \ the scanner for player 2, so skip the following
+                        \ instruction
+
+ LDA #YELLOW2           \ Set the colour for player 2's scanner to yellow
+
+.scan1
+
+                        \ --- End of replacement ------------------------------>
 
  STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
                         \ to the I/O processor with the #onescan command
@@ -61505,8 +61522,8 @@ ENDMACRO
  LDA player1INWK31      \ Set the scan visiblilty flag from player1INWK31
  STA INWK+31
 
- LDA #1                 \ Set TYPE purely to control the colour on the scanner
- STA TYPE               \ (we revert this to the correct type later)
+ LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
+ STA TYPE               \ to yellow (we revert this to the correct type later)
 
  JSR SCAN               \ Remove the ship from the scanner, if it's there
 
