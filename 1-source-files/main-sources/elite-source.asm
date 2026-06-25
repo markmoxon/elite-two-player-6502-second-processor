@@ -4432,6 +4432,16 @@ ENDIF
 
  SKIP 1                 \ Player 1's ship type
 
+.player1Missiles
+
+ SKIP 1                 \ Player 2's number of missiles, as configured in the
+                        \ configuration screen
+
+.player2Missiles
+
+ SKIP 1                 \ Player 2's number of missiles, as configured in the
+                        \ configuration screen
+
 .player1GameType
 
  SKIP 1                 \ Game type:
@@ -30271,7 +30281,7 @@ ENDIF
 
  LDA #2                 \ Set A to draw player 2's indicators
 
- LDX NOMSL              \ Call MSBAR to update the leftmost indicator in the
+ LDX player2NOMSL       \ Call MSBAR to update the leftmost indicator in the
  JSR MSBAR              \ dashboard's missile bar, which returns with Y = 0
 
  STY player2MSAR        \ Set MSAR = 0 to indicate that the leftmost missile
@@ -36657,6 +36667,9 @@ ENDIF
  LDX #3                 \ Set player 2's missiles to 3 by default
  STX player2NOMSL
 
+ STX player1Missiles    \ Set the number of missiles on the configuration screen
+ STX player2Missiles    \ to 3 by default
+
  LDX #&FF               \ Give player 2 an E.C.M.
  STX player2ECM
 
@@ -37036,6 +37049,13 @@ ENDIF
                         \ view
 
                         \ --- And replaced by: -------------------------------->
+
+ LDA player1Missiles    \ Reset the number of missiles for each player to the
+ STA NOMSL              \ configured amount (so this restores any missiles fired
+ LDA player2Missiles    \ in the last game)
+ STA player2NOMSL
+
+ JSR msblob             \ Update the missiles in the dashboard
 
  LDA #CYAN              \ Send a #SETCOL CYAN command to the I/O processor to
  JSR DOCOL              \ switch to colour 3, which is cyan
@@ -56585,7 +56605,7 @@ ENDIF
  LDX #6                 \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
- LDX NOMSL              \ Print the number of missiles for player 1
+ LDX player1Missiles    \ Print the number of missiles for player 1
  LDY #0
  LDA #1
  CLC
@@ -56601,7 +56621,7 @@ ENDIF
  LDX #7                 \ Set the highlight colour for this option (i.e. red if
  JSR SetHighlightColour \ this is the highlighted value, yellow otherwise)
 
- LDX player2NOMSL       \ Print the number of missiles for player 2
+ LDX player2Missiles    \ Print the number of missiles for player 2
  LDY #0
  LDA #1
  CLC
@@ -57109,14 +57129,17 @@ ENDIF
 
 .ToggleOption06
 
- LDX NOMSL              \ Set X = the number of missiles for player 1
+ LDX player1Missiles    \ Set X = the number of missiles for player 1
  INX
  CPX #5
  BNE P%+4
  LDX #0
 
- STX NOMSL              \ Set the number of missiles for player 1 to the new
+ STX player1Missiles    \ Set the number of missiles for player 1 to the new
                         \ value
+
+ STX NOMSL              \ Set the in-game number of missiles to the new value
+                        \ (this setting gets changed during gameplay)
 
  JSR msblob             \ Update the missiles in the dashboard
 
@@ -57124,14 +57147,17 @@ ENDIF
 
 .ToggleOption07
 
- LDX player2NOMSL       \ Set X = the number of missiles for player 2
+ LDX player2Missiles    \ Set X = the number of missiles for player 2
  INX
  CPX #5
  BNE P%+4
  LDX #0
 
- STX player2NOMSL       \ Set the number of missiles for player 2 to the new
+ STX player2Missiles    \ Set the number of missiles for player 2 to the new
                         \ value
+
+ STX player2NOMSL       \ Set the in-game number of missiles to the new value
+                        \ (this setting gets changed during gameplay)
 
  JSR msblob             \ Update the missiles in the dashboard
 
@@ -61693,10 +61719,6 @@ ENDMACRO
  SEC
  SBC #&20
  STA INWK+34
-
-\STZ INWK+8             \ Clear exploding state
-
-\STZ INWK+36            \ Clear scooped state
 
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
  STA TYPE               \ type
