@@ -34414,7 +34414,7 @@ ENDIF
  STZ player1Score       \ Reset the scores
  STZ player1Score+1
  STZ player2Score
- STZ player2Score+2
+ STZ player2Score+1
 
  LDX #%10000000         \ Set bit 7 of titleScreen to denote we are drawing the
  STX titleScreen        \ title screen, so the compass and scanner are disabled
