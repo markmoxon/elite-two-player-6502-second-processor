@@ -4193,11 +4193,11 @@ ENDIF
 
 .player2ECMA
 
- SKIP 1                 \ Storage for player 2's ECMA setting
+ SKIP 1                 \ Player 2's ECMA setting
 
 .player2ECMP
 
- SKIP 1                 \ Storage for player 2's ECMP setting
+ SKIP 1                 \ Player 2's ECMP setting
 
 .player2LAS2
 
@@ -4343,6 +4343,10 @@ ENDIF
 
  SKIP 1                 \ Player 2's LASY value
 
+.player2MSTG
+
+ SKIP 1                 \ Player 2's MSTG value
+
 .player2ENERGY
 
  SKIP 1                 \ Player 2's ENERGY value
@@ -4474,6 +4478,15 @@ ENDIF
 
  SKIP 1                 \ A flag to denote we are in the title screen rather
                         \ than the game itself
+
+.newCoords
+
+ SKIP 9                 \ The coordinates for player 1's ship in player 2's view
+                        \ during the transformation calculation
+
+.storeData
+
+ SKIP NI%               \ Storage area for INWK, ship movement etc.
 
 .endWP
 
@@ -5859,67 +5872,141 @@ ENDIF
 .MA4
 
 }
+
+                        \ --- End of added code ------------------------------->
+
+ LDA KY15               \ If "U" is being pressed and the number of missiles
+ AND NOMSL              \ in NOMSL is non-zero, keep going, otherwise jump down
+ BEQ MA20               \ to MA20 to skip the following
+
+ LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
+ JSR ABORT              \ ABORT to disarm the missile and update the missile
+                        \ indicators on the dashboard to green (Y = &EE)
+
+ LDA #40                \ Call the NOISE routine with A = 40 to make a low,
+ JSR NOISE              \ long beep to indicate the missile is now disarmed
+
+ LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
+ STA MSAR               \ currently armed
+
+.MA20
+
+ LDA MSTG               \ If MSTG is positive (i.e. it does not have bit 7 set),
+ BPL MA25               \ then it indicates we already have a missile locked on
+                        \ a target (in which case MSTG contains the ship number
+                        \ of the target), so jump to MA25 to skip targeting. Or
+                        \ to put it another way, if MSTG = &FF, which means
+                        \ there is no current target lock, keep going
+
+ LDA KY14               \ If "T" is being pressed, keep going, otherwise jump
+ BEQ MA25               \ down to MA25 to skip the following
+
+ LDX NOMSL              \ If the number of missiles in NOMSL is zero, jump down
+ BEQ MA25               \ to MA25 to skip the following
+
+ STA MSAR               \ The "target missile" key is being pressed and we have
+                        \ at least one missile, so set MSAR = &FF to denote that
+                        \ our missile is currently armed (we know A has the
+                        \ value &FF, as we just loaded it from MSTG and checked
+                        \ that it was negative)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #1                 \ Set A to draw player 1's indicators
+
+                        \ --- End of added code ------------------------------->
+
+ LDY #YELLOW2           \ Change the leftmost missile indicator to yellow
+ JSR MSBAR              \ on the missile bar (this call changes the leftmost
+                        \ indicator because we set X to the number of missiles
+                        \ in NOMSL above, and the indicators are numbered from
+                        \ right to left, so X is the number of the leftmost
+                        \ indicator)
+
+.MA25
+
+ LDA KY16               \ If "M" is being pressed, keep going, otherwise jump
+ BEQ MA24               \ down to MA24 to skip the following
+
+ LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
+ BMI MA64               \ MA64 to skip the following (also skipping the checks
+                        \ for TAB, ESCAPE, "J" and "E")
+
+ JSR FRMIS              \ The "fire missile" key is being pressed and we have
+                        \ a missile lock, so call the FRMIS routine to fire
+                        \ the missile
+
+.MA24
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA KY21               \ If "_" is being pressed and the number of missiles
+ AND player2NOMSL       \ in NOMSL is non-zero, keep going, otherwise jump down
+ BEQ MA20               \ to MA20 to skip the following
+
+ LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
+ JSR Player2ABORT       \ ABORT to disarm the missile and update the missile
+                        \ indicators on the dashboard to green (Y = &EE)
+
+ LDA #40                \ Call the NOISE routine with A = 40 to make a low,
+ JSR NOISE              \ long beep to indicate the missile is now disarmed
+
+ LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
+ STA player2MSAR        \ currently armed
+
+.MA20
+
+ LDA player2MSTG        \ If MSTG is positive (i.e. it does not have bit 7 set),
+ BPL MA25               \ then it indicates we already have a missile locked on
+                        \ a target (in which case MSTG contains the ship number
+                        \ of the target), so jump to MA25 to skip targeting. Or
+                        \ to put it another way, if MSTG = &FF, which means
+                        \ there is no current target lock, keep going
+
+ LDA KY12               \ If "[" is being pressed, keep going, otherwise jump
+ BEQ MA25               \ down to MA25 to skip the following
+
+ LDX player2NOMSL       \ If the number of missiles in NOMSL is zero, jump down
+ BEQ MA25               \ to MA25 to skip the following
+
+ STA player2MSAR        \ The "target missile" key is being pressed and we have
+                        \ at least one missile, so set MSAR = &FF to denote that
+                        \ our missile is currently armed (we know A has the
+                        \ value &FF, as we just loaded it from MSTG and checked
+                        \ that it was negative)
+
+ LDA #2                 \ Set A to draw player 2's indicators
+
+ LDY #YELLOW2           \ Change the leftmost missile indicator to yellow
+ JSR MSBAR              \ on the missile bar (this call changes the leftmost
+                        \ indicator because we set X to the number of missiles
+                        \ in NOMSL above, and the indicators are numbered from
+                        \ right to left, so X is the number of the leftmost
+                        \ indicator)
+
+.MA25
+
+ LDA KY13               \ If "@" is being pressed, keep going, otherwise jump
+ BEQ MA24               \ down to MA24 to skip the following
+
+ LDA player2MSTG        \ If MSTG = &FF then there is no target lock, so jump to
+ BMI MA64               \ MA64 to skip the following (also skipping the checks
+                        \ for TAB, ESCAPE, "J" and "E")
+
+ JSR Player2FRMIS       \ The "fire missile" key is being pressed and we have
+                        \ a missile lock, so call the FRMIS routine to fire
+                        \ the missile
+
+.MA24
+
+}
+
                         \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
-\LDA KY15               \ If "U" is being pressed and the number of missiles
-\AND NOMSL              \ in NOMSL is non-zero, keep going, otherwise jump down
-\BEQ MA20               \ to MA20 to skip the following
-\
-\LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
-\JSR ABORT              \ ABORT to disarm the missile and update the missile
-\                       \ indicators on the dashboard to green (Y = &EE)
-\
-\LDA #40                \ Call the NOISE routine with A = 40 to make a low,
-\JSR NOISE              \ long beep to indicate the missile is now disarmed
-\
-\LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
-\STA MSAR               \ currently armed
-\
-\.MA20
-\
-\LDA MSTG               \ If MSTG is positive (i.e. it does not have bit 7 set),
-\BPL MA25               \ then it indicates we already have a missile locked on
-\                       \ a target (in which case MSTG contains the ship number
-\                       \ of the target), so jump to MA25 to skip targeting. Or
-\                       \ to put it another way, if MSTG = &FF, which means
-\                       \ there is no current target lock, keep going
-\
-\LDA KY14               \ If "T" is being pressed, keep going, otherwise jump
-\BEQ MA25               \ down to MA25 to skip the following
-\
-\LDX NOMSL              \ If the number of missiles in NOMSL is zero, jump down
-\BEQ MA25               \ to MA25 to skip the following
-\
-\STA MSAR               \ The "target missile" key is being pressed and we have
-\                       \ at least one missile, so set MSAR = &FF to denote that
-\                       \ our missile is currently armed (we know A has the
-\                       \ value &FF, as we just loaded it from MSTG and checked
-\                       \ that it was negative)
-\
-\LDY #YELLOW2           \ Change the leftmost missile indicator to yellow
-\JSR MSBAR              \ on the missile bar (this call changes the leftmost
-\                       \ indicator because we set X to the number of missiles
-\                       \ in NOMSL above, and the indicators are numbered from
-\                       \ right to left, so X is the number of the leftmost
-\                       \ indicator)
-\
-\.MA25
-\
-\LDA KY16               \ If "M" is being pressed, keep going, otherwise jump
-\BEQ MA24               \ down to MA24 to skip the following
-\
-\LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
-\BMI MA64               \ MA64 to skip the following (also skipping the checks
-\                       \ for TAB, ESCAPE, "J" and "E")
-\
-\JSR FRMIS              \ The "fire missile" key is being pressed and we have
-\                       \ a missile lock, so call the FRMIS routine to fire
-\                       \ the missile
-\
-\.MA24
-\
 \LDA KY12               \ If TAB is being pressed, keep going, otherwise jump
 \BEQ MA76               \ down to MA76 to skip the following
 \
@@ -6124,6 +6211,7 @@ ENDIF
 .MA3
 
 }
+
                         \ --- End of added code ------------------------------->
 
  LDA LASCT              \ If LASCT is zero, keep going, otherwise the laser is
@@ -6297,30 +6385,34 @@ ENDIF
 \
 \ ******************************************************************************
 
- LDA BOMB               \ If we set off our energy bomb (see MA24 above), then
- BPL MA21               \ BOMB is now negative, so this skips to MA21 if our
-                        \ energy bomb is not going off
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CPY #2*SST             \ If the ship in Y is the space station, jump to BA21
- BEQ MA21               \ as energy bombs are useless against space stations
+\LDA BOMB               \ If we set off our energy bomb (see MA24 above), then
+\BPL MA21               \ BOMB is now negative, so this skips to MA21 if our
+\                       \ energy bomb is not going off
+\
+\CPY #2*SST             \ If the ship in Y is the space station, jump to BA21
+\BEQ MA21               \ as energy bombs are useless against space stations
+\
+\CPY #2*CON             \ If the ship in Y is the Constrictor, jump to BA21
+\BCS MA21               \ as energy bombs are useless against the Constrictor
+\                       \ (the Constrictor is the target of mission 1, and it
+\                       \ would be too easy if it could just be blown out of
+\                       \ the sky with a single key press)
+\
+\LDA INWK+31            \ If the ship we are checking has bit 5 set in its ship
+\AND #%00100000         \ byte #31, then it is already exploding, so jump to
+\BNE MA21               \ BA21 as ships can't explode more than once
+\
+\ASL INWK+31            \ The energy bomb is killing this ship, so set bit 7 of
+\SEC                    \ the ship byte #31 to indicate that it has now been
+\ROR INWK+31            \ killed
+\
+\JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
+\                       \ ship (so increase the kill tally, make an explosion
+\                       \ sound and possibly display "RIGHT ON COMMANDER!")
 
- CPY #2*CON             \ If the ship in Y is the Constrictor, jump to BA21
- BCS MA21               \ as energy bombs are useless against the Constrictor
-                        \ (the Constrictor is the target of mission 1, and it
-                        \ would be too easy if it could just be blown out of
-                        \ the sky with a single key press)
-
- LDA INWK+31            \ If the ship we are checking has bit 5 set in its ship
- AND #%00100000         \ byte #31, then it is already exploding, so jump to
- BNE MA21               \ BA21 as ships can't explode more than once
-
- ASL INWK+31            \ The energy bomb is killing this ship, so set bit 7 of
- SEC                    \ the ship byte #31 to indicate that it has now been
- ROR INWK+31            \ killed
-
- JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
-                        \ ship (so increase the kill tally, make an explosion
-                        \ sound and possibly display "RIGHT ON COMMANDER!")
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -7721,7 +7813,6 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
-
  LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
  BNE oh                 \ then jump to oh to return from the main flight loop
                         \ (as oh is an RTS)
@@ -7758,43 +7849,47 @@ ENDIF
 \
 \ ******************************************************************************
 
-.SPIN
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR DORND              \ Fetch a random number, and jump to oh if it is
- BPL oh                 \ positive (50% chance)
+\.SPIN
+\
+\JSR DORND              \ Fetch a random number, and jump to oh if it is
+\BPL oh                 \ positive (50% chance)
+\
+\TYA                    \ Copy the cargo type from Y into A and X
+\TAX
+\
+\LDY #0                 \ Fetch the first byte of the hit ship's blueprint,
+\AND (XX0),Y            \ which determines the maximum number of bits of
+\                       \ debris shown when the ship is destroyed, and AND
+\                       \ with the random number we just fetched
+\
+\AND #15                \ Reduce the random number in A to the range 0-15
+\
+\.SPIN2
+\
+\STA CNT                \ Store the result in CNT, so CNT contains a random
+\                       \ number between 0 and the maximum number of bits of
+\                       \ debris that this ship will release when destroyed
+\                       \ (to a maximum of 15 bits of debris)
+\
+\.spl
+\
+\BEQ oh                 \ We're going to go round a loop using CNT as a counter
+\                       \ so this checks whether the counter is zero and jumps
+\                       \ to oh when it gets there (which might be straight
+\                       \ away)
+\
+\LDA #0                 \ Call SFS1 to spawn the specified cargo from the now
+\JSR SFS1               \ deceased parent ship, giving the spawned canister an
+\                       \ AI flag of 0 (no AI, zero aggression, no E.C.M.)
+\
+\DEC CNT                \ Decrease the loop counter
+\
+\BNE spl+2              \ Jump back up to the LDA &0 instruction above (this BPL
+\                       \ is effectively a JMP as CNT will never be negative)
 
- TYA                    \ Copy the cargo type from Y into A and X
- TAX
-
- LDY #0                 \ Fetch the first byte of the hit ship's blueprint,
- AND (XX0),Y            \ which determines the maximum number of bits of
-                        \ debris shown when the ship is destroyed, and AND
-                        \ with the random number we just fetched
-
- AND #15                \ Reduce the random number in A to the range 0-15
-
-.SPIN2
-
- STA CNT                \ Store the result in CNT, so CNT contains a random
-                        \ number between 0 and the maximum number of bits of
-                        \ debris that this ship will release when destroyed
-                        \ (to a maximum of 15 bits of debris)
-
-.spl
-
- BEQ oh                 \ We're going to go round a loop using CNT as a counter
-                        \ so this checks whether the counter is zero and jumps
-                        \ to oh when it gets there (which might be straight
-                        \ away)
-
- LDA #0                 \ Call SFS1 to spawn the specified cargo from the now
- JSR SFS1               \ deceased parent ship, giving the spawned canister an
-                        \ AI flag of 0 (no AI, zero aggression, no E.C.M.)
-
- DEC CNT                \ Decrease the loop counter
-
- BNE spl+2              \ Jump back up to the LDA &0 instruction above (this BPL
-                        \ is effectively a JMP as CNT will never be negative)
+                        \ --- End of removed code ----------------------------->
 
 .oh
 
@@ -16956,16 +17051,20 @@ ENDIF
                         \ isn't room in the universe for our missile, so jump
                         \ down to FR1 to display a "missile jammed" message
 
- LDX MSTG               \ Fetch the slot number of the missile's target
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR GINF               \ Get the address of the data block for the target ship
-                        \ and store it in INF
+\LDX MSTG               \ Fetch the slot number of the missile's target
+\
+\JSR GINF               \ Get the address of the data block for the target ship
+\                       \ and store it in INF
+\
+\LDA FRIN,X             \ Fetch the ship type of the missile's target into A
+\
+\JSR ANGRY              \ Call ANGRY to make the target ship or station hostile,
+\                       \ and if this is a ship, wake up its AI and give it a
+\                       \ kick of speed
 
- LDA FRIN,X             \ Fetch the ship type of the missile's target into A
-
- JSR ANGRY              \ Call ANGRY to make the target ship or station hostile,
-                        \ and if this is a ship, wake up its AI and give it a
-                        \ kick of speed
+                        \ --- End of removed code ----------------------------->
 
  LDY #0                 \ We have just launched a missile, so we need to remove
  JSR ABORT              \ missile lock and hide the leftmost indicator on the
@@ -16976,6 +17075,133 @@ ENDIF
  LDA #48                \ Call the NOISE routine with A = 48 to make the sound
  JMP NOISE              \ of a missile launch, returning from the subroutine
                         \ using a tail call
+
+\ ******************************************************************************
+\
+\       Name: Player2FRS1
+\       Type: Subroutine
+\   Category: Tactics
+\    Summary: Launch a ship straight ahead of us, below the laser sights
+\
+\ ------------------------------------------------------------------------------
+\
+\ This is used in three places:
+\
+\   * When we launch a missile, in which case the missile is the ship that is
+\     launched ahead of us
+\
+\   * When we launch our escape pod, in which case it's our abandoned Cobra Mk
+\     III that is launched ahead of us
+\
+\   * The fq1 entry point is used to launch a bunch of cargo canisters ahead of
+\     us as part of the death screen
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The type of ship to launch ahead of us
+\
+\ ------------------------------------------------------------------------------
+\
+\ Returns:
+\
+\   C flag              Set if the ship was successfully launched, clear if it
+\                       wasn't (as there wasn't enough free memory)
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   fq1                 Used to add a cargo canister to the universe
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+
+.Player2FRS1
+
+ JSR ZINF               \ Call ZINF to reset the INWK ship workspace
+
+ LDA #28                \ Set y_lo = 28
+ STA INWK+3
+
+ LSR A                  \ Set z_lo = 14, so the launched ship starts out
+ STA INWK+6             \ ahead of us
+
+ LDA #%10000000         \ Set y_sign to be negative, so the launched ship is
+ STA INWK+5             \ launched just below our line of sight
+
+ LDA player2MSTG        \ Set A to the missile lock target, shifted left so the
+ ASL A                  \ slot number is in bits 1-5
+
+ ORA #%10000000         \ Set bit 7 and store the result in byte #32, the AI
+ STA INWK+32            \ flag launched ship for the launched ship. For missiles
+                        \ this enables AI (bit 7), makes it friendly towards us
+                        \ (bit 6), sets the target to the value of MSTG (bits
+                        \ 1-5), and sets its lock status as launched (bit 0).
+                        \ It doesn't matter what it does for our abandoned
+                        \ Cobra, as the AI flag gets overwritten once we return
+                        \ from the subroutine back to the ESCAPE routine that
+                        \ called FRS1 in the first place
+
+ LDA #&60               \ Set byte #14 (nosev_z_hi) to 1 (&60), so the launched
+ STA INWK+14            \ ship is pointing away from us
+
+ ORA #128               \ Set byte #22 (sidev_x_hi) to -1 (&D0), so the launched
+ STA INWK+22            \ ship has the same orientation as spawned ships, just
+                        \ pointing away from us (if we set sidev to +1 instead,
+                        \ this ship would be a mirror image of all the other
+                        \ ships, which are spawned with -1 in nosev and +1 in
+                        \ sidev)
+
+ LDA DELTA              \ Set byte #27 (speed) to 2 * DELTA, so the launched
+ ROL A                  \ ship flies off at twice our speed
+ STA INWK+27
+
+ TXA                    \ Add a new ship of type X to our local bubble of
+ JMP NWSHP              \ universe and return from the subroutine using a tail
+                        \ call
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: Player2FRMIS
+\       Type: Subroutine
+\   Category: Tactics
+\    Summary: Fire a missile from our ship
+\
+\ ------------------------------------------------------------------------------
+\
+\ We fired a missile, so send it streaking away from us to unleash mayhem and
+\ destruction on our sworn enemies.
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2FRMIS
+
+ LDX #MSL               \ Call FRS1 to launch a missile straight ahead of us
+ JSR Player2FRS1
+
+ BCC FR1                \ If FRS1 returns with the C flag clear, then there
+                        \ isn't room in the universe for our missile, so jump
+                        \ down to FR1 to display a "missile jammed" message
+
+ LDY #0                 \ We have just launched a missile, so we need to remove
+ JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
+                        \ dashboard by setting it to black (Y = 0)
+
+ DEC player2NOMSL       \ Reduce the number of missiles we have by 1
+
+ LDA #48                \ Call the NOISE routine with A = 48 to make the sound
+ JMP NOISE              \ of a missile launch, returning from the subroutine
+                        \ using a tail call
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -17004,62 +17230,66 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ANGRY
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP #SST               \ If this is the space station, jump to AN2 to make the
- BEQ AN2                \ space station hostile
+\.ANGRY
+\
+\CMP #SST               \ If this is the space station, jump to AN2 to make the
+\BEQ AN2                \ space station hostile
+\
+\LDY #36                \ Fetch the ship's NEWB flags from byte #36
+\LDA (INF),Y
+\
+\AND #%00100000         \ If bit 5 of the ship's NEWB flags is clear, skip the
+\BEQ P%+5               \ following instruction, otherwise bit 5 is set, meaning
+\                       \ this ship is an innocent bystander, and attacking it
+\                       \ will annoy the space station
+\
+\JSR AN2                \ Call AN2 to make the space station hostile
+\
+\LDY #32                \ Fetch the ship's byte #32 (AI flag)
+\LDA (INF),Y
+\
+\BEQ HI1                \ If the AI flag is zero then this ship has no AI and
+\                       \ zero aggression, so return from the subroutine (as
+\                       \ HI1 contains an RTS)
+\
+\ORA #%10000000         \ Otherwise set bit 7 (AI enabled) to ensure AI is
+\STA (INF),Y            \ definitely enabled, so the ship can start acting
+\                       \ according to its aggression level
+\
+\LDY #28                \ Set the ship's byte #28 (acceleration) to 2, so it
+\LDA #2                 \ speeds up
+\STA (INF),Y
+\
+\ASL A                  \ Set the ship's byte #30 (pitch counter) to 4, so it
+\LDY #30                \ starts diving
+\STA (INF),Y
+\
+\LDA TYPE               \ If the ship's type is < #CYL (i.e. a missile, Coriolis
+\CMP #CYL               \ space station, escape pod, plate, cargo canister,
+\BCC AN3                \ boulder, asteroid, splinter, Shuttle or Transporter),
+\                       \ then jump to AN3 to skip the following
+\
+\LDY #36                \ Set bit 2 of the ship's NEWB flags in byte #36 to
+\LDA (INF),Y            \ make this ship hostile
+\ORA #%00000100
+\STA (INF),Y
+\
+\.AN3
+\
+\RTS                    \ Return from the subroutine
+\
+\.AN2
+\
+\LDA K%+NI%+36          \ Set bit 2 of the NEWB flags in byte #36 of the second
+\ORA #%00000100         \ ship in the ship data workspace at K%, which is
+\STA K%+NI%+36          \ reserved for the sun or the space station (in this
+\                       \ case it's the latter), to make it hostile
+\
+\RTS                    \ Return from the subroutine
 
- LDY #36                \ Fetch the ship's NEWB flags from byte #36
- LDA (INF),Y
-
- AND #%00100000         \ If bit 5 of the ship's NEWB flags is clear, skip the
- BEQ P%+5               \ following instruction, otherwise bit 5 is set, meaning
-                        \ this ship is an innocent bystander, and attacking it
-                        \ will annoy the space station
-
- JSR AN2                \ Call AN2 to make the space station hostile
-
- LDY #32                \ Fetch the ship's byte #32 (AI flag)
- LDA (INF),Y
-
- BEQ HI1                \ If the AI flag is zero then this ship has no AI and
-                        \ zero aggression, so return from the subroutine (as
-                        \ HI1 contains an RTS)
-
- ORA #%10000000         \ Otherwise set bit 7 (AI enabled) to ensure AI is
- STA (INF),Y            \ definitely enabled, so the ship can start acting
-                        \ according to its aggression level
-
- LDY #28                \ Set the ship's byte #28 (acceleration) to 2, so it
- LDA #2                 \ speeds up
- STA (INF),Y
-
- ASL A                  \ Set the ship's byte #30 (pitch counter) to 4, so it
- LDY #30                \ starts diving
- STA (INF),Y
-
- LDA TYPE               \ If the ship's type is < #CYL (i.e. a missile, Coriolis
- CMP #CYL               \ space station, escape pod, plate, cargo canister,
- BCC AN3                \ boulder, asteroid, splinter, Shuttle or Transporter),
-                        \ then jump to AN3 to skip the following
-
- LDY #36                \ Set bit 2 of the ship's NEWB flags in byte #36 to
- LDA (INF),Y            \ make this ship hostile
- ORA #%00000100
- STA (INF),Y
-
-.AN3
-
- RTS                    \ Return from the subroutine
-
-.AN2
-
- LDA K%+NI%+36          \ Set bit 2 of the NEWB flags in byte #36 of the second
- ORA #%00000100         \ ship in the ship data workspace at K%, which is
- STA K%+NI%+36          \ reserved for the sun or the space station (in this
-                        \ case it's the latter), to make it hostile
-
- RTS                    \ Return from the subroutine
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -29960,10 +30190,91 @@ ENDIF
 
  STX MSTG               \ Store the target of our missile lock in MSTG
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #1                 \ Set A to draw player 1's indicators
+
+                        \ --- End of added code ------------------------------->
+
  LDX NOMSL              \ Call MSBAR to update the leftmost indicator in the
  JSR MSBAR              \ dashboard's missile bar, which returns with Y = 0
 
  STY MSAR               \ Set MSAR = 0 to indicate that the leftmost missile
+                        \ is no longer seeking a target lock
+
+ RTS                    \ Return from the subroutine
+
+\ ******************************************************************************
+\
+\       Name: Player2ABORT
+\       Type: Subroutine
+\   Category: Dashboard
+\    Summary: Disarm missiles and update the dashboard indicators
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   Y                   The new colour of the missile indicator:
+\
+\                         * &00 = black (no missile)
+\
+\                         * #RED2 = red (armed and locked)
+\
+\                         * #YELLOW2 = yellow/white (armed)
+\
+\                         * #GREEN2 = green (disarmed)
+\
+\ ******************************************************************************
+
+.Player2ABORT
+
+ LDX #&FF               \ Set X to &FF, which is the value of MSTG when we have
+                        \ no target lock for our missile
+
+                        \ Fall through into ABORT2 to set the missile lock to
+                        \ the value in X, which effectively disarms the missile
+
+\ ******************************************************************************
+\
+\       Name: Player2ABORT2
+\       Type: Subroutine
+\   Category: Dashboard
+\    Summary: Set/unset the lock target for a missile and update the dashboard
+\
+\ ------------------------------------------------------------------------------
+\
+\ Set the lock target for the leftmost missile and update the dashboard.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The slot number of the ship to lock our missile onto, or
+\                       &FF to remove missile lock
+\
+\   Y                   The new colour of the missile indicator:
+\
+\                         * &00 = black (no missile)
+\
+\                         * #RED2 = red (armed and locked)
+\
+\                         * #YELLOW2 = yellow/white (armed)
+\
+\                         * #GREEN2 = green (disarmed)
+\
+\ ******************************************************************************
+
+.Player2ABORT2
+
+ STX player2MSTG        \ Store the target of our missile lock in MSTG
+
+ LDA #2                 \ Set A to draw player 2's indicators
+
+ LDX NOMSL              \ Call MSBAR to update the leftmost indicator in the
+ JSR MSBAR              \ dashboard's missile bar, which returns with Y = 0
+
+ STY player2MSAR        \ Set MSAR = 0 to indicate that the leftmost missile
                         \ is no longer seeking a target lock
 
  RTS                    \ Return from the subroutine
@@ -33661,6 +33972,28 @@ ENDIF
 
 .KS5
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+{
+
+ LDA player2MSTG        \ Check whether this slot matches the slot number in
+ CMP XX4                \ MSTG, which is the target of our missile lock
+
+ BNE KS5                \ If our missile is not locked on this ship, jump to KS5
+
+ LDY #GREEN2            \ Otherwise we need to remove our missile lock, so call
+ JSR Player2ABORT       \ ABORT to disarm the missile and update the missile
+                        \ indicators on the dashboard to green (Y = #GREEN2)
+
+ LDA #200               \ Print recursive token 40 ("TARGET LOST") as an
+ JSR Player2MESS        \ in-flight message
+
+.KS5
+
+}
+
+                        \ --- End of added code ------------------------------->
+
  LDY XX4                \ Restore the slot number of the ship to remove into Y
 
  LDX FRIN,Y             \ Fetch the contents of the slot, which contains the
@@ -34176,6 +34509,13 @@ ENDIF
                         \ --- End of added code ------------------------------->
 
  STX MSTG               \ Reset MSTG, the missile target, to &FF (no target)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STX player2MSTG        \ Reset player2MSTG, the missile target, to &FF (no
+                        \ target)
+
+                        \ --- End of added code ------------------------------->
 
  LDA #128               \ Set the current pitch rate to the mid-point, 128
  STA JSTY
@@ -35361,6 +35701,7 @@ ENDIF
 .NOLASCT
 
 }
+
                         \ --- End of added code ------------------------------->
 
 
@@ -61392,19 +61733,34 @@ ENDMACRO
 
  LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
  CMP #2                 \ the ship setup
- BNE dshp9
+ BNE dshp10
 
  LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31
  STA player1INWK31
 
- LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp8              \ the laser power, so if this is zero, jump down to
-                        \ dshp8 to skip the following
-
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp8              \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp8 to skip the
+ BCC dshp9              \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp9 to skip the
                         \ following)
+
+ LDA player2MSAR        \ We have missile lock, so check whether the leftmost
+ BEQ dshp7              \ missile is currently armed, and if not, jump to dshp7
+                        \ to process laser fire, as we can't lock an unarmed
+                        \ missile
+
+ JSR BEEP               \ We have missile lock and an armed missile, so call
+                        \ the BEEP subroutine to make a short, high beep
+
+ LDX #12                \ Call ABORT2 to store the details of this missile
+ LDY #RED2              \ lock, with the targeted ship's slot number in #12
+ JSR Player2ABORT2      \ (for player 1) and set the colour of the missile
+                        \ indicator to the colour in Y (red = &0E)
+
+.dshp7
+
+ LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
+ BEQ dshp9              \ the laser power, so if this is zero, jump down to
+                        \ dshp9 to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
@@ -61419,20 +61775,20 @@ ENDMACRO
  JSR Player2ee3         \ Print player 2's score
 
  LDA player2GameType    \ If player 2 is playing survival, they don't have a
- BEQ dshp7              \ score, so jump to dshp7 to keep playing
+ BEQ dshp8              \ score, so jump to dshp8 to keep playing
 
- LDA player2Score+1     \ If the score is less than the target, jump to dshp7 to
+ LDA player2Score+1     \ If the score is less than the target, jump to dshp8 to
  CMP player2Target+1    \ keep playing
- BCC dshp7
+ BCC dshp8
  LDA player2Score
  CMP player2Target
- BCC dshp7
+ BCC dshp8
 
  LDA #2                 \ If we get here then player 2 has reached their target,
  JMP DEATH              \ so set A to indicate that player 2 has won and jump to
                         \ DEATH to end the game
 
-.dshp7
+.dshp8
 
                         \ Player 1 has been hit, so process player 1's shields
 
@@ -61443,7 +61799,7 @@ ENDMACRO
 
  JSR OOPS               \ Remove the relevant energy from player 1's shields
 
-.dshp8
+.dshp9
 
  LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
@@ -61459,7 +61815,7 @@ ENDMACRO
  LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
  STA XX0+1              \ blueprint and store it in XX0+1
 
-.dshp9
+.dshp10
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
@@ -61537,26 +61893,6 @@ ENDMACRO
  STX INWK+16
 
  RTS                    \ Return from the subroutine
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: newCoords
-\       Type: Variable
-\   Category: Two-player Elite
-\    Summary: Storage for the coordinates for player 1's ship in player 2's view
-\             during the calculation
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.newCoords
-
- EQUB 0, 0, 0
- EQUB 0, 0, 0
- EQUB 0, 0, 0
 
                         \ --- End of added code ------------------------------->
 
@@ -62252,23 +62588,6 @@ ENDMACRO
  STA player2DELT4+1
 
  RTS                    \ Return from the subroutine
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: storeData
-\       Type: Variable
-\   Category: Two-player Elite
-\    Summary: Storage area for INWK, ship movement etc.
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.storeData
-
- SKIP NI%
 
                         \ --- End of added code ------------------------------->
 
