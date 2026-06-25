@@ -37102,8 +37102,12 @@ ENDIF
  LDA #%10000000
  STA INWK+5
 
- LDA player1ShipType    \ Set up a new ship for player 1 into slot #0
- JSR NWSHP
+ LDA #CYL               \ Set up a new ship block for player 1 in slot #0, using
+ JSR NWSHP              \ the Cobra Mk III blueprint as it has the largest ship
+                        \ line heap (so all the other ships will fit)
+
+ LDA player1ShipType    \ Set the ship to the configured ship for player 1
+ STA FRIN
 
  LDX #0                 \ Save player 1's ship data
  JSR SaveShipDataInSlot
@@ -37114,8 +37118,12 @@ ENDIF
  STZ INWK+1
  STZ INWK+2
 
- LDA player2ShipType    \ Set up a new ship for player 2 into slot #1
- JSR NWSHP
+ LDA #CYL               \ Set up a new ship block for player 2 in slot #1, using
+ JSR NWSHP              \ the Cobra Mk III blueprint as it has the largest ship
+                        \ line heap (so all the other ships will fit)
+
+ LDA player2ShipType    \ Set the ship to the configured ship for player 2
+ STA FRIN+1
 
  LDX #1                 \ Save player 2's ship data
  JSR SaveShipDataInSlot
@@ -56941,11 +56949,6 @@ ENDIF
  LDX player1ShipType    \ Set X = the current ship type for player 1
 
  JSR ToggleShipType     \ Toggle the ship type
-
-\CPX #0                 \ If there's a drawing issue, jump to fixs1
-\BEQ fixs1
-\CPX #28
-\BCS fixs1
 
  LDA shipDistance,X     \ Set the correct distance for the new choice
  STA K%+7
