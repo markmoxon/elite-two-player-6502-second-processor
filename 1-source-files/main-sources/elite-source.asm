@@ -37593,22 +37593,33 @@ ENDIF
  EOR #1
  JSR PrintOptionA
 
- BRA titl9              \ Jump to titl9 to wait for any keys to be releases and
+ BRA titl11             \ Jump to titl11 to wait for any keys to be releases and
                         \ skip any other key checks
 
 .titl5
 
- CMP #&39               \ If the up arrow was not pressed, jump to titl7 to
- BNE titl7              \ keep checking
+ CMP #&39               \ If the up arrow was not pressed, jump to titl8 to
+ BNE titl8              \ keep checking
 
  LDX configHighlight    \ Set nextHighlight to the new highlight option,
  DEX                    \ wrapping around from top to bottom
  DEX
- BPL P%+4
- LDX #12
- STX nextHighlight
+
+ BPL titl6              \ If we have not fallen off the top of the column, jump
+                        \ to titl6
+
+ TXA                    \ Set X to 12 or 13, to move to the bottom of the
+ AND #1                 \ relevant column
+ CLC
+ ADC #12
+ TAX
 
 .titl6
+
+ STX nextHighlight      \ Store the number of the next highlight so we can move
+                        \ the highlight there
+
+.titl7
 
  LDA configHighlight    \ Redraw the original highlight to remove it
  JSR PrintOptionA
@@ -37625,24 +37636,32 @@ ENDIF
  LDA nextHighlight      \ Redraw the next highlight to show it
  JSR PrintOptionA
 
- BRA titl9              \ Jump to titl9 to skip any other key checks
+ BRA titl11             \ Jump to titl11 to skip any other key checks
 
-.titl7
+.titl8
 
- CMP #&29               \ If the down arrow was not pressed, jump to titl9 to
- BNE titl8              \ keep checking
+ CMP #&29               \ If the down arrow was not pressed, jump to titl10 to
+ BNE titl10             \ keep checking
 
  LDX configHighlight    \ Set nextHighlight to the new highlight option,
  INX                    \ wrapping around from top to bottom
  INX
- CPX #14
- BCC P%+4
- LDX #0
- STX nextHighlight
 
- BRA titl6              \ Jump to titl6 to draw the new highlight
+ CPX #14                \ If we have not fallen off the bottom of the column,
+ BCC titl9              \ jump to titl9
 
-.titl8
+ TXA                    \ Set X to 0 or 1, to move to the top of the relevant
+ AND #1                 \ column
+ TAX
+
+.titl9
+
+ STX nextHighlight      \ Store the number of the next highlight so we can move
+                        \ the highlight there
+
+ BRA titl7              \ Jump to titl7 to draw the new highlight
+
+.titl10
 
  LDA configHighlight    \ Redraw the highlight to remove it
  JSR PrintOptionA
@@ -37652,7 +37671,7 @@ ENDIF
  LDA configHighlight    \ Draw the highlight to update it
  JSR PrintOptionA
 
-.titl9
+.titl11
 
  JMP TLL2               \ Loop back to keep rotating the ships
 
