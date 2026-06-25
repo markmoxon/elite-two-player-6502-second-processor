@@ -4325,7 +4325,7 @@ ENDIF
                         \
                         \   * 0 = Joystick
                         \
-                        \   * 1 = Computer
+                        \   * 1 = AI Pilot
 
 .player2LASER
 
@@ -14258,11 +14258,33 @@ ENDIF
  LDA player2ALP2        \ Send the sign of the roll angle to the I/O processor
  JSR OSWRCH
 
+ LDA player2JSTK        \ If this is a human player, jump to dial1 to display
+ BEQ dial1              \ the pitch angle in player2BETA as-is
+
+ LDA player2BETA        \ Send the signed pitch angle to the I/O processor
+ AND #%10000000         \ divided by 4 while retaining the sign
+ STA T
+ LDA player2BETA
+ AND #%01111111
+ LSR A                  
+ LSR A
+ ORA T
+ JSR OSWRCH
+
+ LDA #0                 \ Send 0 for player2BET1 so we don't adjust the value
+ JSR OSWRCH             \ in the I/O processor routine
+
+ JMP dial2              \ Jump to dial2 to skip the following
+
+.dial1
+
  LDA player2BETA        \ Send the signed pitch angle to the I/O processor
  JSR OSWRCH
 
  LDA player2BET1        \ Send the magnitude of the pitch angle to the I/O
  JSR OSWRCH             \ processor
+
+.dial2
 
  LDA player2DELTA       \ Send the current speed to the I/O processor
  JSR OSWRCH
@@ -56573,19 +56595,19 @@ ENDIF
 
 .PrintOption00
 
- LDX #0                 \ Print the ship name for option #0 (player 1 ship)
+ LDX #0                 \ Print the text for option #0 (player 1 ship)
  LDA player1ShipType
  JMP PrintOption0To95
 
 .PrintOption01
 
- LDX #1                 \ Print the ship name for option #1 (player 2 ship)
+ LDX #1                 \ Print the text for option #1 (player 2 ship)
  LDA player2ShipType
  JMP PrintOption0To95
 
 .PrintOption02
 
- LDX #2                 \ Print the ship name for option #2 (player 1 lasers)
+ LDX #2                 \ Print the text for option #2 (player 1 lasers)
 
  LDY LASER              \ Set Y = the laser power for the front view
 
@@ -56615,7 +56637,7 @@ ENDIF
 
 .PrintOption03
 
- LDX #3                 \ Print the ship name for option #3 (player 2 lasers)
+ LDX #3                 \ Print the text for option #3 (player 2 lasers)
 
  LDY player2LASER       \ Set Y = the laser power for the front view
 
@@ -56623,7 +56645,7 @@ ENDIF
 
 .PrintOption04
 
- LDX #4                 \ Print the ship name for option #4 (player 1 energy)
+ LDX #4                 \ Print the text for option #4 (player 1 energy)
 
  LDA ENGY
  CLC
@@ -56632,7 +56654,7 @@ ENDIF
 
 .PrintOption05
 
- LDX #5                 \ Print the ship name for option #5 (player 2 energy)
+ LDX #5                 \ Print the text for option #5 (player 2 energy)
 
  LDA player2ENGY
  CLC
@@ -56673,7 +56695,7 @@ ENDIF
 
 .PrintOption08
 
- LDX #8                 \ Print the ship name for option #8 (player 1 E.C.M.)
+ LDX #8                 \ Print the text for option #8 (player 1 E.C.M.)
 
  LDA #66                \ Set A to 66 ("NO") or 67 ("YES") depending on whether
  LDY ECM                \ ECM is zero
@@ -56684,7 +56706,7 @@ ENDIF
 
 .PrintOption09
 
- LDX #9                 \ Print the ship name for option #9 (player 2 E.C.M.)
+ LDX #9                 \ Print the text for option #9 (player 2 E.C.M.)
 
  LDA #66                \ Set A to 66 ("NO") or 67 ("YES") depending on whether
  LDY player2ECM         \ player2ECM is zero
@@ -56695,7 +56717,7 @@ ENDIF
 
 .PrintOption10
 
- LDX #10                \ Print the ship name for option #10 (player 1 controls)
+ LDX #10                \ Print the text for option #10 (player 1 controls)
 
  LDA #44                \ Set A to 44 ("KEYBOARD") or 45 ("JOYSTICK") depending
  LDY JSTK               \ on whether JSTK is zero
@@ -56706,7 +56728,7 @@ ENDIF
 
 .PrintOption11
 
- LDX #11                \ Print the ship name for option #11 (player 2 controls)
+ LDX #11                \ Print the text for option #11 (player 2 controls)
 
  LDA #45                \ Set A to 45 ("JOYSTICK") or 46 ("AI PILOT") depending
  LDY player2JSTK        \ on whether player2JSTK is zero
