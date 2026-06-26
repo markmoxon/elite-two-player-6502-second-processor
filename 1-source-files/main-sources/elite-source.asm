@@ -49356,17 +49356,28 @@ ENDIF
  LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is yellow
 
+ BIT drawPlayerView
+ BMI clsc1
+
  STZ LAS2               \ Set LAS2 = 0 to stop any laser pulsing
 
  STZ DLY                \ Set the delay in DLY to 0, to indicate that we are
                         \ no longer showing an in-flight message, so any new
                         \ in-flight messages will be shown instantly
 
+ BRA clsc2              \ Jump to clsc2 to skip the following
+
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+.clsc1
+
+ STZ player2LAS2        \ Set LAS2 = 0 to stop any laser pulsing
 
  STZ player2DLY         \ Set the delay in DLY to 0, to indicate that we are
                         \ no longer showing an in-flight message, so any new
                         \ in-flight messages will be shown instantly
+
+.clsc2
 
                         \ --- End of added code ------------------------------->
 
@@ -49376,7 +49387,7 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LDA QQ11               \ If this is a space view, enable split-screen so that
- BNE clsc1              \ circles are clipped correctly
+ BNE clsc3              \ circles are clipped correctly
  SEC
  ROR splitScreen
 
@@ -49391,7 +49402,7 @@ ENDIF
 
  JMP OLDBOX             \ Skip the following
 
-.clsc1
+.clsc3
 
  STZ splitScreen        \ Disable split-screen if this isn't a space view
 
@@ -49432,7 +49443,7 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc3
- BPL clsc3
+ BPL clsc4
 
                         \ We are drawing player 2's view, so move the text
                         \ cursor to the top of the bottom view
@@ -49442,9 +49453,9 @@ ENDIF
 
  LDA player2VIEW        \ Fetch player 2's view
 
- JMP clsc4              \ Skip the following instruction
+ JMP clsc5              \ Skip the following instruction
 
-.clsc3
+.clsc4
 
                         \ --- End of added code ------------------------------->
 
@@ -49457,7 +49468,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.clsc4
+.clsc5
 
                         \ --- End of added code ------------------------------->
 
@@ -49476,8 +49487,8 @@ ENDIF
 \LDA # 1                \ Move the text cursor to column 1 to print player
 \JSR DOXC               \ number
 
- BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc5
- BPL clsc5
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc6
+ BPL clsc6
 
                         \ We are drawing player 2's view
 
@@ -49493,7 +49504,7 @@ ENDIF
 
  JMP tt66               \ Skip the following
 
-.clsc5
+.clsc6
 
                         \ We are drawing player 1's view
 
