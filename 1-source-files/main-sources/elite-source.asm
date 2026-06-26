@@ -4424,6 +4424,13 @@ ENDIF
 
  SKIP 1                 \ The COMC value for player 1's compass on the left
 
+.player1Heap
+
+ SKIP 2                 \ The address of the ship line heap for player 1's ship
+                        \ in player 2's view (i.e. the ship in slot #12), which
+                        \ is &2000 less than the ship heap for player 2's ship
+                        \ in player 1's view
+
 .player1ShipType
 
  SKIP 1                 \ Player 1's ship type
@@ -25891,6 +25898,23 @@ ENDIF
  LDA player2ShipType    \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
+ LDA INWK+34            \ Calculate the address of the ship heap for player 1's
+ PHA                    \ ship in player 2's view, which is &2000 below the ship
+ SEC                    \ heap for slot #2
+ SBC #&20
+ STA INWK+34
+
+ STA player1Heap        \ Store the heap address in player1Heap(1 0) for future
+ LDA INWK+33            \ reference
+ STA player1Heap+1
+
+ LDY #2                 \ Set the Y2 coordinate of the laser line in the ship
+ LDA #255               \ line heap to 255 so there is no laser line for player
+ STA (INWK+33),Y        \ 1's ship in player 2's view
+
+ PLA                    \ Restore the address of the original ship heap
+ STA INWK+34
+
  STZ player1INWK31      \ Reset byte #31 for player 1's ship in player 2's view,
                         \ so it is not visible on the scanner or the screen
 
@@ -28552,6 +28576,15 @@ ENDIF
  AND #%10110111         \ player 1 ship as it appears in player 2's view
  STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
 
+ LDA player1Heap        \ Set P(1 0) to the address of the ship heap for player
+ STA P                  \ 1's ship in player 2's view
+ LDA player1Heap+1
+ STA P+1
+
+ LDY #2                 \ Set the Y2 coordinate of the laser line in the ship
+ LDA #255               \ line heap to 255 so there is no laser line for player
+ STA (P),Y              \ 1's ship in player 2's view
+
  JMP WS2                \ Jump to WS2 to keep going
 
 .wipe1
@@ -28615,6 +28648,17 @@ ENDIF
  STA (INF),Y            \ (bit 6)
 
                         \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDY #33                \ Set P(1 0) to the address of the ship's line heap
+ LDA (INF),Y            
+ STA P
+ INY
+ LDA (INF),Y
+ STA P+1
+
+ LDY #2                 \ Set the Y2 coordinate of the laser line in the ship
+ LDA #255               \ line heap to 255 so there is no laser line for player
+ STA (P),Y              \ 1's ship in player 2's view
 
  RTS                    \ Return from the subroutine
 
