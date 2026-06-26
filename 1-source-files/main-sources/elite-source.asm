@@ -25816,7 +25816,47 @@ ENDIF
  JSR TT111              \ Select the system closest to galactic coordinates
                         \ (QQ9, QQ10)
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\INC INWK+8             \ Increment z_sign ready for the call to SOS, so the
+\                       \ planet appears at a z_sign of 1 in front of us when
+\                       \ we launch
+\
+\JSR SOS1               \ Call SOS1 to set up the planet's data block and add it
+\                       \ to FRIN, where it will get put in the first slot as
+\                       \ it's the first one to be added to our local bubble of
+\                       \ universe following the call to RES2 above
+\
+\LDA #128               \ For the space station, set z_sign to &80, so it's
+\STA INWK+8             \ behind us (&80 is negative)
+\
+\INC INWK+7             \ And increment z_hi, so it's only just behind us
+\
+\JSR NWSPS              \ Add a new space station to our local bubble of
+\                       \ universe
+\
+\LDA #12                \ Set our launch speed in DELTA to 12
+\STA DELTA
+\
+\JSR BAD                \ Call BAD to work out how much illegal contraband we
+\                       \ are carrying in our hold (A is up to 40 for a
+\                       \ standard hold crammed with contraband, up to 70 for
+\                       \ an extended cargo hold full of narcotics and slaves)
+\
+\ORA FIST               \ OR the value in A with our legal status in FIST to
+\                       \ get a new value that is at least as high as both
+\                       \ values, to reflect the fact that launching with a
+\                       \ hold full of contraband can only make matters worse
+\
+\STA FIST               \ Update our legal status with the new value
+\
+\LDA #255               \ Set the view type in QQ11 to 255
+\STA QQ11
+\
+\JSR HFS1               \ Call HFS1 to draw 8 concentric rings to remove the
+\                       \ launch tunnel that we drew above
+
+                        \ --- And replaced by: -------------------------------->
 
  JSR SOLAR              \ Halve our legal status, update the missile indicators,
                         \ and set up data blocks and slots for the planet and
@@ -25848,57 +25888,13 @@ ENDIF
  LDA player2NEWB        \ Set player 2's NEWB flags to the configured value
  STA NEWB
 
-.laun1
-
  LDA player2ShipType    \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
 
  STZ player1INWK31      \ Reset byte #31 for player 1's ship in player 2's view,
-                        \ so it is not visible on the scanner or thescreen
+                        \ so it is not visible on the scanner or the screen
 
- JMP NLUNCH             \ Jump to NLUNCH to skip the station-spawning code
-
- STZ player2VIEW        \ Set player 2's view to front, as we are launching
-
-                        \ --- End of added code ------------------------------->
-
- INC INWK+8             \ Increment z_sign ready for the call to SOS, so the
-                        \ planet appears at a z_sign of 1 in front of us when
-                        \ we launch
-
- JSR SOS1               \ Call SOS1 to set up the planet's data block and add it
-                        \ to FRIN, where it will get put in the first slot as
-                        \ it's the first one to be added to our local bubble of
-                        \ universe following the call to RES2 above
-
- LDA #128               \ For the space station, set z_sign to &80, so it's
- STA INWK+8             \ behind us (&80 is negative)
-
- INC INWK+7             \ And increment z_hi, so it's only just behind us
-
- JSR NWSPS              \ Add a new space station to our local bubble of
-                        \ universe
-
- LDA #12                \ Set our launch speed in DELTA to 12
- STA DELTA
-
- JSR BAD                \ Call BAD to work out how much illegal contraband we
-                        \ are carrying in our hold (A is up to 40 for a
-                        \ standard hold crammed with contraband, up to 70 for
-                        \ an extended cargo hold full of narcotics and slaves)
-
- ORA FIST               \ OR the value in A with our legal status in FIST to
-                        \ get a new value that is at least as high as both
-                        \ values, to reflect the fact that launching with a
-                        \ hold full of contraband can only make matters worse
-
- STA FIST               \ Update our legal status with the new value
-
- LDA #255               \ Set the view type in QQ11 to 255
- STA QQ11
-
- JSR HFS1               \ Call HFS1 to draw 8 concentric rings to remove the
-                        \ launch tunnel that we drew above
+                        \ --- End of replacement ------------------------------>
 
 .NLUNCH
 
