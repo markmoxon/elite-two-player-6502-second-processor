@@ -29473,7 +29473,7 @@ ENDIF
  BCS oops2              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
                         \ energy to survive, and we can jump to oops2 to make a
-                        \ sound and take some damage
+                        \ damage sound
 
 .oops1
 
@@ -29585,7 +29585,7 @@ ENDIF
  BCS oops2              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
                         \ energy to survive, and we can jump to oops2 to make a
-                        \ sound and take some damage
+                        \ damage sound
 
 .oops1
 
@@ -29595,6 +29595,8 @@ ENDIF
  JMP DEATH              \ Otherwise our energy levels are either 0 or negative,
                         \ and in either case that means we jump to our DEATH,
                         \ returning from the subroutine using a tail call
+
+.oops2
 
  JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
                         \ collision and return from the subroutine using a tail
