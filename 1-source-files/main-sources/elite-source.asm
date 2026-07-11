@@ -61705,6 +61705,11 @@ ENDMACRO
                         \ player 1 has changed view (so this reverts any PLUT
                         \ calls in the main loop)
 
+                        \ We now calculate the 3D coordinates and orientation
+                        \ vectors for player 1's ship within player 2's frame of
+                        \ reference, so we can draw player 1's ship in player
+                        \ 2's space view
+                        \
                         \ If:
                         \
                         \   * [x y z] are player 2's coordinates, which is the
@@ -61744,23 +61749,16 @@ ENDMACRO
                         \ And divide each coordinate by (0 96 0) as that's how
                         \ the unit vector is represented
                         \
-                        \ Though because we do a TIDY before the calculation, we
-                        \ know the low bytes of the orientation vectors are all
-                        \ zero, so we can simplify the calculation as follows:
+                        \ Step 3: Transpose the orientation matrix for player 2
+                        \ in player 1's view, so that's:
                         \
-                        \   x =   sidev_x_hi * (x_sign x_hi x_lo)
-                        \       + sidev_y_hi * (y_sign y_hi y_lo)
-                        \       + sidev_z_hi * (z_sign z_hi z_lo)
+                        \   sidev_x sidev_y sidev_z      sidev_x roofv_x nosev_x
+                        \   roofv_x roofv_y roofv_z  ->  sidev_y roofv_y nosev_y
+                        \   nosev_x nosev_y nosev_z      sidev_z roofv_z nosev_z
                         \
-                        \   y =   roofv_x_hi * (x_sign x_hi x_lo)
-                        \       + roofv_y_hi * (y_sign y_hi y_lo)
-                        \       + roofv_z_hi * (z_sign z_hi z_lo)
-                        \
-                        \   z =   nosev_x_hi * (x_sign x_hi x_lo)
-                        \       + nosev_y_hi * (y_sign y_hi y_lo)
-                        \       + nosev_z_hi * (z_sign z_hi z_lo)
-                        \
-                        \ And then divide the result by 96
+                        \ The result is the orientation matrix (and therefore
+                        \ orientation vectors) for player 1's ship in player 2's
+                        \ frame of reference
 
                         \ Step 1: negate [x y z] (if this is player 2's ship)
 
