@@ -50300,7 +50300,7 @@ ENDIF
 .DML2a
 
  LDA (INF),Y            \ Load the Y-th byte of INF and store it in the Y-th
- STA INWK  ,Y           \ byte of INWK
+ STA INWK,Y             \ byte of INWK
 
  DEY                    \ Decrement the loop counter
 
