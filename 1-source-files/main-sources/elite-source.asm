@@ -25914,9 +25914,9 @@ ENDIF
  SBC #&20
  STA INWK+34
 
- STA player1Heap        \ Store the heap address in player1Heap(1 0) for future
+ STA player1Heap+1      \ Store the heap address in player1Heap(1 0) for future
  LDA INWK+33            \ reference
- STA player1Heap+1
+ STA player1Heap
 
  LDY #2                 \ Set the Y2 coordinate of the laser line in the ship
  LDA #255               \ line heap to 255 so there is no laser line for player
