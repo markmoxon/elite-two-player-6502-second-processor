@@ -4254,8 +4254,8 @@ ENDIF
 
 .player1INWK31
 
- SKIP 1                 \ Storage for player 1's INWK+31 byte for in player 2's
-                        \ view
+ SKIP 3                 \ Storage for the INWK+31 bytes for player 1 and any
+                        \ missiles when shown in player 2's view
                         \
                         \  * Bits 0-2: %nnn = number of missiles
                         \
@@ -4275,6 +4275,10 @@ ENDIF
                         \
                         \  * Bit 7: 0 = ship has not been killed
                         \           1 = ship has been killed
+
+.player1X
+
+ SKIP 1                 \ The index of the relevant value in player1INWK31
 
 .player2ALPHA
 
@@ -25927,6 +25931,9 @@ ENDIF
  STZ player1INWK31      \ Reset byte #31 for player 1's ship in player 2's view,
                         \ so it is not visible on the scanner or the screen
 
+ STZ player1INWK31+1    \ Do the same for both missiles
+ STZ player1INWK31+2
+
                         \ --- End of replacement ------------------------------>
 
 .NLUNCH
@@ -28584,6 +28591,14 @@ ENDIF
  LDA player1INWK31      \ Clear bits 3 and 6 in the ship's byte #31 for the
  AND #%10110111         \ player 1 ship as it appears in player 2's view
  STA player1INWK31      \ (bit 3 = on-screen, bit 6 = lasers)
+
+ LDA player1INWK31+1    \ Clear bits 3 and 6 in the ship's byte #31 for the
+ AND #%10110111         \ first missile as it appears in player 2's view
+ STA player1INWK31+1    \ (bit 3 = on-screen, bit 6 = lasers)
+
+ LDA player1INWK31+2    \ Clear bits 3 and 6 in the ship's byte #31 for the
+ AND #%10110111         \ second missile as it appears in player 2's view
+ STA player1INWK31+2    \ (bit 3 = on-screen, bit 6 = lasers)
 
  LDA player1Heap        \ Set P(1 0) to the address of the ship heap for player
  STA P                  \ 1's ship in player 2's view
@@ -47438,6 +47453,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+IF FALSE
+
  BIT titleScreen        \ If bit 7 of titleScreen is set then this is the title
  BMI move3              \ screen, so skip straight to tidying
 
@@ -47483,6 +47500,9 @@ ENDIF
                         \ 2's view jump around)
 
 .move3
+
+ENDIF
+
                         \ --- End of added code ------------------------------->
 
  JSR TIDY               \ Call TIDY to tidy up the orientation vectors, to
@@ -61651,10 +61671,10 @@ ENDMACRO
 
 \ ******************************************************************************
 \
-\       Name: DrawPlayer2View
+\       Name: DrawPlayer2View (Part 1 of 6)
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: Draw a ship in player 2's frame of reference
+\    Summary: Draw the current ship in player 2's view
 \
 \ ******************************************************************************
 
@@ -61664,18 +61684,33 @@ ENDMACRO
 
  JSR SaveShipData       \ Save current INWK state so we can restore it later
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp1 to skip
- CMP #2                 \ the following scanner code
- BNE dshp1
+ LDX XSAV               \ If we are drawing the planet or sun, jump to part 2 to
+ CPX #2                 \ check whether it is on-screen and if so, only move it
+ BCC dshp1              \ by the rotations of player 2's controls
 
-                        \ We are drawing player 2's ship
+ CPX #5                 \ If this is slot #5 or above then return without
+ BCC P%+3               \ drawing anything, as we only process slots #0 to #4
+ RTS
 
- LDX #12                \ Set INF(1 0) to slot #12
+                        \ If we get here we are drawing player 1's ship or a
+                        \ missile
+
+ TXA                    \ Copy the slot number into A so we can add to it below
+
+ DEX                    \ Set player1X to the original ship slot number from the
+ DEX                    \ stack, so we get 0 for player 1's ship, or 1 and 2 for
+ STX player1X           \ the missiles, which we can use as an index into the
+                        \ player1INWK31 table
+
+ CLC                    \ Set INF(1 0) to the address of the data block for the
+ ADC #10                \ copy of this ship in slot #10 + ID (i.e. #12 for
+ TAX                    \ player 2's ship, or #13 or #14 for a missile)
  JSR GINF
 
- JSR RESTORE            \ Fetch the ship's coordinates in slot #12
+ JSR RESTORE            \ Fetch the ship's coordinates from slot #12/13/14
 
- LDA player1INWK31      \ Set the scan visiblilty flag from player1INWK31
+ LDX player1X           \ Set the scan visiblilty flag from player1INWK31
+ LDA player1INWK31,X
  STA INWK+31
 
  LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
@@ -61683,15 +61718,28 @@ ENDMACRO
 
  JSR SCAN               \ Remove the ship from the scanner, if it's there
 
- LDA player1INWK31      \ From this point on we want to draw the ship on the
- ORA #%00010000         \ scanner, so set bit 4 = visible on scanner
- STA player1INWK31
+ LDX player1X           \ From this point on we want to draw the ship on the
+ LDA player1INWK31,X    \ scanner, so set bit 4 = visible on scanner
+ ORA #%00010000
+ STA player1INWK31,X
+
+ JMP dshp4              \ Jump to part 3 to skip the planet/sun code in part 2
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawPlayer2View (Part 2 of 6)
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: If the planet/sun is on-screen, only move it by the rotations of
+\             player 2's controls, so it doesn't jump around on-screen
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .dshp1
-
- LDX XSAV               \ If this isn't the planet or sun, jump to dshp4 to skip
- CPX #2                 \ the following planet/sun-specific code
- BCS dshp4
 
  LDA INWK+5             \ If the planet/sun is within |y_sign| < 2 then it is
  AND #%01111111         \ close to the player's view, so apply player 2's
@@ -61754,15 +61802,23 @@ ENDMACRO
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
- JMP dshp6              \ Jump to dshp6 to draw the planet/sun and save the new
-                        \ position to slot #10 or #11
+ JMP dshp10             \ Jump to part 4 to draw the planet/sun
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawPlayer2View (Part 3 of 6)
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Calculate the ship's coordinates and orientation in player 2's
+\             frame of reference
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
 .dshp4
-
- LDX XSAV               \ TEST CODE: this skips the calculations for missiles as
- CPX #3                 \ they will need their own maths
- BCC P%+3
- RTS
 
  LDX XSAV               \ Refetch the current ship data so that it's the correct
  JSR GetShipDataToINWK  \ way around for the following calculation, even if
@@ -61826,9 +61882,54 @@ ENDMACRO
 
                         \ Step 1: negate [x y z] (if this is player 2's ship)
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp5 to skip
- CMP #2                 \ the negation
- BNE dshp5
+ LDA XSAV               \ If this is the planet or sun, jump to dshp7 to skip
+ CMP #2                 \ the following, so we don't change the coordinates for
+ BCC dshp7              \ the sun and planet
+
+ BEQ dshp6              \ If this is player 2's ship, jump to dshp6 so we only
+                        \ do the following for missiles
+
+                        \ If we get here then this is a missile and INWK is set
+                        \ to the missile's data block
+
+ LDA UNIV+4             \ Set (A V) to the address of player 2's ship data block
+ STA V                  \ in slot #2
+ LDA UNIV+4+1
+
+ JSR VCSUB              \ Calculate vector K3 as follows:
+                        \
+                        \ K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of
+                        \ missile
+                        \
+                        \ K3(5 4 3) = (y_sign y_hi z_lo) - y-coordinate of
+                        \ missile
+                        \
+                        \ K3(8 7 6) = (z_sign z_hi z_lo) - z-coordinate of
+                        \ missile
+
+                        \ So K3 now contains the vector from player 2 to the
+                        \ missile
+
+ LDX #8                 \ We now want to copy the result from K3 to INWK, so set
+                        \ up a counter for 9 bytes
+
+.dshp5
+
+ LDA K3,X               \ Copy the X-th byte from K3 to the X-th byte of INWK
+ STA INWK,X
+
+ DEX                    \ Decrement the counter
+
+ BPL dshp5              \ Loop back until we have copied all 9 bytes
+
+                        \ INWK now contains:
+                        \
+                        \   Player 2 (x, y, z) - missile (x, y, z)
+                        \
+                        \ So to get the result we want, we negate the coordinate
+                        \ in INWK
+
+.dshp6
 
  LDA INWK+2             \ Negate x_sign
  EOR #%10000000
@@ -61842,7 +61943,8 @@ ENDMACRO
  EOR #%10000000
  STA INWK+8
 
-.dshp5
+.dshp7
+
                         \ Step 2: Rotate x-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \ x = [ sidev_x sidev_y sidev_z ] . [ x y z ]
@@ -61883,11 +61985,11 @@ ENDMACRO
  LDA newCoords+8
  STA INWK+8
 
- JSR SCAN               \ Draw the ship on the scanner
+ LDA XSAV               \ If this is the planet or sun, jump to part 4 to skip
+ CMP #2                 \ the transpose, as we don't bother to rotate the planet
+ BCC dshp10             \ or sun or need to override its type
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
- CMP #2                 \ the transpose and ship setup
- BNE dshp6
+ JSR SCAN               \ Draw the ship on the scanner
 
  JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
 
@@ -61899,8 +62001,26 @@ ENDMACRO
  SBC #&20
  STA INWK+34
 
+ LDA XSAV               \ If this is player 2's ship, jump to dshp8 so we only
+ CMP #3                 \ do the following for missiles
+ BCS dshp8
+
+                        \ Multiply by missile orientation vectors
+
+.dshp8
+
+ LDA #1                 \ Set A to the correct ship type for a missile
+
+ LDX XSAV               \ If we're drawing a missile, jump to dshp9 to skip the
+ CPX #3                 \ next instruction
+ BCS dshp9
+
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
- STA TYPE               \ type
+                        \ type
+
+.dshp9
+
+ STA TYPE               \ Store the correct type for the ship we are drawing
 
  ASL A                  \ Set Y = ship type * 2
  TAY
@@ -61913,10 +62033,24 @@ ENDMACRO
  LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
  STA XX0+1              \ blueprint and store it in XX0+1
 
- LDA player1INWK31      \ Copy "on-screen" state from player1INWK31 to INWK+31
+ LDX player1X           \ Copy "on-screen" state from player1INWK31 to INWK+31
+ LDA player1INWK31,X
  STA INWK+31
 
-.dshp6
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawPlayer2View (Part 4 of 6)
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Draw the ship in player 2's view
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.dshp10
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
@@ -61932,20 +62066,33 @@ ENDMACRO
 
  JSR LL9                \ Call LL9 to draw the ship from player 2's perspective
 
- LDA XSAV               \ If this isn't player 2's ship, jump to dshp6 to skip
- CMP #2                 \ the ship setup
- BNE dshp10
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawPlayer2View (Part 5 of 6)
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Target and laser checks for player 1's ship in player 2's view
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
+ CMP #2                 \ the following ship-related checks
+ BNE dshp13
 
  LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31
  STA player1INWK31
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp9              \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp9 to skip the
+ BCC dshp12             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp12 to skip the
                         \ following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
- BEQ dshp7              \ missile is currently armed, and if not, jump to dshp7
+ BEQ dshp11             \ missile is currently armed, and if not, jump to dshp11
                         \ to process laser fire, as we can't lock an unarmed
                         \ missile
 
@@ -61957,11 +62104,11 @@ ENDMACRO
  JSR Player2ABORT2      \ (for player 1) and set the colour of the missile
                         \ indicator to the colour in Y (red = &0E)
 
-.dshp7
+.dshp11
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp9              \ the laser power, so if this is zero, jump down to
-                        \ dshp9 to skip the following
+ BEQ dshp12             \ the laser power, so if this is zero, jump down to
+                        \ dshp12 to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
@@ -61977,7 +62124,7 @@ ENDMACRO
  JSR OOPS               \ Remove the relevant energy from player 1's shields and
                         \ update the scores
 
-.dshp9
+.dshp12
 
  LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
@@ -61993,7 +62140,20 @@ ENDMACRO
  LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
  STA XX0+1              \ blueprint and store it in XX0+1
 
-.dshp10
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: DrawPlayer2View (Part 6 of 6)
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Finish up
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.dshp13
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
