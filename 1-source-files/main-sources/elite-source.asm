@@ -6013,10 +6013,8 @@ ENDIF
  BMI MA64               \ MA64 to skip the following (also skipping the checks
                         \ for TAB, ESCAPE, "J" and "E")
 
- LDX #2                 \ Set INF(1 0) to slot #2, which contains player 2's
- JSR GINF               \ ship
-
- JSR RESTORE            \ Fetch the ship's coordinates in slot #2
+ LDX #2                 \ Fetch the ship's coordinates in slot #2
+ JSR GetShipDataToINWK
 
  JSR SFRMIS             \ The "fire missile" key is being pressed and we have
                         \ a missile lock, so call the SFRMIS routine to spawn a
@@ -34150,6 +34148,22 @@ ENDIF
 
 }
 
+ LDY XX4                \ Restore the slot number of the ship to remove into Y
+
+ CPY #4                 \ If we are removing the missile in slot #4, reset the
+ BNE kshp1              \ INWK+31 value for the missile to remove it from the
+ STZ player1INWK31+2    \ screen
+
+.kshp1
+
+ CPY #3                 \ If we are removing the missile in slot #3, shuffle
+ BNE kshp2              \ the value for slot #4 down
+ LDA player1INWK31+2
+ STA player1INWK31+1
+ STZ player1INWK31+2
+
+.kshp2
+
                         \ --- Mod: Code removed for two-player Elite: --------->
 
 \LDY XX4                \ Restore the slot number of the ship to remove into Y
@@ -50386,42 +50400,6 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: RESTORE
-\       Type: Subroutine
-\   Category: Universe
-\    Summary: Copy a ship data block from K% workspace to INWK
-\
-\ ------------------------------------------------------------------------------
-\
-\ Arguments:
-\
-\   INF                 The ship data block in the K% workspace to restore
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.RESTORE
-
- LDY #NI%-1             \ Set a counter in Y so we can loop through the NI%
-                        \ bytes in the ship data block
-
-.DML2a
-
- LDA (INF),Y            \ Load the Y-th byte of INF and store it in the Y-th
- STA INWK,Y             \ byte of INWK
-
- DEY                    \ Decrement the loop counter
-
- BPL DML2a              \ Loop back for the next byte, until we have copied the
-                        \ last byte from INWK back to INF
-
- RTS                    \ Return from the subroutine
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
 \       Name: DEMON
 \       Type: Subroutine
 \   Category: Demo
@@ -60906,125 +60884,129 @@ ENDMACRO
 
 .SHIP_LOGO
 
- EQUB 0                 \ Max. canisters on demise = 0
- EQUW 99 * 99           \ Targetable area          = 99 * 99
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- EQUB LO(SHIP_LOGO_EDGES - SHIP_LOGO)              \ Edges data offset (low)
- EQUB LO(SHIP_LOGO_FACES - SHIP_LOGO)              \ Faces data offset (low)
+\EQUB 0                 \ Max. canisters on demise = 0
+\EQUW 99 * 99           \ Targetable area          = 99 * 99
+\
+\EQUB LO(SHIP_LOGO_EDGES - SHIP_LOGO)              \ Edges data offset (low)
+\EQUB LO(SHIP_LOGO_FACES - SHIP_LOGO)              \ Faces data offset (low)
+\
+\EQUB 153               \ Max. edge count          = (153 - 1) / 4 = 38
+\EQUB 0                 \ Gun vertex               = 0
+\EQUB 54                \ Explosion count          = 12, as (4 * n) + 6 = 54
+\EQUB 252               \ Number of vertices       = 252 / 6 = 42
+\EQUB 37                \ Number of edges          = 37
+\EQUW 0                 \ Bounty                   = 0
+\EQUB 20                \ Number of faces          = 20 / 4 = 5
+\EQUB 99                \ Visibility distance      = 99
+\EQUB 252               \ Max. energy              = 252
+\EQUB 36                \ Max. speed               = 36
+\
+\EQUB HI(SHIP_LOGO_EDGES - SHIP_LOGO)              \ Edges data offset (high)
+\EQUB HI(SHIP_LOGO_FACES - SHIP_LOGO)              \ Faces data offset (high)
+\
+\EQUB 1                 \ Normals are scaled by    = 2^1 = 2
+\EQUB %00000000         \ Laser power              = 0
+\                       \ Missiles                 = 0
+\
+\.SHIP_LOGO_VERTICES
+\
+\     \    x,    y,    z, face1, face2, face3, face4, visibility
+\VERTEX    0,   -9,   55,     0,      0,    0,     0,         31    \ Vertex 0
+\VERTEX  -10,   -9,   30,     0,      0,    0,     0,         31    \ Vertex 1
+\VERTEX  -25,   -9,   93,     0,      0,    0,     0,         31    \ Vertex 2
+\VERTEX -150,   -9,  180,     0,      0,    0,     0,         31    \ Vertex 3
+\VERTEX  -90,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 4
+\VERTEX -140,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 5
+\VERTEX    0,   -9,  -95,     0,      0,    0,     0,         31    \ Vertex 6
+\VERTEX  140,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 7
+\VERTEX   90,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 8
+\VERTEX  150,   -9,  180,     0,      0,    0,     0,         31    \ Vertex 9
+\VERTEX   25,   -9,   93,     0,      0,    0,     0,         31    \ Vertex 10
+\VERTEX   10,   -9,   30,     0,      0,    0,     0,         31    \ Vertex 11
+\VERTEX  -85,   -9,  -30,     2,      0,    3,     3,         31    \ Vertex 12
+\VERTEX   85,   -9,  -30,     2,      0,    4,     4,         31    \ Vertex 13
+\VERTEX  -70,   11,    5,     1,      0,    3,     3,         31    \ Vertex 14
+\VERTEX  -70,   11,  -25,     2,      0,    3,     3,         31    \ Vertex 15
+\VERTEX   70,   11,  -25,     2,      0,    4,     4,         31    \ Vertex 16
+\VERTEX   70,   11,    5,     1,      0,    4,     4,         31    \ Vertex 17
+\VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 18
+\VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 19
+\VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 20
+\VERTEX  -28,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 21
+\VERTEX  -49,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 22
+\VERTEX  -49,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 23
+\VERTEX  -49,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 24
+\VERTEX  -28,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 25
+\VERTEX  -28,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 26
+\VERTEX  -24,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 27
+\VERTEX  -24,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 28
+\VERTEX   -3,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 29
+\VERTEX    0,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 30
+\VERTEX    0,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 31
+\VERTEX    4,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 32
+\VERTEX   25,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 33
+\VERTEX   14,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 34
+\VERTEX   14,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 35
+\VERTEX   49,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 36
+\VERTEX   28,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 37
+\VERTEX   28,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 38
+\VERTEX   28,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 39
+\VERTEX   49,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 40
+\VERTEX   49,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 41
+\
+\.SHIP_LOGO_EDGES
+\
+\   \ vertex1, vertex2, face1, face2, visibility
+\EDGE       0,       1,     0,     0,         31    \ Edge 0
+\EDGE       1,       2,     0,     0,         31    \ Edge 1
+\EDGE       2,       3,     0,     0,         31    \ Edge 2
+\EDGE       3,       4,     0,     0,         31    \ Edge 3
+\EDGE       4,       5,     0,     0,         31    \ Edge 4
+\EDGE       5,       6,     0,     0,         31    \ Edge 5
+\EDGE       6,       7,     0,     0,         31    \ Edge 6
+\EDGE       7,       8,     0,     0,         31    \ Edge 7
+\EDGE       8,       9,     0,     0,         31    \ Edge 8
+\EDGE       9,      10,     0,     0,         31    \ Edge 9
+\EDGE      10,      11,     0,     0,         31    \ Edge 10
+\EDGE      11,       0,     0,     0,         31    \ Edge 11
+\EDGE      14,      15,     3,     0,         30    \ Edge 12
+\EDGE      15,      16,     1,     0,         30    \ Edge 13
+\EDGE      16,      17,     4,     0,         30    \ Edge 14
+\EDGE      17,      14,     1,     0,         30    \ Edge 15
+\EDGE       4,      12,     3,     0,         30    \ Edge 16
+\EDGE      12,      13,     2,     2,         30    \ Edge 17
+\EDGE      13,       8,     4,     0,         30    \ Edge 18
+\EDGE       8,       4,     1,     1,         30    \ Edge 19
+\EDGE       4,      14,     3,     1,         30    \ Edge 20
+\EDGE      12,      15,     3,     1,         30    \ Edge 21
+\EDGE      13,      16,     4,     2,         30    \ Edge 22
+\EDGE       8,      17,     4,     1,         30    \ Edge 23
+\EDGE      21,      22,     0,     0,         30    \ Edge 24
+\EDGE      22,      24,     0,     0,         30    \ Edge 25
+\EDGE      24,      25,     0,     0,         30    \ Edge 26
+\EDGE      23,      26,     0,     0,         30    \ Edge 27
+\EDGE      27,      28,     0,     0,         30    \ Edge 28
+\EDGE      28,      29,     0,     0,         30    \ Edge 29
+\EDGE      30,      31,     0,     0,         30    \ Edge 30
+\EDGE      32,      33,     0,     0,         30    \ Edge 31
+\EDGE      34,      35,     0,     0,         30    \ Edge 32
+\EDGE      36,      37,     0,     0,         30    \ Edge 33
+\EDGE      37,      39,     0,     0,         30    \ Edge 34
+\EDGE      39,      40,     0,     0,         30    \ Edge 35
+\EDGE      41,      38,     0,     0,         30    \ Edge 36
+\
+\.SHIP_LOGO_FACES
+\
+\   \ normal_x, normal_y, normal_z, visibility
+\FACE        0,       23,        0,         31      \ Face 0
+\FACE        0,        4,       15,         31      \ Face 1
+\FACE        0,       13,      -52,         31      \ Face 2
+\FACE      -81,       81,        0,         31      \ Face 3
+\FACE       81,       81,        0,         31      \ Face 4
 
- EQUB 153               \ Max. edge count          = (153 - 1) / 4 = 38
- EQUB 0                 \ Gun vertex               = 0
- EQUB 54                \ Explosion count          = 12, as (4 * n) + 6 = 54
- EQUB 252               \ Number of vertices       = 252 / 6 = 42
- EQUB 37                \ Number of edges          = 37
- EQUW 0                 \ Bounty                   = 0
- EQUB 20                \ Number of faces          = 20 / 4 = 5
- EQUB 99                \ Visibility distance      = 99
- EQUB 252               \ Max. energy              = 252
- EQUB 36                \ Max. speed               = 36
-
- EQUB HI(SHIP_LOGO_EDGES - SHIP_LOGO)              \ Edges data offset (high)
- EQUB HI(SHIP_LOGO_FACES - SHIP_LOGO)              \ Faces data offset (high)
-
- EQUB 1                 \ Normals are scaled by    = 2^1 = 2
- EQUB %00000000         \ Laser power              = 0
-                        \ Missiles                 = 0
-
-.SHIP_LOGO_VERTICES
-
-      \    x,    y,    z, face1, face2, face3, face4, visibility
- VERTEX    0,   -9,   55,     0,      0,    0,     0,         31    \ Vertex 0
- VERTEX  -10,   -9,   30,     0,      0,    0,     0,         31    \ Vertex 1
- VERTEX  -25,   -9,   93,     0,      0,    0,     0,         31    \ Vertex 2
- VERTEX -150,   -9,  180,     0,      0,    0,     0,         31    \ Vertex 3
- VERTEX  -90,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 4
- VERTEX -140,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 5
- VERTEX    0,   -9,  -95,     0,      0,    0,     0,         31    \ Vertex 6
- VERTEX  140,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 7
- VERTEX   90,   -9,   10,     0,      0,    0,     0,         31    \ Vertex 8
- VERTEX  150,   -9,  180,     0,      0,    0,     0,         31    \ Vertex 9
- VERTEX   25,   -9,   93,     0,      0,    0,     0,         31    \ Vertex 10
- VERTEX   10,   -9,   30,     0,      0,    0,     0,         31    \ Vertex 11
- VERTEX  -85,   -9,  -30,     2,      0,    3,     3,         31    \ Vertex 12
- VERTEX   85,   -9,  -30,     2,      0,    4,     4,         31    \ Vertex 13
- VERTEX  -70,   11,    5,     1,      0,    3,     3,         31    \ Vertex 14
- VERTEX  -70,   11,  -25,     2,      0,    3,     3,         31    \ Vertex 15
- VERTEX   70,   11,  -25,     2,      0,    4,     4,         31    \ Vertex 16
- VERTEX   70,   11,    5,     1,      0,    4,     4,         31    \ Vertex 17
- VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 18
- VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 19
- VERTEX    0,   -9,    5,     0,      0,    0,     0,         31    \ Vertex 20
- VERTEX  -28,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 21
- VERTEX  -49,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 22
- VERTEX  -49,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 23
- VERTEX  -49,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 24
- VERTEX  -28,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 25
- VERTEX  -28,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 26
- VERTEX  -24,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 27
- VERTEX  -24,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 28
- VERTEX   -3,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 29
- VERTEX    0,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 30
- VERTEX    0,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 31
- VERTEX    4,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 32
- VERTEX   25,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 33
- VERTEX   14,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 34
- VERTEX   14,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 35
- VERTEX   49,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 36
- VERTEX   28,   11,   -2,     0,      0,    0,     0,         31    \ Vertex 37
- VERTEX   28,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 38
- VERTEX   28,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 39
- VERTEX   49,   11,  -17,     0,      0,    0,     0,         31    \ Vertex 40
- VERTEX   49,   11,  -10,     0,      0,    0,     0,         31    \ Vertex 41
-
-.SHIP_LOGO_EDGES
-
-    \ vertex1, vertex2, face1, face2, visibility
- EDGE       0,       1,     0,     0,         31    \ Edge 0
- EDGE       1,       2,     0,     0,         31    \ Edge 1
- EDGE       2,       3,     0,     0,         31    \ Edge 2
- EDGE       3,       4,     0,     0,         31    \ Edge 3
- EDGE       4,       5,     0,     0,         31    \ Edge 4
- EDGE       5,       6,     0,     0,         31    \ Edge 5
- EDGE       6,       7,     0,     0,         31    \ Edge 6
- EDGE       7,       8,     0,     0,         31    \ Edge 7
- EDGE       8,       9,     0,     0,         31    \ Edge 8
- EDGE       9,      10,     0,     0,         31    \ Edge 9
- EDGE      10,      11,     0,     0,         31    \ Edge 10
- EDGE      11,       0,     0,     0,         31    \ Edge 11
- EDGE      14,      15,     3,     0,         30    \ Edge 12
- EDGE      15,      16,     1,     0,         30    \ Edge 13
- EDGE      16,      17,     4,     0,         30    \ Edge 14
- EDGE      17,      14,     1,     0,         30    \ Edge 15
- EDGE       4,      12,     3,     0,         30    \ Edge 16
- EDGE      12,      13,     2,     2,         30    \ Edge 17
- EDGE      13,       8,     4,     0,         30    \ Edge 18
- EDGE       8,       4,     1,     1,         30    \ Edge 19
- EDGE       4,      14,     3,     1,         30    \ Edge 20
- EDGE      12,      15,     3,     1,         30    \ Edge 21
- EDGE      13,      16,     4,     2,         30    \ Edge 22
- EDGE       8,      17,     4,     1,         30    \ Edge 23
- EDGE      21,      22,     0,     0,         30    \ Edge 24
- EDGE      22,      24,     0,     0,         30    \ Edge 25
- EDGE      24,      25,     0,     0,         30    \ Edge 26
- EDGE      23,      26,     0,     0,         30    \ Edge 27
- EDGE      27,      28,     0,     0,         30    \ Edge 28
- EDGE      28,      29,     0,     0,         30    \ Edge 29
- EDGE      30,      31,     0,     0,         30    \ Edge 30
- EDGE      32,      33,     0,     0,         30    \ Edge 31
- EDGE      34,      35,     0,     0,         30    \ Edge 32
- EDGE      36,      37,     0,     0,         30    \ Edge 33
- EDGE      37,      39,     0,     0,         30    \ Edge 34
- EDGE      39,      40,     0,     0,         30    \ Edge 35
- EDGE      41,      38,     0,     0,         30    \ Edge 36
-
-.SHIP_LOGO_FACES
-
-    \ normal_x, normal_y, normal_z, visibility
- FACE        0,       23,        0,         31      \ Face 0
- FACE        0,        4,       15,         31      \ Face 1
- FACE        0,       13,      -52,         31      \ Face 2
- FACE      -81,       81,        0,         31      \ Face 3
- FACE       81,       81,        0,         31      \ Face 4
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -61710,7 +61692,7 @@ ENDMACRO
 
  LDX XSAV               \ If we are drawing the planet or sun, jump to part 2 to
  CPX #2                 \ check whether it is on-screen and if so, only move it
- BCC dshp1              \ by the rotations of player 2's controls
+ BCC dshp4              \ by the rotations of player 2's controls
 
  CPX #5                 \ If this is slot #5 or above then return without
  BCC P%+3               \ drawing anything, as we only process slots #0 to #4
@@ -61724,32 +61706,68 @@ ENDMACRO
  STX player1X           \ the missiles, which we can use as an index into the
                         \ player1INWK31 table
 
- LDA XSAV               \ Set INF(1 0) to the address of the data block for the
- CLC                    \ copy of this ship in slot #10 + ID (i.e. #12 for
- ADC #10                \ player 2's ship, or #13 or #14 for a missile)
- TAX
- JSR GINF
+ LDA player1INWK31,X    \ If the ship's INWK+31 byte is zero then this is the
+ BNE dshp1              \ first time we've called this routine for this ship, so
+ LDA #%00010000         \ set bit #4 to indicate that in future we should remove
+ STA player1INWK31,X    \ the ship from the scanner
 
- JSR RESTORE            \ Fetch the ship's coordinates from slot #12/13/14, so
-                        \ that if the ship is already on the scanner, we can
-                        \ remove it (if the ship hasn't yet been processed in
-                        \ this new slot, nothing will happen in the following)
+ BNE dshp2              \ Jump to part 3 to skip the following (this BNE is
+                        \ effectively a JMP as A is non-zero)
 
- LDX player1X           \ Set the scan visiblilty flag from player1INWK31
+.dshp1
+
+ LDA INWK+31            \ If the ship is not exploding, jump to dshp3
+ AND #%00100000
+ BEQ dshp3
+
+ LDA player1INWK31,X    \ If we have already noted the explosion in the copy of
+ AND #%00100000         \ INWK+31 in player1INWK31, jump to part 3 to skip the
+ BNE dshp2              \ following, as we have already removed the ship from
+                        \ the scanner
+
+ LDA player1INWK31,X    \ If we get here then the ship has just exploded but we
+ AND #%11001111         \ haven't removed the yellow copy from the scanner, so
+ ORA #%00100000         \ first of all copy the new explosion and scaner states
+ STA player1INWK31,X    \ to player1INWK31
+
+                        \ Now we need to remove the yellow copy from the scanner
+
+ LDA XSAV               \ Fetch the ship's coordinates from slot #10 + ID (i.e.
+ CLC                    \ #12 for player 2's ship, or #13 or #14 for a missile)
+ ADC #10                \ so that if the ship is already on the scanner, we can
+ TAX                    \ remove it (if the ship hasn't yet been processed in
+ JSR GetShipDataToINWK  \ this new slot, nothing will happen in the following)
+
+ LDA #%00010000         \ Set bit #4 so the call to SCAN will draw the ship on
+ STA INWK+31            \ the scanner, thus removing it
+
+ LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
+ STA TYPE               \ to yellow
+
+ JSR SCAN               \ Remove the ship from the scanner, if it's there
+
+.dshp2
+
+ JMP dshp7              \ Jump to part 3
+
+.dshp3
+
+ LDA XSAV               \ Fetch the ship's coordinates from slot #10 + ID (i.e.
+ CLC                    \ #12 for player 2's ship, or #13 or #14 for a missile)
+ ADC #10                \ so that if the ship is already on the scanner, we can
+ TAX                    \ remove it (if the ship hasn't yet been processed in
+ JSR GetShipDataToINWK  \ this new slot, nothing will happen in the following)
+
+ LDX player1X           \ Set the scanner visiblilty flag from player1INWK31
  LDA player1INWK31,X
  STA INWK+31
 
  LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
- STA TYPE               \ to yellow (we revert this to the correct type later)
+ STA TYPE               \ to yellow
 
  JSR SCAN               \ Remove the ship from the scanner, if it's there
 
- LDX player1X           \ From this point on we want to draw the ship on the
- LDA player1INWK31,X    \ scanner, so set bit 4 = visible on scanner
- ORA #%00010000
- STA player1INWK31,X
-
- JMP dshp4              \ Jump to part 3 to skip the planet/sun code in part 2
+ JMP dshp7              \ Jump to part 3 to skip the planet/sun code in part 2
 
                         \ --- End of added code ------------------------------->
 
@@ -61765,37 +61783,37 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp1
+.dshp4
 
  LDA INWK+5             \ If the planet/sun is within |y_sign| < 2 then it is
  AND #%01111111         \ close to the player's view, so apply player 2's
  CMP #2                 \ movement to the current position of the planet by
- BCC dshp3              \ jumping to dshp3 (to prevent it jumping back onto the
+ BCC dshp6              \ jumping to dshp6 (to prevent it jumping back onto the
                         \ screen when we start using the correct position again)
 
- CPX #1                 \ If we are drawing the sun, jump to dshp2
- BEQ dshp2
+ CPX #1                 \ If we are drawing the sun, jump to dshp5
+ BEQ dshp5
 
  LDA LSX2a              \ If LSX2a is non-zero then the ball line heap for
- BNE dshp4              \ player 2's view is empty, so the planet is not
-                        \ currently visible to player 2, so jump to dshp4 to
+ BNE dshp7              \ player 2's view is empty, so the planet is not
+                        \ currently visible to player 2, so jump to dshp7 to
                         \ move the planet to the correct position in space
 
- BEQ dshp3              \ If we get here then the planet is visible in player
+ BEQ dshp6              \ If we get here then the planet is visible in player
                         \ 2's view, so instead of calculating its correct
                         \ position in space (which will make it jump around
                         \ due to the approximate maths used in rotations), we
                         \ instead apply player 2's movement to the current
-                        \ position of the planet by jumping to dshp3
+                        \ position of the planet by jumping to dshp6
 
-.dshp2
+.dshp5
 
  LDA LSXa               \ If LSXa < 0 then the sun line heap for player 2's view
- BMI dshp4              \ is empty, so the sun is not currently visible to
-                        \ player 2, so jump to dshp4 to move the sun to the
+ BMI dshp7              \ is empty, so the sun is not currently visible to
+                        \ player 2, so jump to dshp7 to move the sun to the
                         \ correct position in space
 
-.dshp3
+.dshp6
 
                         \ If we get here then the planet/sun is visible in
                         \ player 2's view, so instead of calculating its correct
@@ -61828,7 +61846,7 @@ ENDMACRO
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
- JMP dshp10             \ Jump to part 4 to draw the planet/sun
+ JMP dshp13             \ Jump to part 4 to draw the planet/sun
 
                         \ --- End of added code ------------------------------->
 
@@ -61844,7 +61862,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp4
+.dshp7
 
  LDX XSAV               \ Refetch the current ship data so that it's the correct
  JSR GetShipDataToINWK  \ way around for the following calculation, even if
@@ -61908,11 +61926,11 @@ ENDMACRO
 
                         \ Step 1: negate [x y z] (if this is player 2's ship)
 
- LDA XSAV               \ If this is the planet or sun, jump to dshp7 to skip
+ LDA XSAV               \ If this is the planet or sun, jump to dshp10 to skip
  CMP #2                 \ the following, so we don't change the coordinates for
- BCC dshp7              \ the sun and planet
+ BCC dshp10             \ the sun and planet
 
- BEQ dshp6              \ If this is player 2's ship, jump to dshp6 so we only
+ BEQ dshp9              \ If this is player 2's ship, jump to dshp9 so we only
                         \ do the following for missiles
 
                         \ If we get here then this is a missile and INWK is set
@@ -61939,14 +61957,14 @@ ENDMACRO
  LDX #8                 \ We now want to copy the result from K3 to INWK, so set
                         \ up a counter for 9 bytes
 
-.dshp5
+.dshp8
 
  LDA K3,X               \ Copy the X-th byte from K3 to the X-th byte of INWK
  STA INWK,X
 
  DEX                    \ Decrement the counter
 
- BPL dshp5              \ Loop back until we have copied all 9 bytes
+ BPL dshp8              \ Loop back until we have copied all 9 bytes
 
                         \ INWK now contains:
                         \
@@ -61954,11 +61972,11 @@ ENDMACRO
                         \
                         \ which is the result we want
 
- BMI dshp7              \ We have the result we want, so skip the negation and
+ BMI dshp10             \ We have the result we want, so skip the negation and
                         \ move on to the coordinate rotation (this BMI is
                         \ effectively a JMP as we just passed through a BPL)
 
-.dshp6
+.dshp9
 
  LDA INWK+2             \ Negate x_sign
  EOR #%10000000
@@ -61972,7 +61990,7 @@ ENDMACRO
  EOR #%10000000
  STA INWK+8
 
-.dshp7
+.dshp10
 
                         \ Step 2: Rotate x-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
@@ -62016,7 +62034,14 @@ ENDMACRO
 
  LDA XSAV               \ If this is the planet or sun, jump to part 4 to skip
  CMP #2                 \ the transpose, as we don't bother to rotate the planet
- BCC dshp10             \ or sun or need to override its type
+ BCC dshp13             \ or sun or need to override its type
+
+ LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
+ STA TYPE               \ to yellow
+
+ LDX player1X           \ Set the scan visiblilty flag from player1INWK31
+ LDA player1INWK31,X
+ STA INWK+31
 
  JSR SCAN               \ Draw the ship on the scanner
 
@@ -62030,24 +62055,24 @@ ENDMACRO
  SBC #&20
  STA INWK+34
 
- LDA XSAV               \ If this is player 2's ship, jump to dshp8 so we only
+ LDA XSAV               \ If this is player 2's ship, jump to dshp11 so we only
  CMP #3                 \ do the following for missiles
- BCS dshp8
+ BCS dshp11
 
                         \ Multiply by missile orientation vectors
 
-.dshp8
+.dshp11
 
  LDA #1                 \ Set A to the correct ship type for a missile
 
- LDX XSAV               \ If we're drawing a missile, jump to dshp9 to skip the
+ LDX XSAV               \ If we're drawing a missile, jump to dshp12 to skip the
  CPX #3                 \ next instruction
- BCS dshp9
+ BCS dshp12
 
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
                         \ type
 
-.dshp9
+.dshp12
 
  STA TYPE               \ Store the correct type for the ship we are drawing
 
@@ -62079,7 +62104,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp10
+.dshp13
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
@@ -62110,7 +62135,7 @@ ENDMACRO
 
  LDA XSAV               \ If we are drawing the planet or sun, jump to part 6 to
  CMP #2                 \ skip the following ship-related checks
- BCC dshp13
+ BCC dshp16
 
  LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
  LDA INWK+31            \ for this ship
@@ -62118,15 +62143,15 @@ ENDMACRO
 
  LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
  CMP #2                 \ the following target-related checks
- BNE dshp13
+ BNE dshp16
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp12             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp12 to skip the
+ BCC dshp15             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp15 to skip the
                         \ following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
- BEQ dshp11             \ missile is currently armed, and if not, jump to dshp11
+ BEQ dshp14             \ missile is currently armed, and if not, jump to dshp14
                         \ to process laser fire, as we can't lock an unarmed
                         \ missile
 
@@ -62138,11 +62163,11 @@ ENDMACRO
  JSR Player2ABORT2      \ (for player 1) and set the colour of the missile
                         \ indicator to the colour in Y (red = &0E)
 
-.dshp11
+.dshp14
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp12             \ the laser power, so if this is zero, jump down to
-                        \ dshp12 to skip the following
+ BEQ dshp15             \ the laser power, so if this is zero, jump down to
+                        \ dshp15 to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
@@ -62158,7 +62183,7 @@ ENDMACRO
  JSR OOPS               \ Remove the relevant energy from player 1's shields and
                         \ update the scores
 
-.dshp12
+.dshp15
 
  LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
@@ -62187,7 +62212,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp13
+.dshp16
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
