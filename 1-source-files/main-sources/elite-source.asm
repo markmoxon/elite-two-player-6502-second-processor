@@ -36676,10 +36676,28 @@ ENDIF
  LDA #127               \ it in yellow (A = 127)
  JSR WipeShip
 
+ LDA FRIN+3             \ If slot #3 is empty, skip the following
+ BEQ deaf1
+
+ LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
+ LDA #127               \ it in yellow (A = 127)
+ JSR WipeShip
+
+.deaf1
+
+ LDA FRIN+4             \ If slot #4 is empty, skip the following
+ BEQ deaf2
+
+ LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
+ LDA #127               \ it in yellow (A = 127)
+ JSR WipeShip
+
+.deaf2
+
  PLA                    \ Set A to the winning player
 
- CMP #2                 \ If A = 2 then player 2 has won, so jump to deaf1 to
- BEQ deaf1              \ process this
+ CMP #2                 \ If A = 2 then player 2 has won, so jump to deaf3 to
+ BEQ deaf3              \ process this
 
                         \ Player 1 wins
 
@@ -36689,9 +36707,9 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 2
  JSR Player2MESS        \ in-flight message
 
- JMP deaf2              \ Jump to deaf2 to wait for a key press
+ JMP deaf4              \ Jump to deaf4 to wait for a key press
 
-.deaf1
+.deaf3
 
                         \ Player 2 wins
 
@@ -36701,7 +36719,7 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
  JSR MESS               \ in-flight message
 
-.deaf2
+.deaf4
 
  JSR t                  \ Scan the keyboard until a key is pressed, returning
                         \ the ASCII code in A and X
@@ -62083,8 +62101,9 @@ ENDMACRO
  CMP #2                 \ the following ship-related checks
  BNE dshp13
 
- LDA INWK+31            \ Copy "on-screen" state from INWK+31 to player1INWK31
- STA player1INWK31
+ LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
+ LDA INWK+31
+ STA player1INWK31,X
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
  BCC dshp12             \ in which case the C flag will be set (so if there is
