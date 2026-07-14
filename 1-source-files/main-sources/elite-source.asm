@@ -335,9 +335,6 @@ ENDIF
                         \  * Bit 7: 0 = dumb
                         \           1 = AI enabled (apply TACTICS to ship)
 
- PLAYER2NB = %00000100  \ Additional NEWB flags to set for NPC player 2
-                        \ (bit 2 set = hostile)
-
  SHIPCOL = CYAN         \ Ship colours on title screen
 
                         \ --- End of added code ------------------------------->
@@ -4384,10 +4381,6 @@ ENDIF
                         \  * Bit 7: 0 = dumb
                         \           1 = AI enabled (apply TACTICS to ship)
 
-.player2NEWB
-
- SKIP 1                 \ Player 2's NEWB flags
-
 .player2MCH
 
  SKIP 1                 \ Player 2's MCH value
@@ -6012,9 +6005,21 @@ ENDIF
  BMI MA64               \ MA64 to skip the following (also skipping the checks
                         \ for TAB, ESCAPE, "J" and "E")
 
- JSR Player2FRMIS       \ The "fire missile" key is being pressed and we have
-                        \ a missile lock, so call the FRMIS routine to fire
-                        \ the missile
+ LDX #2                 \ Set INF(1 0) to slot #2, which contains player 2's
+ JSR GINF               \ ship
+
+ JSR RESTORE            \ Fetch the ship's coordinates in slot #2
+
+ JSR SFRMIS             \ The "fire missile" key is being pressed and we have
+                        \ a missile lock, so call the SFRMIS routine to spawn a
+                        \ missile as a child of player 2's ship, make a noise
+                        \ and print a message warning of incoming missiles
+
+ LDY #0                 \ We have just launched a missile, so we need to remove
+ JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
+                        \ dashboard by setting it to black (Y = 0)
+
+ DEC player2NOMSL       \ Reduce the number of missiles we have by 1
 
 .MA24
 
@@ -25892,8 +25897,13 @@ ENDIF
  LDA player2INWK32      \ Set player 2's AI flag to the configured value
  STA INWK+32
 
- LDA player2NEWB        \ Set player 2's NEWB flags to the configured value
- STA NEWB
+ LDA #%00000100         \ Set bit 2 of the NEWB flags for player 2 to make them
+ STA NEWB               \ hostile by default
+                        \
+                        \ This means that any missiles launched by player 2
+                        \ inherit this value and will therefore attack player 1,
+                        \ and if player 2 is set to an AI pilot then they will
+                        \ be hostile
 
  LDA player2ShipType    \ Spawn a ship for player 2 in slot 2
  JSR NWSHP
@@ -57316,8 +57326,6 @@ ENDIF
 
  LDA #PLAYER2AI         \ Enable ship AI for player 2
  STA player2INWK32
- LDA #PLAYER2NB
- STA player2NEWB
 
  STZ player2LASER+1     \ Remove rear lasers for AI pilot
 
@@ -57326,7 +57334,6 @@ ENDIF
 .nocp1
 
  STZ player2INWK32      \ Disable ship AI for player 2
- STZ player2NEWB
 
  LDA player2LASER       \ Enable rear lasers for non-AI player 2
  STA player2LASER+1
