@@ -15092,6 +15092,13 @@ ENDIF
  LDA ECMA               \ If an E.C.M. is currently active (either ours or an
  BNE TA35               \ opponent's), jump to TA35 to destroy this missile
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player2ECMA        \ If player 2's E.C.M. is currently active, jump to TA35
+ BNE TA35               \ to destroy this missile
+
+                        \ --- End of added code ------------------------------->
+
  LDA INWK+32            \ Fetch the AI flag from byte #32 and if bit 6 is set
  ASL A                  \ (i.e. missile is hostile), jump up to TA34 to check
  BMI TA34               \ whether the missile has hit us
@@ -15135,43 +15142,60 @@ ENDIF
                         \ distance from the target, so jump down to TA64 see if
                         \ the target activates its E.C.M.
 
- LDA INWK+32            \ Fetch the AI flag from byte #32 and if only bits 7 and
- CMP #%10000010         \ 1 are set (AI is enabled and the target is slot 1, the
- BEQ TA35               \ space station), jump to TA35 to destroy this missile,
-                        \ as the space station ain't kidding around
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDY #31                \ Fetch byte #31 (the exploding flag) of the target ship
- LDA (V),Y              \ into A
+\LDA INWK+32            \ Fetch the AI flag from byte #32 and if only bits 7 and
+\CMP #%10000010         \ 1 are set (AI is enabled and the target is slot 1, the
+\BEQ TA35               \ space station), jump to TA35 to destroy this missile,
+\                       \ as the space station ain't kidding around
+\
+\LDY #31                \ Fetch byte #31 (the exploding flag) of the target ship
+\LDA (V),Y              \ into A
+\
+\BIT M32+1              \ M32 contains an LDY #32 instruction, so M32+1 contains
+\                       \ 32, so this instruction tests A with %00100000, which
+\                       \ checks bit 5 of A (the "already exploding?" bit)
+\
+\BNE TA35               \ If the target ship is already exploding, jump to TA35
+\                       \ to destroy this missile
+\
+\ORA #%10000000         \ Otherwise set bit 7 of the target's byte #31 to mark
+\STA (V),Y              \ the ship as having been killed, so it explodes
+\
+\.TA35
+\
+\LDA INWK               \ Set A = x_lo OR y_lo OR z_lo of the missile
+\ORA INWK+3
+\ORA INWK+6
+\
+\BNE TA87               \ If A is non-zero then the missile is not near our
+\                       \ ship, so jump to TA87 to skip damaging our ship
+\
+\LDA #80                \ Otherwise the missile just got destroyed near us, so
+\JSR OOPS               \ call OOPS to damage the ship by 80, which is nowhere
+\                       \ near as bad as the 250 damage from a missile slamming
+\                       \ straight into us, but it's still pretty nasty
+\
+\.TA87
+\
+\JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
+\                       \ missile (so increase the kill tally, make an explosion
+\                       \ sound and so on)
 
- BIT M32+1              \ M32 contains an LDY #32 instruction, so M32+1 contains
-                        \ 32, so this instruction tests A with %00100000, which
-                        \ checks bit 5 of A (the "already exploding?" bit)
+                        \ --- And replaced by: -------------------------------->
 
- BNE TA35               \ If the target ship is already exploding, jump to TA35
-                        \ to destroy this missile
-
- ORA #%10000000         \ Otherwise set bit 7 of the target's byte #31 to mark
- STA (V),Y              \ the ship as having been killed, so it explodes
+ LDA #250               \ Call OOPS to damage the ship by 250, which is a pretty
+ JSR Player2OOPS        \ big hit
 
 .TA35
 
- LDA INWK               \ Set A = x_lo OR y_lo OR z_lo of the missile
- ORA INWK+3
- ORA INWK+6
-
- BNE TA87               \ If A is non-zero then the missile is not near our
-                        \ ship, so jump to TA87 to skip damaging our ship
-
- LDA #80                \ Otherwise the missile just got destroyed near us, so
- JSR OOPS               \ call OOPS to damage the ship by 80, which is nowhere
-                        \ near as bad as the 250 damage from a missile slamming
-                        \ straight into us, but it's still pretty nasty
+                        \ We jump here if E.C.M. destroys this missile
 
 .TA87
 
- JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
-                        \ missile (so increase the kill tally, make an explosion
-                        \ sound and so on)
+ JSR EXNO3              \ Make the sound of the missile exploding
+
+                        \ --- End of replacement ------------------------------>
 
  ASL INWK+31            \ Set bit 7 of the missile's byte #31 flag to mark it as
  SEC                    \ having been killed, so it explodes
@@ -37003,7 +37027,7 @@ ENDIF
 
  CMP CHK                \ Test the calculated checksum against CHK
 
-IF _REMOVE_CHECKSUMS OR TRUE
+IF _REMOVE_CHECKSUMS
 
  NOP                    \ If we have disabled checksums, then ignore the result
  NOP                    \ of the comparison and fall through into the next part
@@ -48949,7 +48973,7 @@ ENDIF
  CMP S%-1               \ Compare the calculated checksum in A with the checksum
                         \ stored in S%-1
 
-IF _REMOVE_CHECKSUMS OR TRUE
+IF _REMOVE_CHECKSUMS
 
  NOP                    \ If we have disabled checksums, then ignore the result
  NOP                    \ of the comparison and return from the subroutine
