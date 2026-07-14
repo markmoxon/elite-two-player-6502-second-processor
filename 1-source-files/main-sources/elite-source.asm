@@ -6936,32 +6936,6 @@ ENDIF
  CMP #2                 \ following
  BNE MA8
 
-                        \ Player 2 has been hit, so increment player 1's score
-
- JSR ee3                \ Print player 1's score to remove it from the screen
-
- INC player1Score       \ Increment player 1's score
- BNE P%+5
- INC player1Score+1
-
- JSR ee3                \ Print player 1's score
-
- LDA player1GameType    \ If player 1 is playing survival, they don't have a
- BEQ nwin1              \ score, so jump to nwin1 to keep playing
-
- LDA player1Score+1     \ If the score is less than the target, jump to nwin1 to
- CMP player1Target+1    \ keep playing
- BCC nwin1
- LDA player1Score
- CMP player1Target
- BCC nwin1
-
- LDA #1                 \ If we get here then player 1 has reached their target,
- JMP DEATH              \ so set A to indicate that player 1 has won and jump to
-                        \ DEATH to end the game
-
-.nwin1
-
                         \ Player 2 has been hit, so process player 2's shields
 
  LDA LAS                \ Fetch the power of the current laser and clear the
@@ -6969,6 +6943,7 @@ ENDIF
  LSR A                  \ halve the laser power to get the damage level
 
  JSR Player2OOPS        \ Remove the relevant energy from player 2's shields
+                        \ and update the scores
 
                         \ --- End of added code ------------------------------->
 
@@ -15185,7 +15160,7 @@ ENDIF
                         \ --- And replaced by: -------------------------------->
 
  LDA #250               \ Call OOPS to damage the ship by 250, which is a pretty
- JSR Player2OOPS        \ big hit
+ JSR Player2OOPS        \ big hit, and update the scores
 
 .TA35
 
@@ -29424,6 +29399,36 @@ ENDIF
 
  STA T                  \ Store the amount of damage in T
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+                        \ Player 2 has been hit, so increment player 1's score
+
+ JSR Player2ee3         \ Print player 2's score to remove it from the screen
+
+ INC player2Score       \ Increment player 2's score
+ BNE P%+5
+ INC player2Score+1
+
+ JSR Player2ee3         \ Print player 2's score
+
+ LDA player2GameType    \ If player 2 is playing survival, they don't have a
+ BEQ oops1              \ score, so jump to oops1 to keep playing
+
+ LDA player2Score+1     \ If the score is less than the target, jump to oops1 to
+ CMP player2Target+1    \ keep playing
+ BCC oops1
+ LDA player2Score
+ CMP player2Target
+ BCC oops1
+
+ LDA #2                 \ If we get here then player 2 has reached their target,
+ JMP DEATH              \ so set A to indicate that player 2 has won and jump to
+                        \ DEATH to end the game
+
+.oops1
+
+                        \ --- End of added code ------------------------------->
+
  LDX #0                 \ Fetch byte #8 (z_sign) for the ship attacking us, and
  LDY #8                 \ set X = 0
  LDA (INF),Y
@@ -29501,15 +29506,15 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- BEQ oops1              \ If we have just run out of energy, skip the next
+ BEQ oops2              \ If we have just run out of energy, skip the next
                         \ instruction to jump straight to our death
 
- BCS oops2              \ If the C flag is set, then subtracting the damage from
+ BCS oops3              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
-                        \ energy to survive, and we can jump to oops2 to make a
+                        \ energy to survive, and we can jump to oops3 to make a
                         \ damage sound
 
-.oops1
+.oops2
 
  LDA #2                 \ Set A to indicate that player 2 has won (as player 1
                         \ just ran out of energy)
@@ -29518,7 +29523,7 @@ ENDIF
                         \ and in either case that means we jump to our DEATH,
                         \ returning from the subroutine using a tail call
 
-.oops2
+.oops3
 
  JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
                         \ collision and return from the subroutine using a tail
@@ -29556,6 +29561,32 @@ ENDIF
 {
 
  STA T                  \ Store the amount of damage in T
+
+                        \ Player 2 has been hit, so increment player 1's score
+
+ JSR ee3                \ Print player 1's score to remove it from the screen
+
+ INC player1Score       \ Increment player 1's score
+ BNE P%+5
+ INC player1Score+1
+
+ JSR ee3                \ Print player 1's score
+
+ LDA player1GameType    \ If player 1 is playing survival, they don't have a
+ BEQ oops1              \ score, so jump to oops1 to keep playing
+
+ LDA player1Score+1     \ If the score is less than the target, jump to oops1 to
+ CMP player1Target+1    \ keep playing
+ BCC oops1
+ LDA player1Score
+ CMP player1Target
+ BCC oops1
+
+ LDA #1                 \ If we get here then player 1 has reached their target,
+ JMP DEATH              \ so set A to indicate that player 1 has won and jump to
+                        \ DEATH to end the game
+
+.oops1
 
  LDA K%+NI%*12+8        \ Fetch byte #8 (z_sign) for player 1 in player 2's
                         \ frame of reference, so we can work out whether player
@@ -29613,15 +29644,15 @@ ENDIF
                         \ appear to drain away four times faster than the
                         \ shields did)
 
- BEQ oops1              \ If we have just run out of energy, skip the next
+ BEQ oops2              \ If we have just run out of energy, skip the next
                         \ instruction to jump straight to our death
 
- BCS oops2              \ If the C flag is set, then subtracting the damage from
+ BCS oops3              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
-                        \ energy to survive, and we can jump to oops2 to make a
+                        \ energy to survive, and we can jump to oops3 to make a
                         \ damage sound
 
-.oops1
+.oops2
 
  LDA #1                 \ Set A to indicate that player 1 has won (as player 2
                         \ just ran out of energy)
@@ -29630,7 +29661,7 @@ ENDIF
                         \ and in either case that means we jump to our DEATH,
                         \ returning from the subroutine using a tail call
 
-.oops2
+.oops3
 
  JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
                         \ collision and return from the subroutine using a tail
@@ -61936,30 +61967,6 @@ ENDMACRO
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
                         \ us making a laser strike on another ship
 
- JSR Player2ee3         \ Print player 2's score to remove it from the screen
-
- INC player2Score       \ Increment player 2's score
- BNE P%+5
- INC player2Score+1
-
- JSR Player2ee3         \ Print player 2's score
-
- LDA player2GameType    \ If player 2 is playing survival, they don't have a
- BEQ dshp8              \ score, so jump to dshp8 to keep playing
-
- LDA player2Score+1     \ If the score is less than the target, jump to dshp8 to
- CMP player2Target+1    \ keep playing
- BCC dshp8
- LDA player2Score
- CMP player2Target
- BCC dshp8
-
- LDA #2                 \ If we get here then player 2 has reached their target,
- JMP DEATH              \ so set A to indicate that player 2 has won and jump to
-                        \ DEATH to end the game
-
-.dshp8
-
                         \ Player 1 has been hit, so process player 1's shields
 
  LDX player2VIEW        \ Fetch the power of the current laser and clear the
@@ -61967,7 +61974,8 @@ ENDMACRO
  AND #%01111111         \ halve the laser power to get the damage level
  LSR A
 
- JSR OOPS               \ Remove the relevant energy from player 1's shields
+ JSR OOPS               \ Remove the relevant energy from player 1's shields and
+                        \ update the scores
 
 .dshp9
 
