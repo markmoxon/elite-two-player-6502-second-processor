@@ -5244,37 +5244,41 @@ ENDIF
 
 .DEEOR
 
- LDY #0                 \ Set (X Y) = SC(1 0) = &1300
- STY SC
- LDX #&13
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-.DEEL
+\LDY #0                 \ Set (X Y) = SC(1 0) = &1300
+\STY SC
+\LDX #&13
+\
+\.DEEL
+\
+\STX SC+1               \ Set SC+1 = X, so now SC(1 0) = (X 0)
+\
+\TYA                    \ Set A = contents of (SC(1 0) + Y) EOR Y EOR &75
+\EOR (SC),Y             \       = contents of ((X 0) + Y) EOR Y EOR &75
+\EOR #&75               \       = contents of (X Y) EOR Y EOR &75
+\
+\IF _REMOVE_CHECKSUMS
+\
+\NOP                    \ If we have disabled checksums, then don't update (X Y)
+\NOP                    \ with the result, and just move on to the next byte
+\
+\ELSE
+\
+\STA (SC),Y             \ Store the EOR'd value in SC(1 0) + Y, i.e. (X Y)
+\
+\ENDIF
+\
+\DEY                    \ Decrement the loop counter to process the next byte
+\
+\BNE DEEL               \ Loop back until we have done the whole page
+\
+\INX                    \ Increment the page counter to point to the next page
+\
+\CPX #&A0               \ Loop back to do the next page until X = &A0, when
+\BNE DEEL               \ (X Y) = &A000
 
- STX SC+1               \ Set SC+1 = X, so now SC(1 0) = (X 0)
-
- TYA                    \ Set A = contents of (SC(1 0) + Y) EOR Y EOR &75
- EOR (SC),Y             \       = contents of ((X 0) + Y) EOR Y EOR &75
- EOR #&75               \       = contents of (X Y) EOR Y EOR &75
-
-IF _REMOVE_CHECKSUMS
-
- NOP                    \ If we have disabled checksums, then don't update (X Y)
- NOP                    \ with the result, and just move on to the next byte
-
-ELSE
-
- STA (SC),Y             \ Store the EOR'd value in SC(1 0) + Y, i.e. (X Y)
-
-ENDIF
-
- DEY                    \ Decrement the loop counter to process the next byte
-
- BNE DEEL               \ Loop back until we have done the whole page
-
- INX                    \ Increment the page counter to point to the next page
-
- CPX #&A0               \ Loop back to do the next page until X = &A0, when
- BNE DEEL               \ (X Y) = &A000
+                        \ --- End of removed code ----------------------------->
 
  JMP BRKBK              \ Jump to BRKBK to set the standard BRKV handler for the
                         \ game and return from the subroutine using a tail call
@@ -34146,42 +34150,44 @@ ENDIF
 
 }
 
-                        \ --- End of added code ------------------------------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDY XX4                \ Restore the slot number of the ship to remove into Y
+\LDY XX4                \ Restore the slot number of the ship to remove into Y
+\
+\LDX FRIN,Y             \ Fetch the contents of the slot, which contains the
+\                       \ ship type
+\
+\CPX #SST               \ If this is the space station, then jump to KS4 to
+\BEQ KS4                \ replace the space station with the sun
+\
+\CPX #CON               \ Did we just kill the Constrictor from mission 1? If
+\BNE lll                \ not, jump to lll
+\
+\LDA TP                 \ We just killed the Constrictor from mission 1, so set
+\ORA #%00000010         \ bit 1 of TP to indicate that we have successfully
+\STA TP                 \ completed mission 1
+\
+\.lll
+\
+\CPX #HER               \ Did we just kill a rock hermit? If we did, jump to
+\BEQ blacksuspenders    \ blacksuspenders to decrease the junk count
+\
+\CPX #JL                \ If JL <= X < JH, i.e. the type of ship we killed in X
+\BCC KS7                \ is junk (escape pod, alloy plate, cargo canister,
+\CPX #JH                \ asteroid, splinter, Shuttle or Transporter), then keep
+\BCS KS7                \ going, otherwise jump to KS7
+\
+\.blacksuspenders
+\
+\DEC JUNK               \ We just killed junk, so decrease the junk counter
+\
+\.KS7
+\
+\DEC MANY,X             \ Decrease the number of this type of ship in our little
+\                       \ bubble, which is stored in MANY+X (where X is the ship
+\                       \ type)
 
- LDX FRIN,Y             \ Fetch the contents of the slot, which contains the
-                        \ ship type
-
- CPX #SST               \ If this is the space station, then jump to KS4 to
- BEQ KS4                \ replace the space station with the sun
-
- CPX #CON               \ Did we just kill the Constrictor from mission 1? If
- BNE lll                \ not, jump to lll
-
- LDA TP                 \ We just killed the Constrictor from mission 1, so set
- ORA #%00000010         \ bit 1 of TP to indicate that we have successfully
- STA TP                 \ completed mission 1
-
-.lll
-
- CPX #HER               \ Did we just kill a rock hermit? If we did, jump to
- BEQ blacksuspenders    \ blacksuspenders to decrease the junk count
-
- CPX #JL                \ If JL <= X < JH, i.e. the type of ship we killed in X
- BCC KS7                \ is junk (escape pod, alloy plate, cargo canister,
- CPX #JH                \ asteroid, splinter, Shuttle or Transporter), then keep
- BCS KS7                \ going, otherwise jump to KS7
-
-.blacksuspenders
-
- DEC JUNK               \ We just killed junk, so decrease the junk counter
-
-.KS7
-
- DEC MANY,X             \ Decrease the number of this type of ship in our little
-                        \ bubble, which is stored in MANY+X (where X is the ship
-                        \ type)
+                        \ --- End of removed code ----------------------------->
 
  LDX XX4                \ Restore the slot number of the ship to remove into X
 
@@ -61713,19 +61719,21 @@ ENDMACRO
                         \ If we get here we are drawing player 1's ship or a
                         \ missile
 
- TXA                    \ Copy the slot number into A so we can add to it below
-
  DEX                    \ Set player1X to the original ship slot number from the
  DEX                    \ stack, so we get 0 for player 1's ship, or 1 and 2 for
  STX player1X           \ the missiles, which we can use as an index into the
                         \ player1INWK31 table
 
- CLC                    \ Set INF(1 0) to the address of the data block for the
- ADC #10                \ copy of this ship in slot #10 + ID (i.e. #12 for
- TAX                    \ player 2's ship, or #13 or #14 for a missile)
+ LDA XSAV               \ Set INF(1 0) to the address of the data block for the
+ CLC                    \ copy of this ship in slot #10 + ID (i.e. #12 for
+ ADC #10                \ player 2's ship, or #13 or #14 for a missile)
+ TAX
  JSR GINF
 
- JSR RESTORE            \ Fetch the ship's coordinates from slot #12/13/14
+ JSR RESTORE            \ Fetch the ship's coordinates from slot #12/13/14, so
+                        \ that if the ship is already on the scanner, we can
+                        \ remove it (if the ship hasn't yet been processed in
+                        \ this new slot, nothing will happen in the following)
 
  LDX player1X           \ Set the scan visiblilty flag from player1INWK31
  LDA player1INWK31,X
@@ -61917,13 +61925,13 @@ ENDMACRO
  JSR VCSUB              \ Calculate vector K3 as follows:
                         \
                         \ K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of
-                        \ missile
+                        \ player 2's ship
                         \
                         \ K3(5 4 3) = (y_sign y_hi z_lo) - y-coordinate of
-                        \ missile
+                        \ player 2's ship
                         \
                         \ K3(8 7 6) = (z_sign z_hi z_lo) - z-coordinate of
-                        \ missile
+                        \ player 2's ship
 
                         \ So K3 now contains the vector from player 2 to the
                         \ missile
@@ -61942,10 +61950,13 @@ ENDMACRO
 
                         \ INWK now contains:
                         \
-                        \   Player 2 (x, y, z) - missile (x, y, z)
+                        \     Missile (x, y, z) - player 2 (x, y, z)
                         \
-                        \ So to get the result we want, we negate the coordinate
-                        \ in INWK
+                        \ which is the result we want
+
+ BMI dshp7              \ We have the result we want, so skip the negation and
+                        \ move on to the coordinate rotation (this BMI is
+                        \ effectively a JMP as we just passed through a BPL)
 
 .dshp6
 
@@ -62097,13 +62108,17 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
- CMP #2                 \ the following ship-related checks
- BNE dshp13
+ LDA XSAV               \ If we are drawing the planet or sun, jump to part 6 to
+ CMP #2                 \ skip the following ship-related checks
+ BCC dshp13
 
  LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
- LDA INWK+31
+ LDA INWK+31            \ for this ship
  STA player1INWK31,X
+
+ LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
+ CMP #2                 \ the following target-related checks
+ BNE dshp13
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
  BCC dshp12             \ in which case the C flag will be set (so if there is
