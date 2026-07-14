@@ -61,13 +61,9 @@ else
   max-commander=FALSE
 endif
 
-ifeq ($(encrypt), no)
-  unencrypt=-u
-  remove-checksums=TRUE
-else
-  unencrypt=
-  remove-checksums=FALSE
-endif
+# Remove encryption and checksums to make development easier
+unencrypt=-u
+remove-checksums=TRUE
 
 ifeq ($(match), no)
   match-original-binaries=FALSE
