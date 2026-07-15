@@ -61699,7 +61699,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-MACRO ROTATE_COORDINATE_24 c, v1, c1, v2, c2, v3, c3
+MACRO ROTATE_COORDINATE_24 c, v1, v2, v3, c1, c2, c3
 
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \     v1 * c1 + v2 * c2 + v3 * c3
@@ -62343,22 +62343,22 @@ ENDMACRO
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \ x = [ sidev_x sidev_y sidev_z ] . [ x y z ]
 
-                    \   c, v1, c1, v2, c2, v3, c3
- ROTATE_COORDINATE_24   0, 21,  0, 23,  3, 25,  6
+                    \   c, v1, v2, v3, c1, c2, c3
+ ROTATE_COORDINATE_24   0, 21, 23, 25,  0,  3,  6
 
                         \ Step 2: Rotate y-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \ y = [ roofv_x roofv_y roofv_z ] . [ x y z ]
 
-                    \   c, v1, c1, v2, c2, v3, c3
- ROTATE_COORDINATE_24   3, 15,  0, 17,  3, 19,  6
+                    \   c, v1, v2, v3, c1, c2, c3
+ ROTATE_COORDINATE_24   3, 15, 17, 19,  0,  3,  6
 
                         \ Step 2: Rotate z-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
                         \ z = [ nosev_x nosev_y nosev_z ] . [ x y z ]
 
-                    \   c, v1, c1, v2, c2, v3, c3
- ROTATE_COORDINATE_24   6,  9,  0, 11,  3, 13,  6
+                    \   c, v1, v2, v3, c1, c2, c3
+ ROTATE_COORDINATE_24   6,  9, 11, 13,  0,  3,  6
 
  LDA newCoords          \ Copy new coords back into INWK
  STA INWK
