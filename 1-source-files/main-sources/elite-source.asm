@@ -4493,6 +4493,10 @@ ENDIF
  SKIP 1                 \ A flag to denote we are in the title screen rather
                         \ than the game itself
 
+.newVectors
+
+ SKIP 18                 \ The orientation vectors for a missile in player 2's
+                        \ view during the transformation calculation
 .newCoords
 
  SKIP 9                 \ The coordinates for player 1's ship in player 2's view
@@ -57678,6 +57682,193 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
+
+\ ******************************************************************************
+\
+\       Name: ROTATE_VECTORS_16
+\       Type: Macro
+\   Category: Two-player Elite
+\    Summary: Rotate an orientation vector by an orientation vector (16 bits)
+\
+\ ------------------------------------------------------------------------------
+\
+\ Rotate an orientation vector [ v1 v2 v3 ] by another orientation vector
+\ [ w1 w2 w3 ] and store the result in the coordinate c. The calculation is:
+\
+\   c = [ v1 v2 v3 ] . [ w1 w2 w3 ]
+\     = v1 * w1 + v2 * w2 + v3 * w3
+\
+\ where v1, v2, v3 are INWK offsets, w1, w2, w3 are XX3 offsets and c is an
+\ offset into the newVectors block.
+\
+\ We repeat this calculation nine times to multiply two orientation matrices.
+\
+\ So values of v1, v2, v3 and w1, w2, w3 mean:
+\
+\   *  9 = (nosev_x_hi nosev_x_lo)
+\   * 11 = (nosev_y_hi nosev_y_lo)
+\   * 13 = (nosev_z_hi nosev_z_lo)
+\
+\   * 15 = (roofv_x_hi roofv_x_lo)
+\   * 17 = (roofv_y_hi roofv_y_lo)
+\   * 19 = (roofv_z_hi roofv_z_lo)
+\
+\   * 21 = (sidev_x_hi sidev_x_lo)
+\   * 23 = (sidev_y_hi sidev_y_lo)
+\   * 25 = (sidev_z_hi sidev_z_lo)
+\
+\ while values of c mean:
+\
+\   *  0 = store 16-bit nosev_x in newVectors+0 to newVectors+1
+\   *  2 = store 16-bit nosev_y in newVectors+2 to newVectors+3
+\   *  4 = store 16-bit nosev_z in newVectors+4 to newVectors+5
+\
+\   *  6 = store 16-bit roofv_x in newVectors+6 to newVectors+7
+\   *  8 = store 16-bit roofv_y in newVectors+8 to newVectors+9
+\   * 10 = store 16-bit roofv_z in newVectors+10 to newVectors+11
+\
+\   * 12 = store 16-bit sidev_x in newVectors+12 to newVectors+13
+\   * 14 = store 16-bit sidev_y in newVectors+14 to newVectors+15
+\   * 16 = store 16-bit sidev_z in newVectors+16 to newVectors+17
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+MACRO ROTATE_VECTORS_16 c, v1, v2, v3, w1, w2, w3
+
+                        \ c = [ v1 v2 v3 ] . [ w1 w2 w3 ]
+                        \     v1 * w1 + v2 * w2 + v3 * w3
+                        \
+                        \ Commentary has c = z-coordinate
+                        \                v1 = nosev_x
+                        \                v2 = nosev_y
+                        \                v3 = nosev_z
+                        \                w1 = sidev_x
+                        \                w2 = sidev_y
+                        \                w3 = sidev_z
+
+ LDY #v1                \ First do nosev_x * sidev_x, so calculate:
+ LDX #w1                \
+ JSR Multiply16x16      \   K(3 2 1 0) = nosev_x * sidev_x
+                        \
+                        \ i.e. (nosev_x_hi nosev_x_lo) * (sidev_x_hi sidev_x_lo)
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
+ STA XX12               \ byte, so:
+ LDA K+2                \
+ STA XX12+1             \   XX12(2 1 0) = nosev_x * sidev_x
+ LDA K+3
+ STA XX12+2
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotv1
+ INC XX12
+ BNE rotv1
+ INC XX12+1
+ BNE rotv1
+ INC XX12+2
+
+.rotv1
+
+ LDY #v2                \ Next do nosev_y * sidev_y, so calculate:
+ LDX #w2                \
+ JSR Multiply16x16      \   K(3 2 1 0) = nosev_y * sidev_y
+                        \
+                        \ i.e. (nosev_y_hi nosev_y_lo) * (sidev_y_hi sidev_y_lo)
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(5 4 3), ignoring low
+ STA XX12+3             \ byte, so:
+ LDA K+2                \
+ STA XX12+4             \   XX12(5 4 3) = nosev_y * sidev_y
+ LDA K+3
+ STA XX12+5
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotv2
+ INC XX12+3
+ BNE rotv2
+ INC XX12+4
+ BNE rotv2
+ INC XX12+5
+
+.rotv2
+
+ LDY #v3                \ Then do nosev_z * sidev_z, so calculate
+ LDX #w3                \
+ JSR Multiply16x16      \   K(3 2 1 0) = nosev_z * sidev_z
+                        \
+                        \ i.e. (nosev_z_hi nosev_z_lo) * (sidev_z_hi sidev_z_lo)
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotv3
+ INC K+1
+ BNE rotv3
+ INC K+2
+ BNE rotv3
+ INC K+3
+
+.rotv3
+
+                        \ By this point we have:
+                        \
+                        \   XX12(2 1 0) = nosev_x * sidev_x
+                        \   XX12(5 4 3) = nosev_y * sidev_y
+                        \   K(3 2 1)    = nosev_z * sidev_z
+                        \
+                        \ So now we need to add them all together
+
+ LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
+ STA XX15+1             \                 = nosev_x * sidev_x
+ LDA XX12+1
+ STA XX15+2
+ LDA XX12+2
+ STA XX15+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * sidev_z) + (nosev_x * sidev_x)
+
+ LDA XX12+3             \ Set XX15(3 2 1) = XX12(5 4 3)
+ STA XX15+1             \                 = nosev_y * sidev_y
+ LDA XX12+4
+ STA XX15+2
+ LDA XX12+5
+ STA XX15+3
+
+ LDA P                  \ Set K(3 2 1) = P(2 1 0)
+ STA K+1                \              = (nosev_z * sidev_z) + (nosev_x * sidev_x)
+ LDA P+1
+ STA K+2
+ LDA P+2
+ STA K+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * sidev_z) + (nosev_x * sidev_x)
+                        \              + (nosev_y * sidev_y)
+
+ JSR DivideBy96         \ Calculate:
+                        \
+                        \   K(3 2 1 0) = P(2 1 0) / 96
+
+ LDA K+3                \ Extract the sign from K+3 to put into K+1
+ AND #%10000000
+ STA T
+
+ LDA K                  \ Set result vector to the result in K(1 0)
+ STA newVectors+c
+ LDA K+1
+ AND #%01111111
+ ORA T
+ STA newVectors+c+1
+
+ENDMACRO
+
+                        \ --- End of added code ------------------------------->
+
 \ ******************************************************************************
 \
 \       Name: OrientateMissile
@@ -57690,47 +57881,179 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 .OrientateMissile
-                        \ If we get here then this is a missile, so we need to
-                        \ calculate the missile's orientation vectors as
-                        \ follows:
+
+                        \ If we get here then we are drawing a missile in player
+                        \ 2's view, so we need to calculate the missile's
+                        \ orientation vectors for player 2's view, as follows:
                         \
-                        \   missile o-vectors . transposed player 2 o-vectors
+                        \   missile's orientation vector for player 2's view
+                        \   =   player 2's orientation matrix
+                        \     . missile's orientation vector for player 1's view
                         \
-                        \ The missile's orientation vectors are already in INWK
-                        \ so we need to transpose player 2's orientation vectors
-                        \ into a scratch space (let's use XX3)
+                        \ The missile's orientation vectors for player 1's view
+                        \ are already in INWK at this point, so the first step
+                        \ is to copy player 2's orientation vectors into XX3
+                        \
+                        \ We will store the orientation vectors in XX3 using the
+                        \ same offsets as the orientation vectors in INWK, so
+                        \ both INWK+9 and XX3+9 will represent nosev_x_lo, for
+                        \ example
 
- LDA K%+NI%*2+9         \ nosev_x_lo
- LDX K%+NI%*2+25        \ sidev_z_lo
- STA XX3+25
- STX XX3+9
+ LDX #17                \ We start by copying player 2's orientation vectors
+                        \ into XX3, so set an index in X for copying 18 bytes
 
- LDA K%+NI%*2+10        \ nosev_x_hi
- LDX K%+NI%*2+26        \ sidev_z_hi
- STA XX3+26
- STX XX3+10
+.orms1
 
- LDA K%+NI%*2+11        \ nosev_y_lo
- LDX K%+NI%*2+19        \ roofv_z_lo
- STA XX3+19
- STX XX3+11
+ LDA K%+NI%*2+9,X       \ Copy the X-th vector byte from player 2 into XX3
+ STA XX3+9,X
 
- LDA K%+NI%*2+12        \ nosev_y_hi
- LDX K%+NI%*2+20        \ roofv_z_hi
- STA XX3+20
- STX XX3+12
+ DEX                    \ Decrement the loop counter
 
- LDA K%+NI%*2+15        \ roofv_x_lo
- LDX K%+NI%*2+23        \ sidev_y_lo
- STA XX3+23
- STX XX3+15
+ BPL orms1              \ Loop back until we have copied all 18 bytes
 
- LDA K%+NI%*2+16        \ roofv_x_hi
- LDX K%+NI%*2+24        \ sidev_y_hi
- STA XX3+24
- STX XX3+16
+                        \ So by this point we have:
+                        \
+                        \   * The missile's orientation vectors in INWK
+                        \
+                        \   * Player 2's orientation matrix in XX3
+                        \
+                        \ We now do the following multiplication for each of the
+                        \ missile's orientation vectors in turn:
+                        \
+                        \   new vector = player 2 matrix . missile vector
+                        \
+                        \ where player 2's orientation matrix is the 3x3 matrix
+                        \ made up of player 2's orientation vectors, in this
+                        \ form:
+                        \
+                        \   [ sidev_x sidev_y sidev_z ]
+                        \   [ roofv_x roofv_y roofv_z ]
+                        \   [ nosev_x nosev_y nosev_z ]
+                        \
+                        \ and each of the missile's orientation vectors is a
+                        \ standard orientation vector in the form:
+                        \
+                        \   [ sidev_x ]
+                        \   [ sidev_y ]
+                        \   [ sidev_z ]
+                        \
+                        \ So we need to do three calculations to get the new
+                        \ orientation vectors for the missile in player 2's
+                        \ view, like this:
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ sidev_x ]
+                        \   sidev' = [ roofv_x roofv_y roofv_z ] . [ sidev_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ sidev_z ]
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ roofv_x ]
+                        \   roofv' = [ roofv_x roofv_y roofv_z ] . [ roofv_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ roofv_z ]
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ nosev_x ]
+                        \   nosev' = [ roofv_x roofv_y roofv_z ] . [ nosev_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ nosev_z ]
+                        \
+                        \ We store the result in newVectors, ready to be copied
+                        \ back into INWK when we are done
+                        \
+                        \ Note that orientation vectors are stored in reverse
+                        \ order in memory, like this: nosev, roofv and sidev
+                        \
+                        \ We store the results in newVectors in the same order
+                        \ as they are stored in INWK and XX3, to enable easy
+                        \ copying into INWK when we are done
 
- JMP dshp12             \ Return from the subroutine
+                        \ First we calculate:
+                        \
+                        \   sidev' = [ player 2 matrix ] . [ missile sidev ]
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ sidev_x ]
+                        \          = [ roofv_x roofv_y roofv_z ] . [ sidev_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ sidev_z ]
+                        \
+                        \ as:
+                        \
+                        \   sidev_x' = [ player 2 sidev ] . [ missile sidev ]
+                        \
+                        \   sidev_y' = [ player 2 roofv ] . [ missile sidev ]
+                        \
+                        \   sidev_z' = [ player 2 nosev ] . [ missile sidev ]
+                        \
+                        \ As a reminder, the vectors are stored like this:
+                        \
+                        \   * The missile's orientation vectors in INWK
+                        \
+                        \   * Player 2's orientation matrix in XX3
+                        \
+                        \ and the arguments to ROTATE_VECTORS_16 are like this:
+                        \
+                        \   * v1, v2, v3 are XX3 offsets (i.e. player 2 matrix)
+                        \
+                        \   * w1, w2, w3 are INWK offsets (i.e. missile vectors)
+
+                    \   c, v1, v2, v3, w1, w2, w3
+ ROTATE_VECTORS_16     12, 21, 23, 25, 21, 23, 25
+ ROTATE_VECTORS_16     14, 15, 17, 19, 21, 23, 25
+ ROTATE_VECTORS_16     16,  9, 11, 13, 21, 23, 25
+
+                        \ Next we calculate:
+                        \
+                        \   roofv' = [ player 2 matrix ] . [ missile roofv ]
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ roofv_x ]
+                        \          = [ roofv_x roofv_y roofv_z ] . [ roofv_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ roofv_z ]
+                        \
+                        \ as:
+                        \
+                        \   roofv_x' = [ player 2 sidev ] . [ missile roofv ]
+                        \
+                        \   roofv_y' = [ player 2 roofv ] . [ missile roofv ]
+                        \
+                        \   roofv_z' = [ player 2 nosev ] . [ missile roofv ]
+
+                    \   c, v1, v2, v3, w1, w2, w3
+ ROTATE_VECTORS_16      6, 21, 23, 25, 15, 17, 19
+ ROTATE_VECTORS_16      8, 15, 17, 19, 15, 17, 19
+ ROTATE_VECTORS_16     10,  9, 11, 13, 15, 17, 19
+
+                        \ And finally we calculate:
+                        \
+                        \   nosev' = [ player 2 matrix ] . [ missile nosev ]
+                        \
+                        \            [ sidev_x sidev_y sidev_z ]   [ nosev_x ]
+                        \          = [ roofv_x roofv_y roofv_z ] . [ nosev_y ]
+                        \            [ nosev_x nosev_y nosev_z ]   [ nosev_z ]
+                        \
+                        \ as:
+                        \
+                        \   nosev_x' = [ player 2 sidev ] . [ missile nosev ]
+                        \
+                        \   nosev_y' = [ player 2 roofv ] . [ missile nosev ]
+                        \
+                        \   nosev_z' = [ player 2 nosev ] . [ missile nosev ]
+
+                    \   c, v1, v2, v3, w1, w2, w3
+ ROTATE_VECTORS_16      0, 21, 23, 25,  9, 11, 13
+ ROTATE_VECTORS_16      2, 15, 17, 19,  9, 11, 13
+ ROTATE_VECTORS_16      4,  9, 11, 13,  9, 11, 13
+
+ LDX #17                \ We now copy the new orientation vectors into INWK, so
+                        \ set an index in X for copying 18 bytes
+
+.orms2
+
+ LDA newVectors,X       \ Copy the X-th new vector byte into INWK+9, which is
+ STA INWK+9,X           \ where the orientation vectors are in the data block
+
+ DEX                    \ Decrement the loop counter
+
+ BPL orms2              \ Loop back until we have copied all 18 bytes
+
+ JSR TIDY               \ Tidy the missile's new orientation vectors
+
+ JMP dshp12             \ Return from the subroutine, rejoining DrawPlayer2View
+                        \ just after the call to this routine
 
                         \ --- End of added code ------------------------------->
 
@@ -61837,190 +62160,6 @@ ENDMACRO
 
 \ ******************************************************************************
 \
-\       Name: ROTATE_COORDINATE_16
-\       Type: Macro
-\   Category: Two-player Elite
-\    Summary: Rotate an orientation vector by an orientation vector (16 bits)
-\
-\ ------------------------------------------------------------------------------
-\
-\ Rotate an orientation vector [ v1 v2 v3 ] by another orientation vector
-\ [ w1 w2 w3 ] and store the result in the coordinate c. The calculation is:
-\
-\   c = [ v1 v2 v3 ] . [ w1 w2 w3 ]
-\     = v1 * w1 + v2 * w2 + v3 * w3
-\
-\ where v1, v2, v3 and w1 w2 w3 are INWK offsets, and c is an offset into the
-\ newCoords block.
-\
-\ So values of c1, c2, c3 mean:
-\
-\   * 0 = INWK+0 to INWK+2 (x_sign x_hi x_lo)
-\   * 3 = INWK+3 to INWK+5 (y_sign y_hi y_lo)
-\   * 6 = INWK+6 to INWK+8 (z_sign z_hi z_lo)
-\
-\ and values of v1, v2, v3 mean:
-\
-\   *  9 = (nosev_x_hi nosev_x_lo)
-\   * 11 = (nosev_y_hi nosev_y_lo)
-\   * 13 = (nosev_z_hi nosev_z_lo)
-\
-\   * 15 = (roofv_x_hi roofv_x_lo)
-\   * 17 = (roofv_y_hi roofv_y_lo)
-\   * 19 = (roofv_z_hi roofv_z_lo)
-\
-\   * 21 = (sidev_x_hi sidev_x_lo)
-\   * 23 = (sidev_y_hi sidev_y_lo)
-\   * 25 = (sidev_z_hi sidev_z_lo)
-\
-\ while values of c mean:
-\
-\   * 0 = store 24-bit x-coordinate in newCoords+0 to newCoords+2
-\   * 3 = store 24-bit y-coordinate in newCoords+3 to newCoords+5
-\   * 6 = store 24-bit z-coordinate in newCoords+6 to newCoords+8
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-MACRO ROTATE_COORDINATE16 c, v1, c1, v2, c2, v3, c3
-
-                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
-                        \     v1 * c1 + v2 * c2 + v3 * c3
-                        \
-                        \ Commentary has c = z-coordinate
-                        \                v1 = nosev_x
-                        \                v2 = nosev_y
-                        \                v3 = nosev_z
-                        \                c1 = x
-                        \                c2 = y
-                        \                c3 = z
-
- LDY #v1                \ First do nosev_x * x, so calculate:
- LDX #c1                \
- JSR Multiply16x24      \   K(3 2 1 0) = nosev_x * x
-                        \
-                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
-
- LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
- STA XX12               \ byte, so:
- LDA K+2                \
- STA XX12+1             \   XX12(2 1 0) = nosev_x * x
- LDA K+3
- STA XX12+2
-
- BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL rotc1
- INC XX12
- BNE rotc1
- INC XX12+1
- BNE rotc1
- INC XX12+2
-
-.rotc1
-
- LDY #v2                \ Next do nosev_y * y, so calculate:
- LDX #c2                \
- JSR Multiply16x24      \   K(3 2 1 0) = nosev_y * y
-                        \
-                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
-
- LDA K+1                \ Copy result from K(3 2 1) to XX12(5 4 3), ignoring low
- STA XX12+3             \ byte, so:
- LDA K+2                \
- STA XX12+4             \   XX12(5 4 3) = nosev_y * y
- LDA K+3
- STA XX12+5
-
- BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL rotc2
- INC XX12+3
- BNE rotc2
- INC XX12+4
- BNE rotc2
- INC XX12+5
-
-.rotc2
-
- LDY #v3                \ Then do nosev_z * z, so calculate
- LDX #c3                \
- JSR Multiply16x24      \   K(3 2 1 0) = nosev_z * z
-                        \
-                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
-
- BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
- BPL rotc3
- INC K+1
- BNE rotc3
- INC K+2
- BNE rotc3
- INC K+3
-
-.rotc3
-
-                        \ By this point we have:
-                        \
-                        \   XX12(2 1 0) = nosev_x * x
-                        \   XX12(5 4 3) = nosev_y * y
-                        \   K(3 2 1)    = nosev_z * z
-                        \
-                        \ So now we need to add them all together
-
- LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
- STA XX15+1             \                 = nosev_x * x
- LDA XX12+1
- STA XX15+2
- LDA XX12+2
- STA XX15+3
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
-                        \            = (nosev_z * z) + (nosev_x * x)
-
- LDA XX12+3             \ Set XX15(3 2 1) = XX12(5 4 3)
- STA XX15+1             \                 = nosev_y * y
- LDA XX12+4
- STA XX15+2
- LDA XX12+5
- STA XX15+3
-
- LDA P                  \ Set K(3 2 1) = P(2 1 0)
- STA K+1                \              = (nosev_z * z) + (nosev_x * x)
- LDA P+1
- STA K+2
- LDA P+2
- STA K+3
-
- JSR Add32              \ Calculate:
-                        \
-                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
-                        \            = (nosev_z * z) + (nosev_x * x)
-                        \              + (nosev_y * y)
-
- JSR DivideBy96         \ Calculate:
-                        \
-                        \   K(3 2 1 0) = P(2 1 0) / 96
-
- LDA K+3                \ Extract the sign from K+3 to put into K+2
- AND #%10000000
- STA T
-
- LDA K                  \ Set player 2's z-coordinate to the result in K(2 1 0)
- STA newCoords+c
- LDA K+1
- STA newCoords+c+1
- LDA K+2
- AND #%01111111
- ORA T
- STA newCoords+c+2
-
-ENDMACRO
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
 \       Name: DrawPlayer2View (Part 1 of 6)
 \       Type: Subroutine
 \   Category: Two-player Elite
@@ -62050,13 +62189,33 @@ ENDMACRO
  STX player1X           \ the missiles, which we can use as an index into the
                         \ player1INWK31 table
 
- LDA player1INWK31,X    \ If the ship's INWK+31 byte is zero then this is the
- BNE dshp1              \ first time we've called this routine for this ship, so
- LDA #%00010000         \ set bit #4 to indicate that in future we should remove
- STA player1INWK31,X    \ the ship from the scanner
+ LDA player1INWK31,X    \ If the ship's INWK+31 byte is non-zero then this is
+ BNE dshp1              \ not the first time we've called this routine for this
+                        \ ship, so jump to dshp1 to keep processing this ship
 
- BNE dshp2              \ Jump to part 3 to skip the following (this BNE is
-                        \ effectively a JMP as A is non-zero)
+                        \ If we get here then this is the first time we've
+                        \ called this routine for this ship, so we need to do
+                        \ some initiaisation
+
+ LDA #%00010000         \ Set bit #4 to indicate that in future we should remove
+ STA player1INWK31,X    \ the ship from the scanner (and to make player1INWK31
+                        \ non-zero so we don't repeat these initialisation
+                        \ steps)
+
+ LDA INWK+34            \ Set the high heap byte to set the heap address for the
+ PHA                    \ ship in player 2's view to &2000 below the heap for
+ SEC                    \ the ship in player 1's view, storing the original high
+ SBC #&20               \ byte on the stack
+ STA INWK+34
+
+ LDY #2                 \ Set the Y2 coordinate of the laser line in the ship
+ LDA #255               \ line heap to 255 so there is no laser line in the heap
+ STA (INWK+33),Y        \ for player 2's view
+
+ PLA                    \ Restore the original heap address
+ STA INWK+34
+
+ JMP dshp2              \ Jump to part 3 to skip the following
 
 .dshp1
 
@@ -62393,8 +62552,8 @@ ENDMACRO
  JSR SCAN               \ Draw the ship on the scanner
 
  LDA XSAV               \ If this is player 2's ship, jump to dshp11 to skip
- CMP #3                 \ the following instruction
- BCS dshp11
+ CMP #2                 \ the following instruction
+ BEQ dshp11
 
  JMP OrientateMissile   \ Step 3: Calculate the missile's orientation matrix,
                         \ jumping back to dshp12 when we're done
@@ -62408,9 +62567,9 @@ ENDMACRO
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
 
- LDA INWK+34            \ High heap byte (&2000 below ship #2)
- SEC
- SBC #&20
+ LDA INWK+34            \ Set the high heap byte to set the heap address for the
+ SEC                    \ ship in player 2's view to &2000 below the heap for
+ SBC #&20               \ the ship in player 1's view
  STA INWK+34
 
  LDA XSAV               \ If this is player 2's ship, jump to dshp13 so we only
@@ -62653,6 +62812,209 @@ ENDMACRO
 
 \ ******************************************************************************
 \
+\       Name: Multiply16x16
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Multiply two 16-bit orientation vectors
+\
+\ ------------------------------------------------------------------------------
+\
+\ Calculate:
+\
+\   K(3 2 1 0) = orientation vector * orientation vector
+\
+\ So if Y = 21 and X = 9, for example, then we set K(3 2 1 0) to:
+\
+\   (sidev_x_hi sidev_x_lo) * (nosev_x_hi nosev_x_lo)
+\
+\ We are multiplying two sign-magnitude numbers, so we multiply the absolute
+\ values of the operands, and only apply the sign at the end.
+\
+\ Specifically, we do this calculation:
+\
+\    |sidev_x_hi sidev_x_lo| * |nosev_x_hi nosev_x_lo|
+\
+\    =   |sidev_x_hi| * |nosev_x_hi nosev_x_lo|
+\      + |sidev_x_lo| * |nosev_x_hi nosev_x_lo| >> 8
+\
+\ and then we apply the sign bit of sidev_x_hi EOR nosev_x_hi to the result.
+\
+\ We do each multiplication using MULT3, which calculates the following:
+\
+\   K(3 2 1 0) = (A P+1 P) * Q
+\
+\ where both (A P+1 P) and Q are sign-magnitude numbers.
+\
+\ We therefore do the calculation in steps, like this:
+\
+\   1. XX15(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_lo >> 1| << 1
+\
+\   2. K(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_hi|
+\
+\   3. Round up XX15+1 if bit 7 of XX15 is set
+\
+\   4. Calculate K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+\
+\   5. Apply the sign bit of sidev_x_hi EOR nosev_x_hi to the result
+\
+\ Step 1 includes right and left shifts because MULT3 expects sign-magnitude
+\ arguments, but sidev_x_lo doesn't have a sign bit as it is the low byte of the
+\ 16-bit sign-magnitude number (sidev_x_hi sidev_x_lo). So we shift right to
+\ insert a sign bit of zero into bit 7 (thus keeping it positive), do the call
+\ to MULT3, and then shift the result back. We lose some accuracy by ignoring
+\ bit 0 of the orientation vector in this process, but as we don't use the low
+\ byte of the result in XX15+0, this isn't a huge issue.
+\
+\ So in essence, step 1 does this:
+\
+\   XX15(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_lo|
+\
+\ which means step 4 does this:
+\
+\   K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+\              =   |nosev_x_hi nosev_x_lo| * |sidev_x_hi|
+\                + |nosev_x_hi nosev_x_lo| * |sidev_x_lo| >> 8
+\
+\ which is what we want to calculate.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\   X                   The orientation vector to multiply, from INWK:
+\
+\                         * If Y = 9,  multiply nosev_x
+\                                  11, multiply nosev_y
+\                                  13, multiply nosev_z
+\
+\                         * If Y = 15, multiply roofv_x
+\                                  17, multiply roofv_y
+\                                  19, multiply roofv_z
+\
+\                         * If Y = 21, multiply sidev_x
+\                                  23, multiply sidev_y
+\                                  25, multiply sidev_z
+\
+\   Y                   The orientation vector to multiply, from XX3:
+\
+\                         * If Y = 9,  multiply nosev_x
+\                                  11, multiply nosev_y
+\                                  13, multiply nosev_z
+\
+\                         * If Y = 15, multiply roofv_x
+\                                  17, multiply roofv_y
+\                                  19, multiply roofv_z
+\
+\                         * If Y = 21, multiply sidev_x
+\                                  23, multiply sidev_y
+\                                  25, multiply sidev_z
+\
+\ ------------------------------------------------------------------------------
+\
+\ Returns:
+\
+\   K(3 2 1 0)          The result
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Multiply16x16
+
+                        \ The following commentary assumes we are calculating:
+                        \
+                        \   (sidev_x_hi sidev_x_lo) * (nosev_x_hi nosev_x_lo)
+                        \
+                        \ where sidev is in XX3 (as determined by Y) and nosev
+                        \ is in INWK (as determined by X)
+
+ STX coordinateIndex    \ Store the INWK vector index in coordinateIndex so we
+                        \ can retrieve it later
+
+ LDA XX3,Y              \ Q = |sidev_x_lo >> 1|
+ LSR A                  \
+ STA Q                  \ We shift right to create a sign bit (which we discard)
+
+ LDA INWK+0,X           \ (A P+1 P) = |nosev_x_hi nosev_x_lo|
+ STA P
+ LDA INWK+1,X
+ AND #%01111111
+ STA P+1
+ LDA #0
+
+ JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
+                        \            = |nosev_x_hi nosev_x_lo| * |sidev_x_lo >> 1|
+                        \
+                        \ Y, P and P+1 are unchanged
+
+ LDA K                  \ Set XX15(3 2 1 0) = K(3 2 1 0) << 1
+ ASL A                  \
+ STA XX15               \ So XX15(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_lo|
+ LDA K+1                \
+ ROL A                  \ We know the sign bit is positive so we can ignore it
+ STA XX15+1
+ LDA K+2
+ ROL A
+ STA XX15+2
+ LDA K+3
+ ROL A
+ STA XX15+3
+
+ BIT XX15               \ Round up the second-lowest byte in XX15+1 as we are
+ BPL molt1              \ going to drop the bottom byte in XX15
+ INC XX15+1
+ BNE molt1
+ INC XX15+2
+ BNE molt1
+ INC XX15+3
+
+.molt1
+
+ LDA XX3+1,Y            \ Q = |sidev_x_hi| for ship #2
+ AND #%01111111
+ STA Q
+
+ LDX coordinateIndex    \ Retrieve the the INWK vector index
+
+ LDA INWK+0,X           \ (A P+1 P) = |nosev_x_hi nosev_x_lo|
+ STA P
+ LDA INWK+1,X
+ AND #%01111111
+ STA P+1
+ LDA #0
+
+ JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
+                        \            = |nosev_x_hi nosev_x_lo| * |sidev_x_hi|
+
+ CLC                    \ Calculate:
+ LDA K                  \
+ ADC XX15+1             \   K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
+ STA K
+ LDA K+1
+ ADC XX15+2
+ STA K+1
+ LDA K+2
+ ADC XX15+3
+ STA K+2
+ LDA K+3
+ ADC #0
+ STA K+3
+
+ LDX coordinateIndex    \ Retrieve the the INWK vector index
+
+ LDA INWK+1,X           \ Calculate the sign of the result:
+ EOR XX3+1,Y            \
+ AND #%10000000         \   nosev_x_hi EOR sidev_x_hi
+
+ ORA K+3                \ Apply the sign to the result
+ STA K+3
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: Multiply16x24
 \       Type: Subroutine
 \   Category: Two-player Elite
@@ -62665,7 +63027,7 @@ ENDMACRO
 \
 \   K(3 2 1 0) = orientation vector * coordinate
 \
-\ So if X = 0 and Y = 9, for example, then we set K(3 2 1 0) to:
+\ So if Y = 21 and X = 0, for example, then we set K(3 2 1 0) to:
 \
 \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
 \
@@ -62677,7 +63039,7 @@ ENDMACRO
 \    |sidev_x_hi sidev_x_lo| * |x_sign x_hi x_lo|
 \
 \    =   |sidev_x_hi| * |x_sign x_hi x_lo|
-\      + |sidev_x_lo| * (x_sign x_hi x_lo) >> 8
+\      + |sidev_x_lo| * |x_sign x_hi x_lo| >> 8
 \
 \ and then we apply the sign bit of x_sign EOR sidev_x_hi to the result.
 \
@@ -62723,7 +63085,7 @@ ENDMACRO
 \
 \ Arguments:
 \
-\   X                   The coordinate to multiply:
+\   X                   The coordinate to multiply in INWK:
 \
 \                         * If X = 0, multiply coordinate (x_sign x_hi x_lo)
 \
@@ -62731,7 +63093,7 @@ ENDMACRO
 \
 \                         * If X = 6, multiply coordinate (z_sign z_hi z_lo)
 \
-\   Y                   The orientation vector to multiply, fron ship #2:
+\   Y                   The orientation vector to multiply, from ship #2:
 \
 \                         * If Y = 9,  multiply nosev_x
 \                                  11, multiply nosev_y
@@ -62756,6 +63118,14 @@ ENDMACRO
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 .Multiply16x24
+
+                        \ The following commentary assumes we are calculating:
+                        \
+                        \   (sidev_x_hi sidev_x_lo) * (x_sign x_hi x_lo)
+                        \
+                        \ where sidev is the orientation vector from ship #2
+                        \ (as determined by Y) and the coordinate is in INWK
+                        \ (as determined by X)
 
  STX coordinateIndex    \ Store the coordinate index in coordinateIndex so we
                         \ can retrieve it later
