@@ -27990,6 +27990,13 @@ ENDIF
 
 .DOEXP
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BRA EX2                \ TEST: disable explosions until they are implemented
+                        \ properly
+
+                        \ --- End of added code ------------------------------->
+
  LDA INWK+31            \ If bit 6 of the ship's byte #31 is clear, then the
  AND #%01000000         \ ship is not already exploding so there is no existing
  BEQ P%+5               \ explosion cloud to remove, so skip the following
