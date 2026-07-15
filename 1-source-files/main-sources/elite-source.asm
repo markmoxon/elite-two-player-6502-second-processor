@@ -47491,8 +47491,6 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-IF FALSE
-
  BIT titleScreen        \ If bit 7 of titleScreen is set then this is the title
  BMI move3              \ screen, so skip straight to tidying
 
@@ -47528,7 +47526,7 @@ IF FALSE
 .move2
 
  CMP #2                 \ If this is not player 2's ship, jump to move3 to tidy
- BNE move3              \ the ship
+ BNE move3              \ the slot contents
 
                         \ If we get here then this is player 2's ship
 
@@ -47538,8 +47536,6 @@ IF FALSE
                         \ 2's view jump around)
 
 .move3
-
-ENDIF
 
                         \ --- End of added code ------------------------------->
 
