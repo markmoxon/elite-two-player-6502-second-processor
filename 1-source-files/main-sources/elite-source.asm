@@ -57680,6 +57680,62 @@ ENDIF
 
 \ ******************************************************************************
 \
+\       Name: OrientateMissile
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Calculate the orientation of a missile in player 2s's view
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.OrientateMissile
+                        \ If we get here then this is a missile, so we need to
+                        \ calculate the missile's orientation vectors as
+                        \ follows:
+                        \
+                        \   missile o-vectors . transposed player 2 o-vectors
+                        \
+                        \ The missile's orientation vectors are already in INWK
+                        \ so we need to transpose player 2's orientation vectors
+                        \ into a scratch space (let's use XX3)
+
+ LDA K%+NI%*2+9         \ nosev_x_lo
+ LDX K%+NI%*2+25        \ sidev_z_lo
+ STA XX3+25
+ STX XX3+9
+
+ LDA K%+NI%*2+10        \ nosev_x_hi
+ LDX K%+NI%*2+26        \ sidev_z_hi
+ STA XX3+26
+ STX XX3+10
+
+ LDA K%+NI%*2+11        \ nosev_y_lo
+ LDX K%+NI%*2+19        \ roofv_z_lo
+ STA XX3+19
+ STX XX3+11
+
+ LDA K%+NI%*2+12        \ nosev_y_hi
+ LDX K%+NI%*2+20        \ roofv_z_hi
+ STA XX3+20
+ STX XX3+12
+
+ LDA K%+NI%*2+15        \ roofv_x_lo
+ LDX K%+NI%*2+23        \ sidev_y_lo
+ STA XX3+23
+ STX XX3+15
+
+ LDA K%+NI%*2+16        \ roofv_x_hi
+ LDX K%+NI%*2+24        \ sidev_y_hi
+ STA XX3+24
+ STX XX3+16
+
+ JMP dshp12             \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: F%
 \       Type: Variable
 \   Category: Utility routines
@@ -61781,6 +61837,190 @@ ENDMACRO
 
 \ ******************************************************************************
 \
+\       Name: ROTATE_COORDINATE_16
+\       Type: Macro
+\   Category: Two-player Elite
+\    Summary: Rotate an orientation vector by an orientation vector (16 bits)
+\
+\ ------------------------------------------------------------------------------
+\
+\ Rotate an orientation vector [ v1 v2 v3 ] by another orientation vector
+\ [ w1 w2 w3 ] and store the result in the coordinate c. The calculation is:
+\
+\   c = [ v1 v2 v3 ] . [ w1 w2 w3 ]
+\     = v1 * w1 + v2 * w2 + v3 * w3
+\
+\ where v1, v2, v3 and w1 w2 w3 are INWK offsets, and c is an offset into the
+\ newCoords block.
+\
+\ So values of c1, c2, c3 mean:
+\
+\   * 0 = INWK+0 to INWK+2 (x_sign x_hi x_lo)
+\   * 3 = INWK+3 to INWK+5 (y_sign y_hi y_lo)
+\   * 6 = INWK+6 to INWK+8 (z_sign z_hi z_lo)
+\
+\ and values of v1, v2, v3 mean:
+\
+\   *  9 = (nosev_x_hi nosev_x_lo)
+\   * 11 = (nosev_y_hi nosev_y_lo)
+\   * 13 = (nosev_z_hi nosev_z_lo)
+\
+\   * 15 = (roofv_x_hi roofv_x_lo)
+\   * 17 = (roofv_y_hi roofv_y_lo)
+\   * 19 = (roofv_z_hi roofv_z_lo)
+\
+\   * 21 = (sidev_x_hi sidev_x_lo)
+\   * 23 = (sidev_y_hi sidev_y_lo)
+\   * 25 = (sidev_z_hi sidev_z_lo)
+\
+\ while values of c mean:
+\
+\   * 0 = store 24-bit x-coordinate in newCoords+0 to newCoords+2
+\   * 3 = store 24-bit y-coordinate in newCoords+3 to newCoords+5
+\   * 6 = store 24-bit z-coordinate in newCoords+6 to newCoords+8
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+MACRO ROTATE_COORDINATE16 c, v1, c1, v2, c2, v3, c3
+
+                        \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
+                        \     v1 * c1 + v2 * c2 + v3 * c3
+                        \
+                        \ Commentary has c = z-coordinate
+                        \                v1 = nosev_x
+                        \                v2 = nosev_y
+                        \                v3 = nosev_z
+                        \                c1 = x
+                        \                c2 = y
+                        \                c3 = z
+
+ LDY #v1                \ First do nosev_x * x, so calculate:
+ LDX #c1                \
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_x * x
+                        \
+                        \ i.e. (nosev_x_hi nosev_x_lo) * (x_sign x_hi x_lo)
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(2 1 0), ignoring low
+ STA XX12               \ byte, so:
+ LDA K+2                \
+ STA XX12+1             \   XX12(2 1 0) = nosev_x * x
+ LDA K+3
+ STA XX12+2
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotc1
+ INC XX12
+ BNE rotc1
+ INC XX12+1
+ BNE rotc1
+ INC XX12+2
+
+.rotc1
+
+ LDY #v2                \ Next do nosev_y * y, so calculate:
+ LDX #c2                \
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_y * y
+                        \
+                        \ i.e. (nosev_y_hi nosev_y_lo) * (y_sign y_hi y_lo)
+
+ LDA K+1                \ Copy result from K(3 2 1) to XX12(5 4 3), ignoring low
+ STA XX12+3             \ byte, so:
+ LDA K+2                \
+ STA XX12+4             \   XX12(5 4 3) = nosev_y * y
+ LDA K+3
+ STA XX12+5
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotc2
+ INC XX12+3
+ BNE rotc2
+ INC XX12+4
+ BNE rotc2
+ INC XX12+5
+
+.rotc2
+
+ LDY #v3                \ Then do nosev_z * z, so calculate
+ LDX #c3                \
+ JSR Multiply16x24      \   K(3 2 1 0) = nosev_z * z
+                        \
+                        \ i.e. (nosev_z_hi nosev_z_lo) * (z_sign z_hi z_lo)
+
+ BIT K                  \ Round up byte #1 of result if bit 7 of byte #0 is set
+ BPL rotc3
+ INC K+1
+ BNE rotc3
+ INC K+2
+ BNE rotc3
+ INC K+3
+
+.rotc3
+
+                        \ By this point we have:
+                        \
+                        \   XX12(2 1 0) = nosev_x * x
+                        \   XX12(5 4 3) = nosev_y * y
+                        \   K(3 2 1)    = nosev_z * z
+                        \
+                        \ So now we need to add them all together
+
+ LDA XX12               \ Set XX15(3 2 1) = XX12(2 1 0)
+ STA XX15+1             \                 = nosev_x * x
+ LDA XX12+1
+ STA XX15+2
+ LDA XX12+2
+ STA XX15+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * z) + (nosev_x * x)
+
+ LDA XX12+3             \ Set XX15(3 2 1) = XX12(5 4 3)
+ STA XX15+1             \                 = nosev_y * y
+ LDA XX12+4
+ STA XX15+2
+ LDA XX12+5
+ STA XX15+3
+
+ LDA P                  \ Set K(3 2 1) = P(2 1 0)
+ STA K+1                \              = (nosev_z * z) + (nosev_x * x)
+ LDA P+1
+ STA K+2
+ LDA P+2
+ STA K+3
+
+ JSR Add32              \ Calculate:
+                        \
+                        \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
+                        \            = (nosev_z * z) + (nosev_x * x)
+                        \              + (nosev_y * y)
+
+ JSR DivideBy96         \ Calculate:
+                        \
+                        \   K(3 2 1 0) = P(2 1 0) / 96
+
+ LDA K+3                \ Extract the sign from K+3 to put into K+2
+ AND #%10000000
+ STA T
+
+ LDA K                  \ Set player 2's z-coordinate to the result in K(2 1 0)
+ STA newCoords+c
+ LDA K+1
+ STA newCoords+c+1
+ LDA K+2
+ AND #%01111111
+ ORA T
+ STA newCoords+c+2
+
+ENDMACRO
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
 \       Name: DrawPlayer2View (Part 1 of 6)
 \       Type: Subroutine
 \   Category: Two-player Elite
@@ -61953,7 +62193,7 @@ ENDMACRO
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
- JMP dshp13             \ Jump to part 4 to draw the planet/sun
+ JMP dshp15             \ Jump to part 4 to draw the planet/sun
 
                         \ --- End of added code ------------------------------->
 
@@ -62141,7 +62381,7 @@ ENDMACRO
 
  LDA XSAV               \ If this is the planet or sun, jump to part 4 to skip
  CMP #2                 \ the transpose, as we don't bother to rotate the planet
- BCC dshp13             \ or sun or need to override its type
+ BCC dshp15             \ or sun or need to override its type
 
  LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
  STA TYPE               \ to yellow
@@ -62152,7 +62392,18 @@ ENDMACRO
 
  JSR SCAN               \ Draw the ship on the scanner
 
- JSR TransposeMatrix    \ Step 3: Transpose the orientation matrix
+ LDA XSAV               \ If this is player 2's ship, jump to dshp11 to skip
+ CMP #3                 \ the following instruction
+ BCS dshp11
+
+ JMP OrientateMissile   \ Step 3: Calculate the missile's orientation matrix,
+                        \ jumping back to dshp12 when we're done
+
+.dshp11
+
+ JSR TransposeMatrix    \ Step 3: Transpose the player 2 orientation matrix
+
+.dshp12
 
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
@@ -62162,24 +62413,24 @@ ENDMACRO
  SBC #&20
  STA INWK+34
 
- LDA XSAV               \ If this is player 2's ship, jump to dshp11 so we only
+ LDA XSAV               \ If this is player 2's ship, jump to dshp13 so we only
  CMP #3                 \ do the following for missiles
- BCS dshp11
+ BCS dshp13
 
                         \ Multiply by missile orientation vectors
 
-.dshp11
+.dshp13
 
  LDA #1                 \ Set A to the correct ship type for a missile
 
- LDX XSAV               \ If we're drawing a missile, jump to dshp12 to skip the
+ LDX XSAV               \ If we're drawing a missile, jump to dshp14 to skip the
  CPX #3                 \ next instruction
- BCS dshp12
+ BCS dshp14
 
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
                         \ type
 
-.dshp12
+.dshp14
 
  STA TYPE               \ Store the correct type for the ship we are drawing
 
@@ -62211,7 +62462,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp13
+.dshp15
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
@@ -62242,7 +62493,7 @@ ENDMACRO
 
  LDA XSAV               \ If we are drawing the planet or sun, jump to part 6 to
  CMP #2                 \ skip the following ship-related checks
- BCC dshp16
+ BCC dshp18
 
  LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
  LDA INWK+31            \ for this ship
@@ -62250,15 +62501,15 @@ ENDMACRO
 
  LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
  CMP #2                 \ the following target-related checks
- BNE dshp16
+ BNE dshp18
 
  JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp15             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp15 to skip the
+ BCC dshp17             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp17 to skip the
                         \ following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
- BEQ dshp14             \ missile is currently armed, and if not, jump to dshp14
+ BEQ dshp16             \ missile is currently armed, and if not, jump to dshp16
                         \ to process laser fire, as we can't lock an unarmed
                         \ missile
 
@@ -62270,11 +62521,11 @@ ENDMACRO
  JSR Player2ABORT2      \ (for player 1) and set the colour of the missile
                         \ indicator to the colour in Y (red = &0E)
 
-.dshp14
+.dshp16
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp15             \ the laser power, so if this is zero, jump down to
-                        \ dshp15 to skip the following
+ BEQ dshp17             \ the laser power, so if this is zero, jump down to
+                        \ dshp17 to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
@@ -62290,7 +62541,7 @@ ENDMACRO
  JSR OOPS               \ Remove the relevant energy from player 1's shields and
                         \ update the scores
 
-.dshp15
+.dshp17
 
  LDA player2ShipType    \ Switch back to the ship for player 2
  STA TYPE
@@ -62319,7 +62570,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp16
+.dshp18
 
  LDX XSAV               \ Set INF(1 0) for the current ship once again
  JSR GINF
