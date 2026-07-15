@@ -6157,15 +6157,15 @@ ENDIF
 {
 
  LDA K%+NI%*2+32        \ If player 2 is not an NPC, skip the following check
- BPL main1
+ BPL main2
 
  BIT player2Firing      \ If player 2 is not firing its laser then skip the
- BPL main1              \ following
+ BPL main2              \ following
 
  LDA #&FF               \ Fire the NPC's front lasers
  STA KY22
 
-.main1
+.main2
 
  LDA #0                 \ Set LAS = 0, to switch the laser off while we do the
  STA player2LAS         \ following logic
@@ -7033,6 +7033,21 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  STZ drawPlayerView     \ Draw ship for player 1
+
+ BIT INWK+31            \ If the ship is not exploding, jump to main1 to skip
+ BPL main1              \ the following
+
+ LDX XSAV               \ If this is not a missile, skip the following
+ CMP #3
+ BCC main1
+
+ DEX                    \ This is a missile, so set bit 7 of player1INWK31 so
+ DEX                    \ the missile explodes in player 2's view as well as
+ ASL player1INWK31,X    \ player 1's view
+ SEC
+ ROR player1INWK31,X
+
+.main1
 
                         \ --- End of added code ------------------------------->
 
@@ -61799,7 +61814,7 @@ ENDMACRO
 .dshp1
 
  LDA INWK+31            \ If the ship is not exploding, jump to dshp3
- AND #%00100000
+ AND #%10100000
  BEQ dshp3
 
  LDA player1INWK31,X    \ If we have already noted the explosion in the copy of
@@ -61807,9 +61822,12 @@ ENDMACRO
  BNE dshp2              \ following, as we have already removed the ship from
                         \ the scanner
 
+                        \ If we get here then bit 7 is set but bit 5 is not, so
+                        \ the ship has just started to explode
+
  LDA player1INWK31,X    \ If we get here then the ship has just exploded but we
  AND #%11001111         \ haven't removed the yellow copy from the scanner, so
- ORA #%00100000         \ first of all copy the new explosion and scaner states
+ ORA #%10000000         \ first of all copy the new explosion and scaner states
  STA player1INWK31,X    \ to player1INWK31
 
                         \ Now we need to remove the yellow copy from the scanner
