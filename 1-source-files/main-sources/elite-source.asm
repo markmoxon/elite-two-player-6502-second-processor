@@ -17522,41 +17522,82 @@ ENDIF
                         \ new child ship (in this way, the child inherits things
                         \ like location from the parent)
 
- LDA TYPE               \ Fetch the ship type of the parent into A
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP #SST               \ If the parent is not a space station, jump to rx to
- BNE rx                 \ skip the following
+\LDA TYPE               \ Fetch the ship type of the parent into A
+\
+\CMP #SST               \ If the parent is not a space station, jump to rx to
+\BNE rx                 \ skip the following
+\
+\                       \ The parent is a space station, so the child needs to
+\                       \ launch out of the space station's slot. The space
+\                       \ station's nosev vector points out of the station's
+\                       \ slot, so we want to move the ship along this vector.
+\                       \ We do this by taking the unit vector in nosev and
+\                       \ doubling it, so we spawn our ship 2 units along the
+\                       \ vector from the space station's centre
+\
+\TXA                    \ Store the child's ship type in X on the stack
+\PHA
+\
+\LDA #32                \ Set the child's byte #27 (speed) to 32
+\STA INWK+27
+\
+\LDX #0                 \ Add 2 * nosev_x_hi to (x_lo, x_hi, x_sign) to get the
+\LDA INWK+10            \ child's x-coordinate
+\JSR SFS2
+\
+\LDX #3                 \ Add 2 * nosev_y_hi to (y_lo, y_hi, y_sign) to get the
+\LDA INWK+12            \ child's y-coordinate
+\JSR SFS2
+\
+\LDX #6                 \ Add 2 * nosev_z_hi to (z_lo, z_hi, z_sign) to get the
+\LDA INWK+14            \ child's z-coordinate
+\JSR SFS2
+\
+\PLA                    \ Restore the child's ship type from the stack into X
+\TAX
+\
+\.rx
 
-                        \ The parent is a space station, so the child needs to
-                        \ launch out of the space station's slot. The space
-                        \ station's nosev vector points out of the station's
-                        \ slot, so we want to move the ship along this vector.
-                        \ We do this by taking the unit vector in nosev and
-                        \ doubling it, so we spawn our ship 2 units along the
-                        \ vector from the space station's centre
+                        \ --- And replaced by: -------------------------------->
+
+                        \ Spawn the missile below the ship
 
  TXA                    \ Store the child's ship type in X on the stack
  PHA
 
- LDA #32                \ Set the child's byte #27 (speed) to 32
- STA INWK+27
+ LDX #0                 \ Add -roofv_x_hi / 2 to (x_lo, x_hi, x_sign) to get the
+ LDA INWK+16            \ child's x-coordinate
+ TAY
+ LSR A
+ STA R
+ TYA
+ EOR #%10000000
+ JSR MVT1-2
 
- LDX #0                 \ Add 2 * nosev_x_hi to (x_lo, x_hi, x_sign) to get the
- LDA INWK+10            \ child's x-coordinate
- JSR SFS2
+ LDX #3                 \ Add -roofv_y_hi / 2 to (y_lo, y_hi, y_sign) to get the
+ LDA INWK+18            \ child's y-coordinate
+ TAY
+ LSR A
+ STA R
+ TYA
+ EOR #%10000000
+ JSR MVT1-2
 
- LDX #3                 \ Add 2 * nosev_y_hi to (y_lo, y_hi, y_sign) to get the
- LDA INWK+12            \ child's y-coordinate
- JSR SFS2
-
- LDX #6                 \ Add 2 * nosev_z_hi to (z_lo, z_hi, z_sign) to get the
- LDA INWK+14            \ child's z-coordinate
- JSR SFS2
+ LDX #6                 \ Add -roofv_z_hi / 2 to (z_lo, z_hi, z_sign) to get the
+ LDA INWK+20            \ child's z-coordinate
+ TAY
+ LSR A
+ STA R
+ TYA
+ EOR #%10000000
+ JSR MVT1-2
 
  PLA                    \ Restore the child's ship type from the stack into X
  TAX
 
-.rx
+                        \ --- End of replacement ------------------------------>
 
  LDA T1                 \ Restore the child ship's AI flag from T1 and store it
  STA INWK+32            \ in the child's byte #32 (AI)
