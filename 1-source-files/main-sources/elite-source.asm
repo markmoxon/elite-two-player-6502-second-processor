@@ -34204,12 +34204,11 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA player2MSTG        \ Check whether this slot matches the slot number in
  CMP XX4                \ MSTG, which is the target of our missile lock
 
- BNE KS5                \ If our missile is not locked on this ship, jump to KS5
+ BNE kshp1              \ If our missile is not locked on this ship, jump to
+                        \ kshp1
 
  LDY #GREEN2            \ Otherwise we need to remove our missile lock, so call
  JSR Player2ABORT       \ ABORT to disarm the missile and update the missile
@@ -34218,25 +34217,110 @@ ENDIF
  LDA #200               \ Print recursive token 40 ("TARGET LOST") as an
  JSR Player2MESS        \ in-flight message
 
-.KS5
-
-}
+.kshp1
 
  LDY XX4                \ Restore the slot number of the ship to remove into Y
 
- CPY #4                 \ If we are removing the missile in slot #4, reset the
- BNE kshp1              \ INWK+31 value for the missile to remove it from the
- STZ player1INWK31+2    \ screen
+ CPY #4                 \ If we are not removing the missile in slot #4, jump to
+ BNE kshp2              \ kshp2 to keep checking
 
-.kshp1
-
- CPY #3                 \ If we are removing the missile in slot #3, shuffle
- BNE kshp2              \ the value for slot #4 down
- LDA player1INWK31+2
- STA player1INWK31+1
- STZ player1INWK31+2
+ STZ player1INWK31+2    \ Reset the INWK+31 value for the missile to remove it
+                        \ from the screen
 
 .kshp2
+
+ CPY #3                 \ If we are not removing the missile in slot #3, jump to
+ BNE kshp3              \ kshp3 to move onto the normal KILLSHP routine
+
+                        \ If we get here then we are removing the missile in
+                        \ slot #3, so KILLSHP will shuffle slot #4 into slot #3
+                        \
+                        \ We therefore need to shuffle the player1INWK31 value
+                        \ for the missile down, and if there is an object in
+                        \ slot #4 then we will also need to shuffle the data
+                        \ for slot #14 down into slot #13, so we keep the slots
+                        \ for the player 1 and player 2 view in sync
+
+ LDA player1INWK31+2    \ First, shuffle the INWK+31 value for slot #4 down into
+ STA player1INWK31+1    \ slot #3
+ STZ player1INWK31+2
+
+ LDA FRIN+4             \ If slot #4 is empty then there is no data to shuffle,
+ BEQ kshp3              \ so jump to kshp3 to skip the following
+
+                        \ There is data in slot #4, so there is also data in
+                        \ slot #14, so now we need to shuffle the data for slot
+                        \ #14 into slot #13
+                        \
+                        \ We can do this by calling the normal KILLSHP routine
+                        \ below for slot #13, and then we can continue on with
+                        \ running KILLSHP for slot #3
+
+ LDX #13                \ Set XX4 so we remove slot #13
+ STX XX4
+
+ JSR GINF               \ Set up INF(1 0) for slot #13
+
+ LDA #1                 \ Set the type of slot #14 to non-zero so we shuffle it
+ STA FRIN+14            \ down into slot #13
+
+ STZ FRIN+15            \ Zero slot #15 so we don't shuffle that one down
+
+ LDA XX0                \ Store XX0(1 0) on the stack
+ PHA
+ LDA XX0+1
+ PHA
+
+ LDA SLSP               \ Store SLSP(1 0) on the stack
+ PHA
+ LDA SLSP+1
+ PHA
+
+ LDA XX21               \ Set XX0 to the missile ship blueprint
+ STA XX0
+ LDA XX21+1
+ STA XX0+1
+
+ JSR kshp3              \ By this point:
+                        \
+                        \   * XX4 is set to 13 so we remove slot #13
+                        \
+                        \   * Slot #14 is set to a non-empty missile
+                        \
+                        \   * Slot #15 is set to empty
+                        \
+                        \   * INF(1 0) points to slot #13's ship data block
+                        \
+                        \   * XX0(1 0) points to the missile ship blueprint
+                        \
+                        \ So now we can call the normal KILLSHP routine at kshp3
+                        \ to shuffle slot #14 down into slot #13
+
+ STZ FRIN+14            \ Zero the slot types for slot #13 and #14 once again
+ STZ FRIN+13
+
+ PLA                    \ Retrieve SLSP(1 0) from the stack
+ STA SLSP+1
+ PLA
+ STA SLSP
+
+ PLA                    \ Retrieve XX0(1 0) from the stack
+ STA XX0+1
+ PLA
+ STA XX0
+
+ LDX #3                 \ Set up INF(1 0) for slot #3
+ JSR GINF
+
+ LDY #3                 \ Set XX4 so we remove slot #3
+ STY XX4
+
+                        \ Fall through into the normal KILLSHP routine at kshp3
+                        \ to shuffle slot #4 down into slot #3
+
+.kshp3
+
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
