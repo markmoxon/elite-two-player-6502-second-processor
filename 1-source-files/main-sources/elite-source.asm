@@ -17140,6 +17140,13 @@ ENDIF
 
  DEC NOMSL              \ Reduce the number of missiles we have by 1
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #120               \ Print recursive token 120 ("INCOMING MISSILE") as an
+ JSR Player2MESS        \ in-flight message
+
+                        \ --- End of added code ------------------------------->
+
  LDA #48                \ Call the NOISE routine with A = 48 to make the sound
  JMP NOISE              \ of a missile launch, returning from the subroutine
                         \ using a tail call
