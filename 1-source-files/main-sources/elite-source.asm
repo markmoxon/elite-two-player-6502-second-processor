@@ -15201,22 +15201,51 @@ ENDIF
 \CMP #%10000010         \ 1 are set (AI is enabled and the target is slot 1, the
 \BEQ TA35               \ space station), jump to TA35 to destroy this missile,
 \                       \ as the space station ain't kidding around
-\
-\LDY #31                \ Fetch byte #31 (the exploding flag) of the target ship
-\LDA (V),Y              \ into A
-\
-\BIT M32+1              \ M32 contains an LDY #32 instruction, so M32+1 contains
-\                       \ 32, so this instruction tests A with %00100000, which
-\                       \ checks bit 5 of A (the "already exploding?" bit)
-\
-\BNE TA35               \ If the target ship is already exploding, jump to TA35
-\                       \ to destroy this missile
-\
-\ORA #%10000000         \ Otherwise set bit 7 of the target's byte #31 to mark
-\STA (V),Y              \ the ship as having been killed, so it explodes
-\
-\.TA35
-\
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA INWK+32            \ Fetch the AI flag from byte #32 and if only bits 7 and
+ CMP #%10000100         \ a target of slot #2 are set then the missile is
+ BEQ tact1              \ heading for player 2, so jump to tact1 to apply damage
+                        \ to player 2
+
+                        \ If we get here then the missile's target is another
+                        \ missile, so we need to destroy the target
+
+                        \ --- End of replacement ------------------------------>
+
+ LDY #31                \ Fetch byte #31 (the exploding flag) of the target ship
+ LDA (V),Y              \ into A
+
+ BIT M32+1              \ M32 contains an LDY #32 instruction, so M32+1 contains
+                        \ 32, so this instruction tests A with %00100000, which
+                        \ checks bit 5 of A (the "already exploding?" bit)
+
+ BNE TA35               \ If the target ship is already exploding, jump to TA35
+                        \ to destroy this missile
+
+ ORA #%10000000         \ Otherwise set bit 7 of the target's byte #31 to mark
+ STA (V),Y              \ the ship as having been killed, so it explodes
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BNE TA35               \ Jump to TA35 to destroy this missile (this BNE is
+                        \ effectively a JMP as A is never zero)
+
+.tact1
+
+                        \ If we get here then the missile has exploded near to
+                        \ player 2's ship
+
+ LDA #250               \ Call OOPS to damage the ship by 250, which is a pretty
+ JSR Player2OOPS        \ big hit, and update the scores
+
+                        \ --- End of added code ------------------------------->
+
+.TA35
+
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
 \LDA INWK               \ Set A = x_lo OR y_lo OR z_lo of the missile
 \ORA INWK+3
 \ORA INWK+6
@@ -15228,27 +15257,14 @@ ENDIF
 \JSR OOPS               \ call OOPS to damage the ship by 80, which is nowhere
 \                       \ near as bad as the 250 damage from a missile slamming
 \                       \ straight into us, but it's still pretty nasty
-\
-\.TA87
-\
-\JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
-\                       \ missile (so increase the kill tally, make an explosion
-\                       \ sound and so on)
 
-                        \ --- And replaced by: -------------------------------->
-
- LDA #250               \ Call OOPS to damage the ship by 250, which is a pretty
- JSR Player2OOPS        \ big hit, and update the scores
-
-.TA35
-
-                        \ We jump here if E.C.M. destroys this missile
+                        \ --- End of removed code ----------------------------->
 
 .TA87
 
- JSR EXNO3              \ Make the sound of the missile exploding
-
-                        \ --- End of replacement ------------------------------>
+ JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
+                        \ missile (so increase the kill tally, make an explosion
+                        \ sound and so on)
 
  ASL INWK+31            \ Set bit 7 of the missile's byte #31 flag to mark it as
  SEC                    \ having been killed, so it explodes
@@ -15516,12 +15532,12 @@ ENDIF
 
  LDA XSAV               \ If this is not player 2, skip the following
  CMP #2
- BNE tact1
+ BNE tact2
 
  STZ player2Firing      \ Reset player2Firing to denote that player 2 is not
                         \ firing its laser at us
 
-.tact1
+.tact2
 
                         \ --- End of added code ------------------------------->
 
@@ -15867,12 +15883,12 @@ ENDIF
 
  LDA XSAV               \ If this is not player 2, skip the following
  CMP #2
- BNE tact2
+ BNE tact3
 
  SEC                    \ Set bit 7 of player2Firing to denote that NPC player 2
  ROR player2Firing      \ is firing its lasers
 
-.tact2
+.tact3
 
                         \ --- End of added code ------------------------------->
 
@@ -15900,7 +15916,7 @@ ENDIF
 
  LDA XSAV               \ If this is not player 2, skip the following
  CMP #2
- BNE tact3
+ BNE tact4
 
  JSR Player2ee3         \ Print player 2's score to remove it from the screen
 
@@ -15911,20 +15927,20 @@ ENDIF
  JSR Player2ee3         \ Print player 2's score
 
  LDA player2GameType    \ If player 2 is playing survival, they don't have a
- BEQ tact3              \ score, so jump to tact3 to keep playing
+ BEQ tact4              \ score, so jump to tact4 to keep playing
 
- LDA player2Score+1     \ If the score is less than the target, jump to tact3 to
+ LDA player2Score+1     \ If the score is less than the target, jump to tact4 to
  CMP player2Target+1    \ keep playing
- BCC tact3
+ BCC tact4
  LDA player2Score
  CMP player2Target
- BCC tact3
+ BCC tact4
 
  LDA #2                 \ If we get here then player 2 has reached their target,
  JMP DEATH              \ so set A to indicate that player 2 has won and jump to
                         \ DEATH to end the game
 
-.tact3
+.tact4
 
                         \ --- End of added code ------------------------------->
 
