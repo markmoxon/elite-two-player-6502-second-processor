@@ -63073,15 +63073,17 @@ ENDMACRO
 \
 \   4. Calculate K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
 \
-\   5. Apply the sign bit of sidev_x_hi EOR nosev_x_hi to the result
+\   5. If bit 0 of sidev_x_lo is set, add another |nosev_x_hi nosev_x_lo|
+\
+\   6. Apply the sign bit of sidev_x_hi EOR nosev_x_hi to the result
 \
 \ Step 1 includes right and left shifts because MULT3 expects sign-magnitude
 \ arguments, but sidev_x_lo doesn't have a sign bit as it is the low byte of the
 \ 16-bit sign-magnitude number (sidev_x_hi sidev_x_lo). So we shift right to
 \ insert a sign bit of zero into bit 7 (thus keeping it positive), do the call
-\ to MULT3, and then shift the result back. We lose some accuracy by ignoring
-\ bit 0 of the orientation vector in this process, but as we don't use the low
-\ byte of the result in XX15+0, this isn't a huge issue.
+\ to MULT3, and then shift the result back. If bit 0 of sidev_x_lo is set, then
+\ we avoid a loss of accuracy by adding one more |nosev_x_hi nosev_x_lo| to the
+\ result.
 \
 \ So in essence, step 1 does this:
 \
@@ -63151,7 +63153,11 @@ ENDMACRO
 
  LDA XX3,Y              \ Q = |sidev_x_lo >> 1|
  LSR A                  \
- STA Q                  \ We shift right to create a sign bit (which we discard)
+ STA Q                  \ We shift right to create a sign bit
+
+ PHP                    \ Put the bit that we just shifted out of sidev_x_lo 
+                        \ onto the stack, so we can incorporate it into the
+                        \ result below
 
  LDA INWK+0,X           \ (A P+1 P) = |nosev_x_hi nosev_x_lo|
  STA P
@@ -63218,6 +63224,33 @@ ENDMACRO
  ADC #0
  STA K+3
 
+ PLP                    \ Retrieve bit 0 of sidev_x_lo, which we pushed onto the
+                        \ stack above when shifting sidev_x_lo right to create a
+                        \ sign bit
+
+ BCC molt2              \ If bit 0 is clear then the result is already accurate,
+                        \ so jump to molt2 to skip the following
+
+                        \ If we get here then bit 0 of sidev_x_lo is 1, so we
+                        \ need to add one more |nosev_x_hi nosev_x_lo| to the
+                        \ result to make it accurate
+
+ LDX coordinateIndex    \ Retrieve the the INWK vector index
+
+ CLC                    \ Calculate:
+ LDA INWK+0,X           \
+ ADC K                  \   K(3 2 1 0) = K(3 2 1 0) + |nosev_x_hi nosev_x_lo|
+ STA K
+ LDA INWK+1,X
+ AND #%01111111
+ ADC K+1
+ STA K+1
+ LDA K+2
+ ADC #0
+ STA K+2
+
+.molt2
+
  LDX coordinateIndex    \ Retrieve the the INWK vector index
 
  LDA INWK+1,X           \ Calculate the sign of the result:
@@ -63277,15 +63310,17 @@ ENDMACRO
 \
 \   4. Calculate K(3 2 1 0) = K(3 2 1 0) + XX15(3 2 1)
 \
-\   5. Apply the sign bit of sidev_x_hi EOR x_sign to the result
+\   5. If bit 0 of sidev_x_lo is set, add another |x_sign x_hi x_lo|
+\
+\   6. Apply the sign bit of sidev_x_hi EOR x_sign to the result
 \
 \ Step 1 includes right and left shifts because MULT3 expects sign-magnitude
 \ arguments, but sidev_x_lo doesn't have a sign bit as it is the low byte of the
 \ 16-bit sign-magnitude number (sidev_x_hi sidev_x_lo). So we shift right to
 \ insert a sign bit of zero into bit 7 (thus keeping it positive), do the call
-\ to MULT3, and then shift the result back. We lose some accuracy by ignoring
-\ bit 0 of the orientation vector in this process, but as we don't use the low
-\ byte of the result in XX15+0, this isn't a huge issue.
+\ to MULT3, and then shift the result back. If bit 0 of sidev_x_lo is set, then
+\ we avoid a loss of accuracy by adding one more |x_sign x_hi x_lo| to the
+\ result.
 \
 \ So in essence, step 1 does this:
 \
@@ -63350,7 +63385,11 @@ ENDMACRO
 
  LDA K%+NI%*2,Y         \ Q = |sidev_x_lo >> 1| for ship #2
  LSR A                  \
- STA Q                  \ We shift right to create a sign bit (which we discard)
+ STA Q                  \ We shift right to create a sign bit
+
+ PHP                    \ Put the bit that we just shifted out of sidev_x_lo 
+                        \ onto the stack, so we can incorporate it into the
+                        \ result below
 
  LDA INWK+0,X           \ (A P+1 P) = |x_sign x_hi x_lo|
  STA P
@@ -63416,6 +63455,36 @@ ENDMACRO
  LDA K+3
  ADC #0
  STA K+3
+
+ PLP                    \ Retrieve bit 0 of sidev_x_lo, which we pushed onto the
+                        \ stack above when shifting sidev_x_lo right to create a
+                        \ sign bit
+
+ BCC mult2              \ If bit 0 is clear then the result is already accurate,
+                        \ so jump to mult2 to skip the following
+
+                        \ If we get here then bit 0 of sidev_x_lo is 1, so we
+                        \ need to add one more |nosev_x_hi nosev_x_lo| to the
+                        \ result to make it accurate
+
+ LDX coordinateIndex    \ Retrieve the the INWK vector index
+
+ CLC                    \ Calculate:
+ LDA INWK+0,X           \
+ ADC K                  \   K(3 2 1 0) = K(3 2 1 0) + |x_sign x_hi x_lo|
+ STA K
+ LDA INWK+1,X
+ ADC K+1
+ STA K+1
+ LDA INWK+2,X
+ AND #%01111111
+ ADC K+2
+ STA K+2
+ LDA K+3
+ ADC #0
+ STA K+3
+
+.mult2
 
  LDX coordinateIndex    \ Retrieve the coordinate index
 
