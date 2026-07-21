@@ -15291,8 +15291,17 @@ ENDIF
                         \ to TA19 with the vector from the target to the missile
                         \ in K3
 
- JMP ECBLB2             \ The target has E.C.M., so jump to ECBLB2 to set it
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\JMP ECBLB2             \ The target has E.C.M., so jump to ECBLB2 to set it
+\                       \ off, returning from the subroutine using a tail call
+
+                        \ --- And replaced by: -------------------------------->
+
+ JMP Player2ECBLB2      \ The target has E.C.M., so jump to ECBLB2 to set it
                         \ off, returning from the subroutine using a tail call
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -15361,102 +15370,106 @@ ENDIF
  CPX #MSL               \ If this is a missile, jump up to TA18 to implement
  BEQ TA18               \ missile tactics
 
- CPX #SST               \ If this is not the space station, jump down to TA13
- BNE TA13
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA NEWB               \ This is the space station, so check whether bit 2 of
- AND #%00000100         \ the ship's NEWB flags is set, and if it is (i.e. the
- BNE TN5                \ station is hostile), jump to TN5 to spawn some cops
+\CPX #SST               \ If this is not the space station, jump down to TA13
+\BNE TA13
+\
+\LDA NEWB               \ This is the space station, so check whether bit 2 of
+\AND #%00000100         \ the ship's NEWB flags is set, and if it is (i.e. the
+\BNE TN5                \ station is hostile), jump to TN5 to spawn some cops
+\
+\LDA MANY+SHU+1         \ The station is not hostile, so check how many
+\BNE TA1                \ Transporters there are in the vicinity, and if we
+\                       \ already have one, return from the subroutine (as TA1
+\                       \ contains an RTS)
+\
+\                       \ If we get here then the station is not hostile, so we
+\                       \ can consider spawning a Transporter or Shuttle
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #253               \ If A < 253 (99.2% chance), return from the subroutine
+\BCC TA1                \ (as TA1 contains an RTS)
+\
+\AND #1                 \ Set A = a random number that's either 0 or 1
+\
+\ADC #SHU-1             \ The C flag is set (as we didn't take the BCC above),
+\TAX                    \ so this sets X to a value of either #SHU or #SHU + 1,
+\                       \ which is the ship type for a Shuttle or a Transporter
+\
+\BNE TN6                \ Jump to TN6 to spawn this ship type and return from
+\                       \ the subroutine using a tail call (this BNE is
+\                       \ effectively a JMP as A is never zero)
+\
+\.TN5
+\
+\                       \ If we get here then this is the space station and it
+\                       \ is hostile, so we need to spawn some cops
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #240               \ If A < 240 (93.8% chance), return from the subroutine
+\BCC TA1                \ (as TA1 contains an RTS)
+\
+\LDA MANY+COPS          \ Check how many cops there are in the vicinity already,
+\CMP #7                 \ and if there are 7 or more, return from the subroutine
+\BCS TA22               \ (as TA22 contains an RTS)
+\
+\LDX #COPS              \ Set X to the ship type for a cop
+\
+\.TN6
+\
+\LDA #%11110001         \ Set the AI flag to give the ship E.C.M., enable AI and
+\                       \ make it very aggressive (56 out of 63)
+\
+\JMP SFS1               \ Jump to SFS1 to spawn the ship, returning from the
+\                       \ subroutine using a tail call
+\
+\.TA13
+\
+\CPX #HER               \ If this is not a rock hermit, jump down to TA17
+\BNE TA17
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #200               \ If A < 200 (78% chance), return from the subroutine
+\BCC TA22               \ (as TA22 contains an RTS)
+\
+\LDX #0                 \ Set byte #32 to %00000000 to disable AI, zero the
+\STX INWK+32            \ aggression level and remove E.C.M.
+\
+\STX NEWB               \ Set the ship's NEWB flags to %00000000 so the ship we
+\                       \ spawn below will inherit the default values from E%
+\
+\AND #3                 \ Set A = a random number that's in the range 0-3
+\
+\ADC #SH3               \ The C flag is set (as we didn't take the BCC above),
+\TAX                    \ so this sets X to a random value between #SH3 + 1 and
+\                       \ #SH3 + 4, so that's a Sidewinder, Mamba, Krait, Adder
+\                       \ or Gecko
+\
+\JSR TN6                \ Call TN6 to spawn this ship with E.C.M., AI and a high
+\                       \ aggression (56 out of 63), though we override this in
+\                       \ the next instructions
+\
+\LDA #0                 \ Set byte #32 to %00000000 to disable AI, zero the
+\STA INWK+32            \ aggression level and remove E.C.M. (for the rock
+\                       \ hermit)
+\
+\RTS                    \ Return from the subroutine
+\
+\.TA17
+\
+\LDY #14                \ If the ship's energy is greater or equal to the
+\LDA INWK+35            \ maximum value from the ship's blueprint pointed to by
+\CMP (XX0),Y            \ XX0, then skip the next instruction
+\BCS TA21
+\
+\INC INWK+35            \ The ship's energy is not at maximum, so recharge the
+\                       \ energy banks by 1
 
- LDA MANY+SHU+1         \ The station is not hostile, so check how many
- BNE TA1                \ Transporters there are in the vicinity, and if we
-                        \ already have one, return from the subroutine (as TA1
-                        \ contains an RTS)
-
-                        \ If we get here then the station is not hostile, so we
-                        \ can consider spawning a Transporter or Shuttle
-
- JSR DORND              \ Set A and X to random numbers
-
- CMP #253               \ If A < 253 (99.2% chance), return from the subroutine
- BCC TA1                \ (as TA1 contains an RTS)
-
- AND #1                 \ Set A = a random number that's either 0 or 1
-
- ADC #SHU-1             \ The C flag is set (as we didn't take the BCC above),
- TAX                    \ so this sets X to a value of either #SHU or #SHU + 1,
-                        \ which is the ship type for a Shuttle or a Transporter
-
- BNE TN6                \ Jump to TN6 to spawn this ship type and return from
-                        \ the subroutine using a tail call (this BNE is
-                        \ effectively a JMP as A is never zero)
-
-.TN5
-
-                        \ If we get here then this is the space station and it
-                        \ is hostile, so we need to spawn some cops
-
- JSR DORND              \ Set A and X to random numbers
-
- CMP #240               \ If A < 240 (93.8% chance), return from the subroutine
- BCC TA1                \ (as TA1 contains an RTS)
-
- LDA MANY+COPS          \ Check how many cops there are in the vicinity already,
- CMP #7                 \ and if there are 7 or more, return from the subroutine
- BCS TA22               \ (as TA22 contains an RTS)
-
- LDX #COPS              \ Set X to the ship type for a cop
-
-.TN6
-
- LDA #%11110001         \ Set the AI flag to give the ship E.C.M., enable AI and
-                        \ make it very aggressive (56 out of 63)
-
- JMP SFS1               \ Jump to SFS1 to spawn the ship, returning from the
-                        \ subroutine using a tail call
-
-.TA13
-
- CPX #HER               \ If this is not a rock hermit, jump down to TA17
- BNE TA17
-
- JSR DORND              \ Set A and X to random numbers
-
- CMP #200               \ If A < 200 (78% chance), return from the subroutine
- BCC TA22               \ (as TA22 contains an RTS)
-
- LDX #0                 \ Set byte #32 to %00000000 to disable AI, zero the
- STX INWK+32            \ aggression level and remove E.C.M.
-
- STX NEWB               \ Set the ship's NEWB flags to %00000000 so the ship we
-                        \ spawn below will inherit the default values from E%
-
- AND #3                 \ Set A = a random number that's in the range 0-3
-
- ADC #SH3               \ The C flag is set (as we didn't take the BCC above),
- TAX                    \ so this sets X to a random value between #SH3 + 1 and
-                        \ #SH3 + 4, so that's a Sidewinder, Mamba, Krait, Adder
-                        \ or Gecko
-
- JSR TN6                \ Call TN6 to spawn this ship with E.C.M., AI and a high
-                        \ aggression (56 out of 63), though we override this in
-                        \ the next instructions
-
- LDA #0                 \ Set byte #32 to %00000000 to disable AI, zero the
- STA INWK+32            \ aggression level and remove E.C.M. (for the rock
-                        \ hermit)
-
- RTS                    \ Return from the subroutine
-
-.TA17
-
- LDY #14                \ If the ship's energy is greater or equal to the
- LDA INWK+35            \ maximum value from the ship's blueprint pointed to by
- CMP (XX0),Y            \ XX0, then skip the next instruction
- BCS TA21
-
- INC INWK+35            \ The ship's energy is not at maximum, so recharge the
-                        \ energy banks by 1
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -15503,22 +15516,26 @@ ENDIF
 
 .TA21
 
- CPX #TGL               \ If this is not a Thargon, jump down to TA14
- BNE TA14
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA MANY+THG           \ If there is at least one Thargoid in the vicinity,
- BNE TA14               \ jump down to TA14
+\CPX #TGL               \ If this is not a Thargon, jump down to TA14
+\BNE TA14
+\
+\LDA MANY+THG           \ If there is at least one Thargoid in the vicinity,
+\BNE TA14               \ jump down to TA14
+\
+\LSR INWK+32            \ This is a Thargon but there is no Thargoid mothership,
+\ASL INWK+32            \ so clear bit 0 of the AI flag to disable its E.C.M.
+\
+\LSR INWK+27            \ And halve the Thargon's speed
+\
+\.TA22
+\
+\RTS                    \ Return from the subroutine
 
- LSR INWK+32            \ This is a Thargon but there is no Thargoid mothership,
- ASL INWK+32            \ so clear bit 0 of the AI flag to disable its E.C.M.
-
- LSR INWK+27            \ And halve the Thargon's speed
-
-.TA22
-
- RTS                    \ Return from the subroutine
-
-.TA14
+                        \ --- End of removed code ----------------------------->
+ 
+ .TA14
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
@@ -15533,70 +15550,74 @@ ENDIF
 
                         \ --- End of added code ------------------------------->
 
- JSR DORND              \ Set A and X to random numbers
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA NEWB               \ Extract bit 0 of the ship's NEWB flags into the C flag
- LSR A                  \ and jump to TN1 if it is clear (i.e. if this is not a
- BCC TN1                \ trader)
+\JSR DORND              \ Set A and X to random numbers
+\
+\LDA NEWB               \ Extract bit 0 of the ship's NEWB flags into the C flag
+\LSR A                  \ and jump to TN1 if it is clear (i.e. if this is not a
+\BCC TN1                \ trader)
+\
+\CPX #50                \ This is a trader, so if X >= 50 (80% chance), return
+\BCS TA22               \ from the subroutine (as TA22 contains an RTS)
+\
+\.TN1
+\
+\LSR A                  \ Extract bit 1 of the ship's NEWB flags into the C flag
+\BCC TN2                \ and jump to TN2 if it is clear (i.e. if this is not a
+\                       \ bounty hunter)
+\
+\LDX FIST               \ This is a bounty hunter, so check whether our FIST
+\CPX #40                \ rating is < 40 (where 50 is a fugitive), and jump to
+\BCC TN2                \ TN2 if we are not 100% evil
+\
+\LDA NEWB               \ We are a fugitive or a bad offender, and this ship is
+\ORA #%00000100         \ a bounty hunter, so set bit 2 of the ship's NEWB flags
+\STA NEWB               \ to make it hostile
+\
+\LSR A                  \ Shift A right twice so the next test in TN2 will check
+\LSR A                  \ bit 2
+\
+\.TN2
+\
+\LSR A                  \ Extract bit 2 of the ship's NEWB flags into the C flag
+\BCS TN3                \ and jump to TN3 if it is set (i.e. if this ship is
+\                       \ hostile)
+\
+\LSR A                  \ The ship is not hostile, so extract bit 4 of the
+\LSR A                  \ ship's NEWB flags into the C flag, and jump to GOPL if
+\BCC GOPL               \ it is clear (i.e. if this ship is not docking)
+\
+\JMP DOCKIT             \ The ship is not hostile and is docking, so jump to
+\                       \ DOCKIT to apply the docking algorithm to this ship
+\
+\.GOPL
+\
+\JSR SPS1               \ The ship is not hostile and it is not docking, so call
+\                       \ SPS1 to calculate the vector to the planet and store
+\                       \ it in XX15
+\
+\JMP TA151              \ Jump to TA151 to make the ship head towards the planet
+\
+\.TN3
+\
+\LSR A                  \ Extract bit 3 of the ship's NEWB flags into the C flag
+\BCC TN4                \ and jump to TN4 if it is clear (i.e. if this ship is
+\                       \ not a pirate)
+\
+\LDA SSPR               \ If we are not inside the space station safe zone, jump
+\BEQ TN4                \ to TN4
+\
+\                       \ If we get here then this is a pirate and we are inside
+\                       \ the space station safe zone
+\
+\LDA INWK+32            \ Clear bits 1 to 6 of the AI flag in byte #32 (to set
+\AND #%10000001         \ the aggression level to zero)
+\STA INWK+32
+\
+\.TN4
 
- CPX #50                \ This is a trader, so if X >= 50 (80% chance), return
- BCS TA22               \ from the subroutine (as TA22 contains an RTS)
-
-.TN1
-
- LSR A                  \ Extract bit 1 of the ship's NEWB flags into the C flag
- BCC TN2                \ and jump to TN2 if it is clear (i.e. if this is not a
-                        \ bounty hunter)
-
- LDX FIST               \ This is a bounty hunter, so check whether our FIST
- CPX #40                \ rating is < 40 (where 50 is a fugitive), and jump to
- BCC TN2                \ TN2 if we are not 100% evil
-
- LDA NEWB               \ We are a fugitive or a bad offender, and this ship is
- ORA #%00000100         \ a bounty hunter, so set bit 2 of the ship's NEWB flags
- STA NEWB               \ to make it hostile
-
- LSR A                  \ Shift A right twice so the next test in TN2 will check
- LSR A                  \ bit 2
-
-.TN2
-
- LSR A                  \ Extract bit 2 of the ship's NEWB flags into the C flag
- BCS TN3                \ and jump to TN3 if it is set (i.e. if this ship is
-                        \ hostile)
-
- LSR A                  \ The ship is not hostile, so extract bit 4 of the
- LSR A                  \ ship's NEWB flags into the C flag, and jump to GOPL if
- BCC GOPL               \ it is clear (i.e. if this ship is not docking)
-
- JMP DOCKIT             \ The ship is not hostile and is docking, so jump to
-                        \ DOCKIT to apply the docking algorithm to this ship
-
-.GOPL
-
- JSR SPS1               \ The ship is not hostile and it is not docking, so call
-                        \ SPS1 to calculate the vector to the planet and store
-                        \ it in XX15
-
- JMP TA151              \ Jump to TA151 to make the ship head towards the planet
-
-.TN3
-
- LSR A                  \ Extract bit 3 of the ship's NEWB flags into the C flag
- BCC TN4                \ and jump to TN4 if it is clear (i.e. if this ship is
-                        \ not a pirate)
-
- LDA SSPR               \ If we are not inside the space station safe zone, jump
- BEQ TN4                \ to TN4
-
-                        \ If we get here then this is a pirate and we are inside
-                        \ the space station safe zone
-
- LDA INWK+32            \ Clear bits 1 to 6 of the AI flag in byte #32 (to set
- AND #%10000001         \ the aggression level to zero)
- STA INWK+32
-
-.TN4
+                        \ --- End of removed code ----------------------------->
 
  LDX #8                 \ We now want to copy the ship's x, y and z coordinates
                         \ from INWK to K3, so set up a counter for 9 bytes
@@ -15670,27 +15691,31 @@ ENDIF
  JMP TA20               \ This is a missile, so jump down to TA20 to get
                         \ straight into some aggressive manoeuvring
 
- CMP #ANA               \ If this is not an Anaconda, jump down to TN7 to skip
- BNE TN7                \ the following
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR DORND              \ Set A and X to random numbers
+\CMP #ANA               \ If this is not an Anaconda, jump down to TN7 to skip
+\BNE TN7                \ the following
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #200               \ If A < 200 (78% chance), jump down to TN7 to skip the
+\BCC TN7                \ following
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\LDX #WRM               \ Set X to the ship type for a Worm
+\
+\CMP #100               \ If A >= 100 (61% chance), skip the following
+\BCS P%+4               \ instruction
+\
+\LDX #SH3               \ Set X to the ship type for a Sidewinder
+\
+\JMP TN6                \ Jump to TN6 to spawn the Worm or Sidewinder and return
+\                       \ from the subroutine using a tail call
+\
+\.TN7
 
- CMP #200               \ If A < 200 (78% chance), jump down to TN7 to skip the
- BCC TN7                \ following
-
- JSR DORND              \ Set A and X to random numbers
-
- LDX #WRM               \ Set X to the ship type for a Worm
-
- CMP #100               \ If A >= 100 (61% chance), skip the following
- BCS P%+4               \ instruction
-
- LDX #SH3               \ Set X to the ship type for a Sidewinder
-
- JMP TN6                \ Jump to TN6 to spawn the Worm or Sidewinder and return
-                        \ from the subroutine using a tail call
-
-.TN7
+                        \ --- End of removed code ----------------------------->
 
  JSR DORND              \ Set A and X to random numbers
 
@@ -15704,38 +15729,47 @@ ENDIF
 
 .TA7
 
- LDY #14                \ Set A = the ship's maximum energy / 2
- LDA (XX0),Y
- LSR A
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP INWK+35            \ If the ship's current energy in byte #35 > A, i.e. the
- BCC TA3                \ ship has at least half of its energy banks charged,
-                        \ jump down to TA3
+\LDY #14                \ Set A = the ship's maximum energy / 2
+\LDA (XX0),Y
+\LSR A
+\
+\CMP INWK+35            \ If the ship's current energy in byte #35 > A, i.e. the
+\BCC TA3                \ ship has at least half of its energy banks charged,
+\                       \ jump down to TA3
+\
+\LSR A                  \ If the ship's current energy in byte #35 > A / 4, i.e.
+\LSR A                  \ the ship is not into the last 1/8th of its energy,
+\CMP INWK+35            \ jump down to ta3 to consider firing a missile
+\BCC ta3
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #230               \ If A < 230 (90% chance), jump down to ta3 to consider
+\BCC ta3                \ firing a missile
+\
+\LDX TYPE               \ Fetch the ship blueprint's default NEWB flags from the
+\LDA E%-1,X             \ table at E%, and if bit 7 is clear (i.e. this ship
+\BPL ta3                \ does not have an escape pod), jump to ta3 to skip the
+\                       \ spawning of an escape pod
+\
+\                       \ By this point, the ship has run out of both energy and
+\                       \ luck, so it's time to bail
+\
+\LDA #%00000000         \ Set the AI flag to 0 to disable AI, set aggression to
+\STA INWK+32            \ zero and disable any E.C.M., so the ship's a sitting
+\                       \ duck
+\
+\JMP SESCP              \ Jump to SESCP to spawn an escape pod from the ship,
+\                       \ returning from the subroutine using a tail call
 
- LSR A                  \ If the ship's current energy in byte #35 > A / 4, i.e.
- LSR A                  \ the ship is not into the last 1/8th of its energy,
- CMP INWK+35            \ jump down to ta3 to consider firing a missile
- BCC ta3
+                        \ --- And replaced by: -------------------------------->
 
- JSR DORND              \ Set A and X to random numbers
+ LDA player2ENERGY      \ If the ship's current energy is at least half, jump
+ BMI TA3                \ down to TA3 to skip launching a missile
 
- CMP #230               \ If A < 230 (90% chance), jump down to ta3 to consider
- BCC ta3                \ firing a missile
-
- LDX TYPE               \ Fetch the ship blueprint's default NEWB flags from the
- LDA E%-1,X             \ table at E%, and if bit 7 is clear (i.e. this ship
- BPL ta3                \ does not have an escape pod), jump to ta3 to skip the
-                        \ spawning of an escape pod
-
-                        \ By this point, the ship has run out of both energy and
-                        \ luck, so it's time to bail
-
- LDA #%00000000         \ Set the AI flag to 0 to disable AI, set aggression to
- STA INWK+32            \ zero and disable any E.C.M., so the ship's a sitting
-                        \ duck
-
- JMP SESCP              \ Jump to SESCP to spawn an escape pod from the ship,
-                        \ returning from the subroutine using a tail call
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -16227,325 +16261,329 @@ ENDIF
 \
 \ ******************************************************************************
 
-.DOCKIT
-
- LDA #6                 \ Set RAT2 = 6, which is the threshold below which we
- STA RAT2               \ don't apply pitch and roll to the ship (so a lower
-                        \ value means we apply pitch and roll more often, and a
-                        \ value of 0 means we always apply them). The value is
-                        \ compared with double the high byte of sidev . XX15,
-                        \ where XX15 is the vector from the ship to the station
-
- LSR A                  \ Set RAT = 2, which is the magnitude we set the pitch
- STA RAT                \ or roll counter to in part 7 when turning a ship
-                        \ towards a vector (a higher value giving a longer
-                        \ turn)
-
- LDA #29                \ Set CNT2 = 29, which is the maximum angle beyond which
- STA CNT2               \ a ship will slow down to start turning towards its
-                        \ prey (a lower value means a ship will start to slow
-                        \ down even if its angle with the enemy ship is large,
-                        \ which gives a tighter turn)
-
- LDA SSPR               \ If we are inside the space station safe zone, skip the
- BNE P%+5               \ next instruction
-
-.GOPLS
-
- JMP GOPL               \ Jump to GOPL to make the ship head towards the planet
-
- JSR VCSU1              \ If we get here then we are in the space station safe
-                        \ zone, so call VCSU1 to calculate the following, where
-                        \ the station is at coordinates (station_x, station_y,
-                        \ station_z):
-                        \
-                        \   K3(2 1 0) = (x_sign x_hi x_lo) - station_x
-                        \
-                        \   K3(5 4 3) = (y_sign y_hi z_lo) - station_y
-                        \
-                        \   K3(8 7 6) = (z_sign z_hi z_lo) - station_z
-                        \
-                        \ so K3 contains the vector from the station to the ship
-
- LDA K3+2               \ If any of the top bytes of the K3 results above are
- ORA K3+5               \ non-zero (after removing the sign bits), jump to GOPL
- ORA K3+8               \ via GOPLS to make the ship head towards the planet, as
- AND #%01111111         \ this will aim the ship in the general direction of the
- BNE GOPLS              \ station (it's too far away for anything more accurate)
-
- JSR TA2                \ Call TA2 to calculate the length of the vector in K3
-                        \ (ignoring the low coordinates), returning it in Q
-
- LDA Q                  \ Store the value of Q in K, so K now contains the
- STA K                  \ distance between station and the ship
-
- JSR TAS2               \ Call TAS2 to normalise the vector in K3, returning the
-                        \ normalised version in XX15, so XX15 contains the unit
-                        \ vector pointing from the station to the ship
-
- LDY #10                \ Call TAS4 to calculate:
- JSR TAS4               \
-                        \   (A X) = nosev . XX15
-                        \
-                        \ where nosev is the nose vector of the space station,
-                        \ so this is the dot product of the station to ship
-                        \ vector with the station's nosev (which points straight
-                        \ out into space, out of the docking slot), and because
-                        \ both vectors are unit vectors, the following is also
-                        \ true:
-                        \
-                        \   (A X) = cos(t)
-                        \
-                        \ where t is the angle between the two vectors
-                        \
-                        \ If the dot product is positive, that means the vector
-                        \ from the station to the ship and the nosev sticking
-                        \ out of the docking slot are facing in a broadly
-                        \ similar direction (so the ship is essentially heading
-                        \ for the slot, which is facing towards the ship), and
-                        \ if it's negative they are facing in broadly opposite
-                        \ directions (so the station slot is on the opposite
-                        \ side of the station as the ship approaches)
-
- BMI PH1                \ If the dot product is negative, i.e. the station slot
-                        \ is on the opposite side, jump to PH1 to fly towards
-                        \ the ideal docking position, some way in front of the
-                        \ slot
-
- CMP #35                \ If the dot product < 35, jump to PH1 to fly towards
- BCC PH1                \ the ideal docking position, some way in front of the
-                        \ slot, as there is a large angle between the vector
-                        \ from the station to the ship and the station's nosev,
-                        \ so the angle of approach is not very optimal
-                        \
-                        \ Specifically, as the unit vector length is 96 in our
-                        \ vector system,
-                        \
-                        \   (A X) = cos(t) < 35 / 96
-                        \
-                        \ so:
-                        \
-                        \   t > arccos(35 / 96) = 68.6 degrees
-                        \
-                        \ so the ship is coming in from the side of the station
-                        \ at an angle between 68.6 and 90 degrees off the
-                        \ optimal entry angle
-
-                        \ If we get here, the slot is on the same side as the
-                        \ ship and the angle of approach is less than 68.6
-                        \ degrees, so we're heading in pretty much the correct
-                        \ direction for a good approach to the docking slot
-
- LDY #10                \ Call TAS3 to calculate:
- JSR TAS3               \
-                        \   (A X) = nosev . XX15
-                        \
-                        \ where nosev is the nose vector of the ship, so this is
-                        \ the dot product of the station to ship vector with the
-                        \ ship's nosev, and is a measure of how close to the
-                        \ station the ship is pointing, with negative meaning it
-                        \ is pointing at the station, and positive meaning it is
-                        \ pointing away from the station
-
- CMP #&A2               \ If the dot product is in the range 0 to -34, jump to
- BCS PH3                \ PH3 to refine our approach, as we are pointing towards
-                        \ the station
-
-                        \ If we get here, then we are not pointing straight at
-                        \ the station, so check how close we are
-
- LDA K                  \ Fetch the distance to the station into A
-
-\BEQ PH10               \ This instruction is commented out in the original
-                        \ source
-
- CMP #157               \ If A < 157, jump to PH2 to turn away from the station,
- BCC PH2                \ as we are too close
-
- LDA TYPE               \ Fetch the ship type into A
-
- BMI PH3                \ If bit 7 is set, then that means the ship type was set
-                        \ to -96 in the DOKEY routine when we switched on our
-                        \ docking computer, so this is us auto-docking our
-                        \ Cobra, so jump to PH3 to refine our approach
-                        \
-                        \ Otherwise this is an NPC trying to dock, so keep going
-                        \ to turn away from the station
-
-.PH2
-
-                        \ If we get here then we turn away from the station and
-                        \ slow right down, effectively aborting this approach
-                        \ attempt
-
- JSR TAS6               \ Call TAS6 to negate the vector in XX15 so it points in
-                        \ the opposite direction, away from the station and
-                        \ towards the ship
-
- JSR TA151              \ Call TA151 to make the ship head in the direction of
-                        \ XX15, which makes the ship turn away from the station
-
-.PH22
-
-                        \ If we get here then we slam on the brakes and slow
-                        \ right down
-
- LDX #0                 \ Set the acceleration in byte #28 to 0
- STX INWK+28
-
- INX                    \ Set the speed in byte #28 to 1
- STX INWK+27
-
- RTS                    \ Return from the subroutine
-
-.PH1
-
-                        \ If we get here then the slot is on the opposite side
-                        \ of the station to the ship, or it's on the same side
-                        \ and the approach angle is not optimal, so we just fly
-                        \ towards the station, aiming for the ideal docking
-                        \ position some distance in front of the slot
-
- JSR VCSU1              \ Call VCSU1 to set K3 to the vector from the station to
-                        \ the ship
-
- JSR DCS1               \ Call DCS1 twice to calculate the vector from the ideal
- JSR DCS1               \ docking position to the ship, where the ideal docking
-                        \ position is straight out of the docking slot at a
-                        \ distance of 8 unit vectors from the centre of the
-                        \ station
-
- JSR TAS2               \ Call TAS2 to normalise the vector in K3, returning the
-                        \ normalised version in XX15
-
- JSR TAS6               \ Call TAS6 to negate the vector in XX15 so it points in
-                        \ the opposite direction
-
- JMP TA151              \ Call TA151 to make the ship head in the direction of
-                        \ XX15, which makes the ship turn towards the ideal
-                        \ docking position, and return from the subroutine using
-                        \ a tail call
-
-.TN11
-
-                        \ If we get here, we accelerate and apply a full
-                        \ clockwise roll (which matches the space station's
-                        \ roll)
-
- INC INWK+28            \ Increment the acceleration in byte #28
-
- LDA #%01111111         \ Set the roll counter to a positive (clockwise) roll
- STA INWK+29            \ with no damping, to match the space station's roll
-
- BNE TN13               \ Jump down to TN13 (this BNE is effectively a JMP as
-                        \ A will never be zero)
-
-.PH3
-
-                        \ If we get here, we refine our approach using pitch and
-                        \ roll to aim for the station
-
- LDX #0                 \ Set RAT2 = 0
- STX RAT2
-
- STX INWK+30            \ Set the pitch counter to 0 to stop any pitching
-
- LDA TYPE               \ If this is not our ship's docking computer, but is an
- BPL PH32               \ NPC ship trying to dock, jump to PH32
-
-                        \ In the following, ship_x and ship_y are the x and
-                        \ y-coordinates of XX15, the vector from the station to
-                        \ the ship
-
- EOR XX15               \ A is negative, so this sets the sign of A to the same
- EOR XX15+1             \ as -XX15 * XX15+1, or -ship_x * ship_y
-
- ASL A                  \ Shift the sign bit into the C flag, so the C flag has
-                        \ the following sign:
-                        \
-                        \   * Positive if ship_x and ship_y have different signs
-                        \   * Negative if ship_x and ship_y have the same sign
-
- LDA #2                 \ Set A = +2 or -2, giving it the sign in the C flag,
- ROR A                  \ and store it in byte #29, the roll counter, so that
- STA INWK+29            \ the ship rolls towards the station
-
- LDA XX15               \ If |ship_x * 2| >= 12, i.e. |ship_x| >= 6, then jump
- ASL A                  \ to PH22 to slow right down and return from the
- CMP #12                \ subroutine, as the station is not in our sights
- BCS PH22
-
- LDA XX15+1             \ Set A = +2 or -2, giving it the same sign as ship_y,
- ASL A                  \ and store it in byte #30, the pitch counter, so that
- LDA #2                 \ the ship pitches towards the station
- ROR A
- STA INWK+30
-
- LDA XX15+1             \ If |ship_y * 2| >= 12, i.e. |ship_y| >= 6, then jump
- ASL A                  \ to PH22 to slow right down and return from the
- CMP #12                \ subroutine, as the station is not in our sights
- BCS PH22
-
-.PH32
-
-                        \ If we get here, we try to match the station roll
-
- STX INWK+29            \ Set the roll counter to 0 to stop any pitching
-
- LDA INWK+22            \ Set XX15 = sidev_x_hi
- STA XX15
-
- LDA INWK+24            \ Set XX15+1 = sidev_y_hi
- STA XX15+1
-
- LDA INWK+26            \ Set XX15+2 = sidev_z_hi
- STA XX15+2             \
-                        \ so XX15 contains the sidev vector of the ship
-
- LDY #16                \ Call TAS4 to calculate:
- JSR TAS4               \
-                        \   (A X) = roofv . XX15
-                        \
-                        \ where roofv is the roof vector of the space station.
-                        \ To dock with the slot horizontal, we want roofv to be
-                        \ pointing off to the side, i.e. parallel to the ship's
-                        \ sidev vector, which means we want the dot product to
-                        \ be large (it can be positive or negative, as roofv can
-                        \ point left or right - it just needs to be parallel to
-                        \ the ship's sidev)
-
- ASL A                  \ If |A * 2| >= 66, i.e. |A| >= 33, then the ship is
- CMP #66                \ lined up with the slot, so jump to TN11 to accelerate
- BCS TN11               \ and roll clockwise (a positive roll) before jumping
-                        \ down to TN13 to check if we're docked yet
-
- JSR PH22               \ Call PH22 to slow right down, as we haven't yet
-                        \ matched the station's roll
-
-.TN13
-
-                        \ If we get here, we check to see if we have docked
-
- LDA K3+10              \ If K3+10 is non-zero, skip to TNRTS, to return from
- BNE TNRTS              \ the subroutine
-                        \
-                        \ I have to say I have no idea what K3+10 contains, as
-                        \ it isn't mentioned anywhere in the whole codebase
-                        \ apart from here, but it does share a location with
-                        \ XX2+10, so it will sometimes be non-zero (specifically
-                        \ when face #10 in the ship we're drawing is visible,
-                        \ which probably happens quite a lot). This would seem
-                        \ to affect whether an NPC ship can dock, as that's the
-                        \ code that gets skipped if K3+10 is non-zero, but as
-                        \ to what this means... that's not yet clear
-
- ASL NEWB               \ Set bit 7 of the ship's NEWB flags to indicate that
- SEC                    \ the ship has now docked, which only has meaning if
- ROR NEWB               \ this is an NPC trying to dock
-
-.TNRTS
-
- RTS                    \ Return from the subroutine
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\.DOCKIT
+\
+\LDA #6                 \ Set RAT2 = 6, which is the threshold below which we
+\STA RAT2               \ don't apply pitch and roll to the ship (so a lower
+\                       \ value means we apply pitch and roll more often, and a
+\                       \ value of 0 means we always apply them). The value is
+\                       \ compared with double the high byte of sidev . XX15,
+\                       \ where XX15 is the vector from the ship to the station
+\
+\LSR A                  \ Set RAT = 2, which is the magnitude we set the pitch
+\STA RAT                \ or roll counter to in part 7 when turning a ship
+\                       \ towards a vector (a higher value giving a longer
+\                       \ turn)
+\
+\LDA #29                \ Set CNT2 = 29, which is the maximum angle beyond which
+\STA CNT2               \ a ship will slow down to start turning towards its
+\                       \ prey (a lower value means a ship will start to slow
+\                       \ down even if its angle with the enemy ship is large,
+\                       \ which gives a tighter turn)
+\
+\LDA SSPR               \ If we are inside the space station safe zone, skip the
+\BNE P%+5               \ next instruction
+\
+\.GOPLS
+\
+\JMP GOPL               \ Jump to GOPL to make the ship head towards the planet
+\
+\JSR VCSU1              \ If we get here then we are in the space station safe
+\                       \ zone, so call VCSU1 to calculate the following, where
+\                       \ the station is at coordinates (station_x, station_y,
+\                       \ station_z):
+\                       \
+\                       \   K3(2 1 0) = (x_sign x_hi x_lo) - station_x
+\                       \
+\                       \   K3(5 4 3) = (y_sign y_hi z_lo) - station_y
+\                       \
+\                       \   K3(8 7 6) = (z_sign z_hi z_lo) - station_z
+\                       \
+\                       \ so K3 contains the vector from the station to the ship
+\
+\LDA K3+2               \ If any of the top bytes of the K3 results above are
+\ORA K3+5               \ non-zero (after removing the sign bits), jump to GOPL
+\ORA K3+8               \ via GOPLS to make the ship head towards the planet, as
+\AND #%01111111         \ this will aim the ship in the general direction of the
+\BNE GOPLS              \ station (it's too far away for anything more accurate)
+\
+\JSR TA2                \ Call TA2 to calculate the length of the vector in K3
+\                       \ (ignoring the low coordinates), returning it in Q
+\
+\LDA Q                  \ Store the value of Q in K, so K now contains the
+\STA K                  \ distance between station and the ship
+\
+\JSR TAS2               \ Call TAS2 to normalise the vector in K3, returning the
+\                       \ normalised version in XX15, so XX15 contains the unit
+\                       \ vector pointing from the station to the ship
+\
+\LDY #10                \ Call TAS4 to calculate:
+\JSR TAS4               \
+\                       \   (A X) = nosev . XX15
+\                       \
+\                       \ where nosev is the nose vector of the space station,
+\                       \ so this is the dot product of the station to ship
+\                       \ vector with the station's nosev (which points straight
+\                       \ out into space, out of the docking slot), and because
+\                       \ both vectors are unit vectors, the following is also
+\                       \ true:
+\                       \
+\                       \   (A X) = cos(t)
+\                       \
+\                       \ where t is the angle between the two vectors
+\                       \
+\                       \ If the dot product is positive, that means the vector
+\                       \ from the station to the ship and the nosev sticking
+\                       \ out of the docking slot are facing in a broadly
+\                       \ similar direction (so the ship is essentially heading
+\                       \ for the slot, which is facing towards the ship), and
+\                       \ if it's negative they are facing in broadly opposite
+\                       \ directions (so the station slot is on the opposite
+\                       \ side of the station as the ship approaches)
+\
+\BMI PH1                \ If the dot product is negative, i.e. the station slot
+\                       \ is on the opposite side, jump to PH1 to fly towards
+\                       \ the ideal docking position, some way in front of the
+\                       \ slot
+\
+\CMP #35                \ If the dot product < 35, jump to PH1 to fly towards
+\BCC PH1                \ the ideal docking position, some way in front of the
+\                       \ slot, as there is a large angle between the vector
+\                       \ from the station to the ship and the station's nosev,
+\                       \ so the angle of approach is not very optimal
+\                       \
+\                       \ Specifically, as the unit vector length is 96 in our
+\                       \ vector system,
+\                       \
+\                       \   (A X) = cos(t) < 35 / 96
+\                       \
+\                       \ so:
+\                       \
+\                       \   t > arccos(35 / 96) = 68.6 degrees
+\                       \
+\                       \ so the ship is coming in from the side of the station
+\                       \ at an angle between 68.6 and 90 degrees off the
+\                       \ optimal entry angle
+\
+\                       \ If we get here, the slot is on the same side as the
+\                       \ ship and the angle of approach is less than 68.6
+\                       \ degrees, so we're heading in pretty much the correct
+\                       \ direction for a good approach to the docking slot
+\
+\LDY #10                \ Call TAS3 to calculate:
+\JSR TAS3               \
+\                       \   (A X) = nosev . XX15
+\                       \
+\                       \ where nosev is the nose vector of the ship, so this is
+\                       \ the dot product of the station to ship vector with the
+\                       \ ship's nosev, and is a measure of how close to the
+\                       \ station the ship is pointing, with negative meaning it
+\                       \ is pointing at the station, and positive meaning it is
+\                       \ pointing away from the station
+\
+\CMP #&A2               \ If the dot product is in the range 0 to -34, jump to
+\BCS PH3                \ PH3 to refine our approach, as we are pointing towards
+\                       \ the station
+\
+\                       \ If we get here, then we are not pointing straight at
+\                       \ the station, so check how close we are
+\
+\LDA K                  \ Fetch the distance to the station into A
+\
+\\BEQ PH10               \ This instruction is commented out in the original
+\                       \ source
+\
+\CMP #157               \ If A < 157, jump to PH2 to turn away from the station,
+\BCC PH2                \ as we are too close
+\
+\LDA TYPE               \ Fetch the ship type into A
+\
+\BMI PH3                \ If bit 7 is set, then that means the ship type was set
+\                       \ to -96 in the DOKEY routine when we switched on our
+\                       \ docking computer, so this is us auto-docking our
+\                       \ Cobra, so jump to PH3 to refine our approach
+\                       \
+\                       \ Otherwise this is an NPC trying to dock, so keep going
+\                       \ to turn away from the station
+\
+\.PH2
+\
+\                       \ If we get here then we turn away from the station and
+\                       \ slow right down, effectively aborting this approach
+\                       \ attempt
+\
+\JSR TAS6               \ Call TAS6 to negate the vector in XX15 so it points in
+\                       \ the opposite direction, away from the station and
+\                       \ towards the ship
+\
+\JSR TA151              \ Call TA151 to make the ship head in the direction of
+\                       \ XX15, which makes the ship turn away from the station
+\
+\.PH22
+\
+\                       \ If we get here then we slam on the brakes and slow
+\                       \ right down
+\
+\LDX #0                 \ Set the acceleration in byte #28 to 0
+\STX INWK+28
+\
+\INX                    \ Set the speed in byte #28 to 1
+\STX INWK+27
+\
+\RTS                    \ Return from the subroutine
+\
+\.PH1
+\
+\                       \ If we get here then the slot is on the opposite side
+\                       \ of the station to the ship, or it's on the same side
+\                       \ and the approach angle is not optimal, so we just fly
+\                       \ towards the station, aiming for the ideal docking
+\                       \ position some distance in front of the slot
+\
+\JSR VCSU1              \ Call VCSU1 to set K3 to the vector from the station to
+\                       \ the ship
+\
+\JSR DCS1               \ Call DCS1 twice to calculate the vector from the ideal
+\JSR DCS1               \ docking position to the ship, where the ideal docking
+\                       \ position is straight out of the docking slot at a
+\                       \ distance of 8 unit vectors from the centre of the
+\                       \ station
+\
+\JSR TAS2               \ Call TAS2 to normalise the vector in K3, returning the
+\                       \ normalised version in XX15
+\
+\JSR TAS6               \ Call TAS6 to negate the vector in XX15 so it points in
+\                       \ the opposite direction
+\
+\JMP TA151              \ Call TA151 to make the ship head in the direction of
+\                       \ XX15, which makes the ship turn towards the ideal
+\                       \ docking position, and return from the subroutine using
+\                       \ a tail call
+\
+\.TN11
+\
+\                       \ If we get here, we accelerate and apply a full
+\                       \ clockwise roll (which matches the space station's
+\                       \ roll)
+\
+\INC INWK+28            \ Increment the acceleration in byte #28
+\
+\LDA #%01111111         \ Set the roll counter to a positive (clockwise) roll
+\STA INWK+29            \ with no damping, to match the space station's roll
+\
+\BNE TN13               \ Jump down to TN13 (this BNE is effectively a JMP as
+\                       \ A will never be zero)
+\
+\.PH3
+\
+\                       \ If we get here, we refine our approach using pitch and
+\                       \ roll to aim for the station
+\
+\LDX #0                 \ Set RAT2 = 0
+\STX RAT2
+\
+\STX INWK+30            \ Set the pitch counter to 0 to stop any pitching
+\
+\LDA TYPE               \ If this is not our ship's docking computer, but is an
+\BPL PH32               \ NPC ship trying to dock, jump to PH32
+\
+\                       \ In the following, ship_x and ship_y are the x and
+\                       \ y-coordinates of XX15, the vector from the station to
+\                       \ the ship
+\
+\EOR XX15               \ A is negative, so this sets the sign of A to the same
+\EOR XX15+1             \ as -XX15 * XX15+1, or -ship_x * ship_y
+\
+\ASL A                  \ Shift the sign bit into the C flag, so the C flag has
+\                       \ the following sign:
+\                       \
+\                       \   * Positive if ship_x and ship_y have different signs
+\                       \   * Negative if ship_x and ship_y have the same sign
+\
+\LDA #2                 \ Set A = +2 or -2, giving it the sign in the C flag,
+\ROR A                  \ and store it in byte #29, the roll counter, so that
+\STA INWK+29            \ the ship rolls towards the station
+\
+\LDA XX15               \ If |ship_x * 2| >= 12, i.e. |ship_x| >= 6, then jump
+\ASL A                  \ to PH22 to slow right down and return from the
+\CMP #12                \ subroutine, as the station is not in our sights
+\BCS PH22
+\
+\LDA XX15+1             \ Set A = +2 or -2, giving it the same sign as ship_y,
+\ASL A                  \ and store it in byte #30, the pitch counter, so that
+\LDA #2                 \ the ship pitches towards the station
+\ROR A
+\STA INWK+30
+\
+\LDA XX15+1             \ If |ship_y * 2| >= 12, i.e. |ship_y| >= 6, then jump
+\ASL A                  \ to PH22 to slow right down and return from the
+\CMP #12                \ subroutine, as the station is not in our sights
+\BCS PH22
+\
+\.PH32
+\
+\                       \ If we get here, we try to match the station roll
+\
+\STX INWK+29            \ Set the roll counter to 0 to stop any pitching
+\
+\LDA INWK+22            \ Set XX15 = sidev_x_hi
+\STA XX15
+\
+\LDA INWK+24            \ Set XX15+1 = sidev_y_hi
+\STA XX15+1
+\
+\LDA INWK+26            \ Set XX15+2 = sidev_z_hi
+\STA XX15+2             \
+\                       \ so XX15 contains the sidev vector of the ship
+\
+\LDY #16                \ Call TAS4 to calculate:
+\JSR TAS4               \
+\                       \   (A X) = roofv . XX15
+\                       \
+\                       \ where roofv is the roof vector of the space station.
+\                       \ To dock with the slot horizontal, we want roofv to be
+\                       \ pointing off to the side, i.e. parallel to the ship's
+\                       \ sidev vector, which means we want the dot product to
+\                       \ be large (it can be positive or negative, as roofv can
+\                       \ point left or right - it just needs to be parallel to
+\                       \ the ship's sidev)
+\
+\ASL A                  \ If |A * 2| >= 66, i.e. |A| >= 33, then the ship is
+\CMP #66                \ lined up with the slot, so jump to TN11 to accelerate
+\BCS TN11               \ and roll clockwise (a positive roll) before jumping
+\                       \ down to TN13 to check if we're docked yet
+\
+\JSR PH22               \ Call PH22 to slow right down, as we haven't yet
+\                       \ matched the station's roll
+\
+\.TN13
+\
+\                       \ If we get here, we check to see if we have docked
+\
+\LDA K3+10              \ If K3+10 is non-zero, skip to TNRTS, to return from
+\BNE TNRTS              \ the subroutine
+\                       \
+\                       \ I have to say I have no idea what K3+10 contains, as
+\                       \ it isn't mentioned anywhere in the whole codebase
+\                       \ apart from here, but it does share a location with
+\                       \ XX2+10, so it will sometimes be non-zero (specifically
+\                       \ when face #10 in the ship we're drawing is visible,
+\                       \ which probably happens quite a lot). This would seem
+\                       \ to affect whether an NPC ship can dock, as that's the
+\                       \ code that gets skipped if K3+10 is non-zero, but as
+\                       \ to what this means... that's not yet clear
+\
+\ASL NEWB               \ Set bit 7 of the ship's NEWB flags to indicate that
+\SEC                    \ the ship has now docked, which only has meaning if
+\ROR NEWB               \ this is an NPC trying to dock
+\
+\.TNRTS
+\
+\RTS                    \ Return from the subroutine
+
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -16571,24 +16609,28 @@ ENDIF
 \
 \ ******************************************************************************
 
-.VCSU1
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #LO(K%+NI%)        \ Set the low byte of V(1 0) to point to the coordinates
- STA V                  \ of the sun or space station
+\.VCSU1
+\
+\LDA #LO(K%+NI%)        \ Set the low byte of V(1 0) to point to the coordinates
+\STA V                  \ of the sun or space station
+\
+\LDA #HI(K%+NI%)        \ Set A to the high byte of the address of the
+\                       \ coordinates of the sun or space station
+\
+\                       \ Fall through into VCSUB to calculate:
+\                       \
+\                       \   K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of sun
+\                       \               or space station
+\                       \
+\                       \   K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of sun
+\                       \               or space station
+\                       \
+\                       \   K3(8 7 6) = (z_sign z_hi z_lo) - z-coordinate of sun
+\                       \               or space station
 
- LDA #HI(K%+NI%)        \ Set A to the high byte of the address of the
-                        \ coordinates of the sun or space station
-
-                        \ Fall through into VCSUB to calculate:
-                        \
-                        \   K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of sun
-                        \               or space station
-                        \
-                        \   K3(2 1 0) = (x_sign x_hi x_lo) - x-coordinate of sun
-                        \               or space station
-                        \
-                        \   K3(8 7 6) = (z_sign z_hi z_lo) - z-coordinate of sun
-                        \               or space station
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
