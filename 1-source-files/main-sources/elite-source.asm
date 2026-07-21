@@ -324,17 +324,6 @@ ENDIF
  PLAYER2SCAN = YELLOW2  \ The colour that player 2 should look for in the
                         \ scanner and compass
 
- PLAYER2AI = %11111110  \ AI flags to set for NPC player 2
-                        \
-                        \  * Bit 0: 0 = no E.C.M.
-                        \           1 = has E.C.M.
-                        \
-                        \  * Bits 1-6: %nnnnnn = aggression level (0 to 63)
-                        \                        (see TACTICS part 7)
-                        \
-                        \  * Bit 7: 0 = dumb
-                        \           1 = AI enabled (apply TACTICS to ship)
-
  SHIPCOL = CYAN         \ Ship colours on title screen
 
                         \ --- End of added code ------------------------------->
@@ -15142,15 +15131,18 @@ ENDIF
                         \ This is the entry point for missile tactics and is
                         \ called from the main TACTICS routine below
 
- LDA ECMA               \ If an E.C.M. is currently active (either ours or an
- BNE TA35               \ opponent's), jump to TA35 to destroy this missile
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
+\LDA ECMA               \ If an E.C.M. is currently active (either ours or an
+\BNE TA35               \ opponent's), jump to TA35 to destroy this missile
 
- LDA player2ECMA        \ If player 2's E.C.M. is currently active, jump to TA35
- BNE TA35               \ to destroy this missile
+                        \ --- And replaced by: -------------------------------->
 
-                        \ --- End of added code ------------------------------->
+ LDA ECMA               \ If either player's E.C.M. is currently active, jump
+ ORA player2ECMA        \ to TA35 to destroy this missile
+ BNE TA35
+
+                        \ --- End of replacement ------------------------------>
 
  LDA INWK+32            \ Fetch the AI flag from byte #32 and if bit 6 is set
  ASL A                  \ (i.e. missile is hostile), jump up to TA34 to check
@@ -15793,17 +15785,29 @@ ENDIF
  DEC INWK+31            \ We're done with the checks, so it's time to fire off a
                         \ missile, so reduce the missile count in byte #31 by 1
 
- LDA TYPE               \ Fetch the ship type into A
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- CMP #THG               \ If this is not a Thargoid, jump down to TA16 to launch
- BNE TA16               \ a missile
+\LDA TYPE               \ Fetch the ship type into A
+\
+\CMP #THG               \ If this is not a Thargoid, jump down to TA16 to launch
+\BNE TA16               \ a missile
+\
+\LDX #TGL               \ This is a Thargoid, so instead of launching a missile,
+\LDA INWK+32            \ the mothership launches a Thargon, so call SFS1 to
+\JMP SFS1               \ spawn a Thargon from the parent ship, and return from
+\                       \ the subroutine using a tail call
+\
+\.TA16
 
- LDX #TGL               \ This is a Thargoid, so instead of launching a missile,
- LDA INWK+32            \ the mothership launches a Thargon, so call SFS1 to
- JMP SFS1               \ spawn a Thargon from the parent ship, and return from
-                        \ the subroutine using a tail call
+                        \ --- And replaced by: -------------------------------->
 
-.TA16
+ LDY #0                 \ Player 2 just launched a missile, so we need to remove
+ JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
+                        \ dashboard by setting it to black (Y = 0)
+
+ DEC player2NOMSL       \ Reduce the number of player 2 missiles by 1
+
+                        \ --- End of replacement ------------------------------>
 
  JMP SFRMIS             \ Jump to SFRMIS to spawn a missile as a child of the
                         \ current ship, make a noise and print a message warning
@@ -26051,7 +26055,9 @@ ENDIF
  LDA #%10000000         \ gunfight
  STA INWK+8
 
- LDA player2INWK32      \ Set player 2's AI flag to the configured value
+ LDA player2ECM         \ Set player 2's AI flag to the configured value, which
+ AND #%00000001         \ will either be 0 or %11111110, and set bit 0 if player
+ ORA player2INWK32      \ 2 has E.C.M.
  STA INWK+32
 
  LDA #%00000100         \ Set bit 2 of the NEWB flags for player 2 to make them
@@ -30406,10 +30412,21 @@ ENDIF
  LDA (XX0),Y            \ ship's energy, and store it in byte #35
  STA INWK+35
 
- LDY #19                \ Fetch ship blueprint byte #19, which contains the
- LDA (XX0),Y            \ number of missiles and laser power, and AND with %111
- AND #%00000111         \ to extract the number of missiles before storing in
- STA INWK+31            \ byte #31
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDY #19                \ Fetch ship blueprint byte #19, which contains the
+\LDA (XX0),Y            \ number of missiles and laser power, and AND with %111
+\AND #%00000111         \ to extract the number of missiles before storing in
+\STA INWK+31            \ byte #31
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDY #19                \ Fetch the configured number of missiles for player 2 before storing in
+ LDA player2Missiles    \ number of missiles and laser power, and AND with %111
+ STA INWK+31            \ to 
+                        \ byte #31
+
+                        \ --- End of replacement ------------------------------>
 
  LDA T                  \ Restore the ship type we stored above
 
@@ -57839,8 +57856,17 @@ ENDIF
  CPX #1                 \ If the new value is not "AI PILOT", jump to nocp1 to
  BNE nocp1              \ disable ship AI for player 2
 
- LDA #PLAYER2AI         \ Enable ship AI for player 2
- STA player2INWK32
+ LDA #%11111110         \ Enable ship AI for player 2 by setting the AI flags
+ STA player2INWK32      \ for NPC player 2 as follows:
+                        \
+                        \  * Bit 0 = no E.C.M.
+                        \
+                        \  * Bits 1-6 = aggression level of 63
+                        \
+                        \  * Bit 7 = AI enabled (apply TACTICS to ship)
+                        \
+                        \ We set bit 0 when spawning the ship if E.C.M. has been
+                        \ configured
 
  STZ player2LASER+1     \ Remove rear lasers for AI pilot
 
