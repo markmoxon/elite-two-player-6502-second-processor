@@ -6037,10 +6037,33 @@ ENDIF
  LDX #2                 \ Fetch the ship's coordinates in slot #2
  JSR GetShipDataToINWK
 
+ LDA player2MSTG        \ If the target is player 2's ship, jump to miss1 to
+ CMP #12                \ spawn a hostile missile (which will attack player 1)
+ BEQ miss1
+
+                        \ If we get here then the target must be a missile, so
+                        \ we need to set that as the target
+
+ SEC                    \ Set A to use as an AI flag in SFS1 for a missile
+ SBC #10                \ targeting the ship in slot player2MSTG - 10
+ ASL A
+ ORA #%10000000         
+
+ LDX #MSL               \ Set X to the ship type of a missile, and call SFS1
+ JSR SFS1               \ to add a missile with the AI byte in A
+
+ JSR Player2SFRMIS      \ Spawn the missile
+
+ JMP miss2              \ Skip the following instruction
+
+.miss1
+
  JSR SFRMIS             \ The "fire missile" key is being pressed and we have
                         \ a missile lock, so call the SFRMIS routine to spawn a
                         \ missile as a child of player 2's ship, make a noise
                         \ and print a message warning of incoming missiles
+
+.miss2
 
  LDY #0                 \ We have just launched a missile, so we need to remove
  JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
@@ -40205,6 +40228,12 @@ ENDIF
                         \ but this is ignored as the hostile flags means we
                         \ are the target
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.Player2SFRMIS
+
+                        \ --- End of added code ------------------------------->
+
  BCC KYTB               \ The C flag will be set if the call to SFS1-2 was a
                         \ success, so if it's clear, jump to KYTB to return from
                         \ the subroutine (as KYTB contains an RTS)
@@ -56668,101 +56697,105 @@ ENDIF
 \ECHR 'Y'
 \ECHR '!'
 \EQUB VE
+\
+\ETWO 'T', 'H'          \ Token 24:     "THERE'S A REAL [91-95] PIRATE OUT
+\ETWO 'E', 'R'          \                THERE"
+\ECHR 'E'               \
+\ECHR '`'               \ Encoded as:   "<226><244>E'S[208]<242><228> [24?] PI
+\ECHR 'S'               \                <248>TE <217>T <226><244>E"
+\ETOK 208
+\ETWO 'R', 'E'
+\ETWO 'A', 'L'
+\ECHR ' '
+\ERND 24
+\ECHR ' '
+\ECHR 'P'
+\ECHR 'I'
+\ETWO 'R', 'A'
+\ECHR 'T'
+\ECHR 'E'
+\ECHR ' '
+\ETWO 'O', 'U'
+\ECHR 'T'
+\ECHR ' '
+\ETWO 'T', 'H'
+\ETWO 'E', 'R'
+\ECHR 'E'
+\EQUB VE
+\
+\ETOK 147               \ Token 25:     "THE INHABITANTS OF [86-90] ARE SO
+\ETOK 193               \                AMAZINGLY PRIMITIVE THAT THEY STILL
+\ECHR 'S'               \                THINK {single cap}***** ****** IS  3D"
+\ECHR ' '               \
+\ECHR 'O'               \ Encoded as:   "[147][193]S OF [18?] A<242> <235> A
+\ECHR 'F'               \                <239>Z<240>GLY PRIMI<251><250> <226>
+\ECHR ' '               \                <245> <226>EY <222><220>L <226><240>K
+\ERND 18                \                 {19}***** ******[202] 3D"
+\ECHR ' '
+\ECHR 'A'
+\ETWO 'R', 'E'
+\ECHR ' '
+\ETWO 'S', 'O'
+\ECHR ' '
+\ECHR 'A'
+\ETWO 'M', 'A'
+\ECHR 'Z'
+\ETWO 'I', 'N'
+\ECHR 'G'
+\ECHR 'L'
+\ECHR 'Y'
+\ECHR ' '
+\ECHR 'P'
+\ECHR 'R'
+\ECHR 'I'
+\ECHR 'M'
+\ECHR 'I'
+\ETWO 'T', 'I'
+\ETWO 'V', 'E'
+\ECHR ' '
+\ETWO 'T', 'H'
+\ETWO 'A', 'T'
+\ECHR ' '
+\ETWO 'T', 'H'
+\ECHR 'E'
+\ECHR 'Y'
+\ECHR ' '
+\ETWO 'S', 'T'
+\ETWO 'I', 'L'
+\ECHR 'L'
+\ECHR ' '
+\ETWO 'T', 'H'
+\ETWO 'I', 'N'
+\ECHR 'K'
+\ECHR ' '
+\EJMP 19
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR ' '
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ECHR '*'
+\ETOK 202
+\ECHR ' '
+\ECHR '3'
+\ECHR 'D'
+\EQUB VE
 
                         \ --- And replaced by: -------------------------------->
 
  EQUB VE
 
+ EQUB VE
+
+ EQUB VE
+
                         \ --- End of replacement ------------------------------>
-
- ETWO 'T', 'H'          \ Token 24:     "THERE'S A REAL [91-95] PIRATE OUT
- ETWO 'E', 'R'          \                THERE"
- ECHR 'E'               \
- ECHR '`'               \ Encoded as:   "<226><244>E'S[208]<242><228> [24?] PI
- ECHR 'S'               \                <248>TE <217>T <226><244>E"
- ETOK 208
- ETWO 'R', 'E'
- ETWO 'A', 'L'
- ECHR ' '
- ERND 24
- ECHR ' '
- ECHR 'P'
- ECHR 'I'
- ETWO 'R', 'A'
- ECHR 'T'
- ECHR 'E'
- ECHR ' '
- ETWO 'O', 'U'
- ECHR 'T'
- ECHR ' '
- ETWO 'T', 'H'
- ETWO 'E', 'R'
- ECHR 'E'
- EQUB VE
-
- ETOK 147               \ Token 25:     "THE INHABITANTS OF [86-90] ARE SO
- ETOK 193               \                AMAZINGLY PRIMITIVE THAT THEY STILL
- ECHR 'S'               \                THINK {single cap}***** ****** IS  3D"
- ECHR ' '               \
- ECHR 'O'               \ Encoded as:   "[147][193]S OF [18?] A<242> <235> A
- ECHR 'F'               \                <239>Z<240>GLY PRIMI<251><250> <226>
- ECHR ' '               \                <245> <226>EY <222><220>L <226><240>K
- ERND 18                \                 {19}***** ******[202] 3D"
- ECHR ' '
- ECHR 'A'
- ETWO 'R', 'E'
- ECHR ' '
- ETWO 'S', 'O'
- ECHR ' '
- ECHR 'A'
- ETWO 'M', 'A'
- ECHR 'Z'
- ETWO 'I', 'N'
- ECHR 'G'
- ECHR 'L'
- ECHR 'Y'
- ECHR ' '
- ECHR 'P'
- ECHR 'R'
- ECHR 'I'
- ECHR 'M'
- ECHR 'I'
- ETWO 'T', 'I'
- ETWO 'V', 'E'
- ECHR ' '
- ETWO 'T', 'H'
- ETWO 'A', 'T'
- ECHR ' '
- ETWO 'T', 'H'
- ECHR 'E'
- ECHR 'Y'
- ECHR ' '
- ETWO 'S', 'T'
- ETWO 'I', 'L'
- ECHR 'L'
- ECHR ' '
- ETWO 'T', 'H'
- ETWO 'I', 'N'
- ECHR 'K'
- ECHR ' '
- EJMP 19
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR ' '
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ECHR '*'
- ETOK 202
- ECHR ' '
- ECHR '3'
- ECHR 'D'
- EQUB VE
 
 IF _SOURCE_DISC
 
@@ -62932,7 +62965,7 @@ ENDMACRO
 
  LDX player2ViewSlot    \ Call ABORT2 to store the details of this missile
  LDY #RED2              \ lock, with the targeted ship's slot number in
- JSR Player2ABORT2      \ player2ViewSlotand set the colour of the missile
+ JSR Player2ABORT2      \ player2ViewSlot and set the colour of the missile
                         \ indicator to the colour in Y
 
 .dshp16
