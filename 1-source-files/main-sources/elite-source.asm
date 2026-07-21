@@ -28796,11 +28796,17 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ LDY #CYAN2             \ Set the scanner colour to cyan so we remove ships in
+                        \ this colour
+
  JSR WipeShip           \ Remove the ship from the scanner
 
  JMP WS1                \ Jump to WS1 to move on to the next slot
 
 .WipeShip
+
+ STY SCANcol            \ Store the scanner colour in SCANcol so we can retrieve
+                        \ it below
 
                         \ --- End of added code ------------------------------->
 
@@ -28822,6 +28828,13 @@ ENDIF
  BPL WSL2               \ Loop back to WSL2 until we have copied all 32 bytes
 
  STX XSAV               \ Store the ship slot number in XSAV while we call SCAN
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA SCANcol            \ Set the correct scanner colour (as passed to WipeShip
+                        \ in Y
+
+                        \ --- End of added code ------------------------------->
 
  JSR SCAN               \ Call SCAN to plot this ship on the scanner, which will
                         \ remove it as it's plotted with EOR logic
@@ -36949,14 +36962,15 @@ ENDIF
                         \ --- And replaced by: -------------------------------->
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA #127               \ it in yellow (A = 127)
+ LDA player2ShipType    \ it in yellow
+ LDY #YELLOW2
  JSR WipeShip
 
  LDA FRIN+3             \ If slot #3 is empty, skip the following
  BEQ deaf1
 
  LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
- LDA #127               \ it in yellow (A = 127)
+ LDY #YELLOW2           \ it in yellow
  JSR WipeShip
 
 .deaf1
@@ -36965,7 +36979,7 @@ ENDIF
  BEQ deaf2
 
  LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
- LDA #127               \ it in yellow (A = 127)
+ LDY #YELLOW2           \ it in yellow
  JSR WipeShip
 
 .deaf2
@@ -41323,7 +41337,8 @@ ENDIF
  BNE deat1              \ set of instructions
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA #127               \ it in yellow (A = 127)
+ LDA player2ShipType    \ it in yellow
+ LDY #YELLOW2
  JSR WipeShip
 
  JMP DEATH2             \ ESCAPE is being pressed, so jump to DEATH2 to end
@@ -47941,6 +47956,12 @@ ENDIF
 
 .MV30
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #CYAN2             \ Set the scanner colour to cyan
+
+                        \ --- End of added code ------------------------------->
+
  JSR SCAN               \ Draw the ship on the scanner, which has the effect of
                         \ removing it, as it's already at this point and hasn't
                         \ yet moved
@@ -48666,6 +48687,12 @@ ENDIF
  LDA INWK+31            \ Set bit 4 to keep the ship visible on the scanner
  ORA #%00010000
  STA INWK+31
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #CYAN2             \ Set the scanner colour to cyan
+
+                        \ --- End of added code ------------------------------->
 
  JMP SCAN               \ Display the ship on the scanner, returning from the
                         \ subroutine using a tail call
@@ -50193,7 +50220,15 @@ ENDIF
 
 .SCANpars
 
- EQUB 7                 \ The number of bytes to transmit with this command
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB 7                 \ The number of bytes to transmit with this command
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB 8                 \ The number of bytes to transmit with this command
+
+                        \ --- End of replacement ------------------------------>
 
  EQUB 0                 \ The number of bytes to receive with this command
 
@@ -50216,6 +50251,15 @@ ENDIF
 .SCANy1
 
  EQUB 0                 \ The screen y-coordinate of the dot on the scanner
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.SCANtype
+
+ EQUB 0                 \ The ship type (so we can draw a single line dot for
+                        \ missiles)
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -50245,6 +50289,9 @@ ENDIF
  BMI SC5                \ disabled for the title screen, so return from the
                         \ subroutine
 
+ STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
+                        \ to the I/O processor with the #onescan command
+
                         \ --- End of added code ------------------------------->
 
  LDA INWK+31            \ Fetch the ship's scanner flag from byte #31
@@ -50264,27 +50311,10 @@ ENDIF
 
 \LDA scacol,X           \ Set A to the scanner colour for this ship type from
 \                       \ the X-th entry in the scacol table
-
-                        \ --- And replaced by: -------------------------------->
-
- LDA #CYAN2             \ Set the colour of the ship on the scanner as cyan by
-                        \ default, for player 1's scanner
-
- CPX #127               \ If the ship type is not 127, then we are not drawing
- BNE scan1              \ the scanner for player 2, so skip the following
-                        \ instruction
-
- LDA #YELLOW2           \ Set the colour for player 2's scanner to yellow
-
-.scan1
-
-                        \ --- End of replacement ------------------------------>
-
- STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
-                        \ to the I/O processor with the #onescan command
-
-                        \ --- Mod: Code removed for two-player Elite: --------->
-
+\
+\STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
+\                       \ to the I/O processor with the #onescan command
+\
 \LDA INWK+1             \ If any of x_hi, y_hi and z_hi have a 1 in bit 6 or 7,
 \ORA INWK+4             \ then the ship is too far away to be shown on the
 \ORA INWK+7             \ scanner, so return from the subroutine (as SC5
@@ -50347,7 +50377,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- ADC #127               \ Set A = 125 + (x_sign x_hi)
+ ADC #127               \ Set A = 127 + (x_sign x_hi)
 
                         \ --- End of replacement ------------------------------>
 
@@ -50502,6 +50532,13 @@ ENDIF
                         \ the sign bit of the stick length
 
 .SC48
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX TYPE               \ Set SCANtype to the ship type so we can draw a single
+ STX SCANtype           \ line dot for missiles)
+
+                        \ --- End of added code ------------------------------->
 
  LDX #LO(SCANpars)      \ Set (Y X) to point to the SCANpars parameter block
  LDY #HI(SCANpars)
@@ -56605,30 +56642,38 @@ ENDIF
  EQUB VE                \
                         \ Encoded as:   "[25?]"
 
- ECHR 'B'               \ Token 23:     "BOY ARE YOU IN THE WRONG GALAXY!"
- ECHR 'O'               \
- ECHR 'Y'               \ Encoded as:   "BOY A<242> [179] <240> [147]WR<223>G G
- ECHR ' '               \                <228>AXY!"
- ECHR 'A'
- ETWO 'R', 'E'
- ECHR ' '
- ETOK 179
- ECHR ' '
- ETWO 'I', 'N'
- ECHR ' '
- ETOK 147
- ECHR 'W'
- ECHR 'R'
- ETWO 'O', 'N'
- ECHR 'G'
- ECHR ' '
- ECHR 'G'
- ETWO 'A', 'L'
- ECHR 'A'
- ECHR 'X'
- ECHR 'Y'
- ECHR '!'
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\ECHR 'B'               \ Token 23:     "BOY ARE YOU IN THE WRONG GALAXY!"
+\ECHR 'O'               \
+\ECHR 'Y'               \ Encoded as:   "BOY A<242> [179] <240> [147]WR<223>G G
+\ECHR ' '               \                <228>AXY!"
+\ECHR 'A'
+\ETWO 'R', 'E'
+\ECHR ' '
+\ETOK 179
+\ECHR ' '
+\ETWO 'I', 'N'
+\ECHR ' '
+\ETOK 147
+\ECHR 'W'
+\ECHR 'R'
+\ETWO 'O', 'N'
+\ECHR 'G'
+\ECHR ' '
+\ECHR 'G'
+\ETWO 'A', 'L'
+\ECHR 'A'
+\ECHR 'X'
+\ECHR 'Y'
+\ECHR '!'
+\EQUB VE
+
+                        \ --- And replaced by: -------------------------------->
+
  EQUB VE
+
+                        \ --- End of replacement ------------------------------>
 
  ETWO 'T', 'H'          \ Token 24:     "THERE'S A REAL [91-95] PIRATE OUT
  ETWO 'E', 'R'          \                THERE"
@@ -62472,10 +62517,8 @@ ENDMACRO
  LDA #%00010000         \ Set bit #4 so the call to SCAN will draw the ship on
  STA INWK+31            \ the scanner, thus removing it
 
- LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
- STA TYPE               \ to yellow
-
- JSR SCAN               \ Remove the ship from the scanner, if it's there
+ LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
+ JSR SCAN
 
 .dshp2
 
@@ -62493,10 +62536,8 @@ ENDMACRO
  LDA player1INWK31,X
  STA INWK+31
 
- LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
- STA TYPE               \ to yellow
-
- JSR SCAN               \ Remove the ship from the scanner, if it's there
+ LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
+ JSR SCAN
 
  JMP dshp7              \ Jump to part 3 to skip the planet/sun code in part 2
 
@@ -62765,14 +62806,12 @@ ENDMACRO
  CMP #2                 \ the transpose, as we don't bother to rotate the planet
  BCC dshp15             \ or sun or need to override its type
 
- LDA #127               \ Set TYPE = 127 purely to set the colour on the scanner
- STA TYPE               \ to yellow
-
  LDX player1X           \ Set the scan visiblilty flag from player1INWK31
  LDA player1INWK31,X
  STA INWK+31
 
- JSR SCAN               \ Draw the ship on the scanner
+ LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
+ JSR SCAN
 
  LDA XSAV               \ If this is player 2's ship, jump to dshp11 to skip
  CMP #2                 \ the following instruction
