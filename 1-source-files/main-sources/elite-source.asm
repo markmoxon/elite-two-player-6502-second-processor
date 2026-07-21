@@ -17685,32 +17685,36 @@ ENDIF
 
  TXA                    \ Copy the child's ship type from X into A
 
- CMP #SPL+1             \ If the type of the child we are spawning is less than
- BCS NOIL               \ #PLT or greater than #SPL - i.e. not an alloy plate,
- CMP #PLT               \ cargo canister, boulder, asteroid or splinter - then
- BCC NOIL               \ jump to NOIL to skip us setting up some pitch and roll
-                        \ for it
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- PHA                    \ Store the child's ship type on the stack so we can
-                        \ retrieve it below
+\CMP #SPL+1             \ If the type of the child we are spawning is less than
+\BCS NOIL               \ #PLT or greater than #SPL - i.e. not an alloy plate,
+\CMP #PLT               \ cargo canister, boulder, asteroid or splinter - then
+\BCC NOIL               \ jump to NOIL to skip us setting up some pitch and roll
+\                       \ for it
+\
+\PHA                    \ Store the child's ship type on the stack so we can
+\                       \ retrieve it below
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\ASL A                  \ Set the child's byte #30 (pitch counter) to a random
+\STA INWK+30            \ value, and at the same time set the C flag randomly
+\
+\TXA                    \ Set the child's byte #27 (speed) to a random value
+\AND #%00001111         \ between 0 and 15
+\STA INWK+27
+\
+\LDA #&FF               \ Set the child's byte #29 (roll counter) to a full
+\ROR A                  \ roll with no damping (as bits 0 to 6 are set), so the
+\STA INWK+29            \ canister tumbles through space, with the direction in
+\                       \ bit 7 set randomly, depending on the C flag from above
+\
+\PLA                    \ Retrieve the child's ship type from the stack
+\
+\.NOIL
 
- JSR DORND              \ Set A and X to random numbers
-
- ASL A                  \ Set the child's byte #30 (pitch counter) to a random
- STA INWK+30            \ value, and at the same time set the C flag randomly
-
- TXA                    \ Set the child's byte #27 (speed) to a random value
- AND #%00001111         \ between 0 and 15
- STA INWK+27
-
- LDA #&FF               \ Set the child's byte #29 (roll counter) to a full
- ROR A                  \ roll with no damping (as bits 0 to 6 are set), so the
- STA INWK+29            \ canister tumbles through space, with the direction in
-                        \ bit 7 set randomly, depending on the C flag from above
-
- PLA                    \ Retrieve the child's ship type from the stack
-
-.NOIL
+                        \ --- End of removed code ----------------------------->
 
  JSR NWSHP              \ Add a new ship of type A to the local bubble
 
@@ -25722,25 +25726,29 @@ ENDIF
 \
 \ ******************************************************************************
 
-.GTHG
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR Ze                 \ Call Ze to initialise INWK to a fairly aggressive
-                        \ ship (though we increase this below)
-                        \
-                        \ Note that because Ze uses the value of X returned by
-                        \ DORND, and X contains the value of A returned by the
-                        \ previous call to DORND, this does not set the new ship
-                        \ to a totally random location
+\.GTHG
+\
+\JSR Ze                 \ Call Ze to initialise INWK to a fairly aggressive
+\                       \ ship (though we increase this below)
+\                       \
+\                       \ Note that because Ze uses the value of X returned by
+\                       \ DORND, and X contains the value of A returned by the
+\                       \ previous call to DORND, this does not set the new ship
+\                       \ to a totally random location
+\
+\LDA #%11111111         \ Set the AI flag in byte #32 so that the ship has AI,
+\STA INWK+32            \ an aggression level of 63 out of 63, and E.C.M.
+\
+\LDA #THG               \ Call NWSHP to add a new Thargoid ship to our local
+\JSR NWSHP              \ bubble of universe
+\
+\LDA #TGL               \ Call NWSHP to add a new Thargon ship to our local
+\JMP NWSHP              \ bubble of universe, and return from the subroutine
+\                       \ using a tail call
 
- LDA #%11111111         \ Set the AI flag in byte #32 so that the ship has AI,
- STA INWK+32            \ an aggression level of 63 out of 63, and E.C.M.
-
- LDA #THG               \ Call NWSHP to add a new Thargoid ship to our local
- JSR NWSHP              \ bubble of universe
-
- LDA #TGL               \ Call NWSHP to add a new Thargon ship to our local
- JMP NWSHP              \ bubble of universe, and return from the subroutine
-                        \ using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -25771,62 +25779,66 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ptg
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LSR COK                \ Set bit 0 of the competition flags in COK, so that the
- SEC                    \ competition code will include the fact that we have
- ROL COK                \ manually forced a mis-jump into witchspace
+\.ptg
+\
+\LSR COK                \ Set bit 0 of the competition flags in COK, so that the
+\SEC                    \ competition code will include the fact that we have
+\ROL COK                \ manually forced a mis-jump into witchspace
+\
+\.MJP
+\
+\\JSR CATLOD             \ This instruction is commented out in the original
+\                       \ source
+\
+\LDA #3                 \ Clear the top part of the screen, draw a border box,
+\JSR TT66               \ and set the current view type in QQ11 to 3
+\
+\JSR LL164              \ Call LL164 to show the hyperspace tunnel and make the
+\                       \ hyperspace sound for a second time (as we already
+\                       \ called LL164 in TT18)
+\
+\JSR RES2               \ Reset a number of flight variables and workspaces, as
+\                       \ well as setting Y to &FF
+\
+\STY MJ                 \ Set the mis-jump flag in MJ to &FF, to indicate that
+\                       \ we are now in witchspace
+\
+\IF _EXECUTIVE
+\
+\LDX #4                 \ Call TALK with X = 4 to say "Oh shit, it's a mis-jump"
+\JSR TALK               \ using the Watford Electronics Beeb Speech Synthesiser
+\                       \ (if one is fitted and speech has been enabled)
+\
+\ENDIF
+\
+\.MJP1
+\
+\JSR GTHG               \ Call GTHG to spawn a Thargoid ship and a Thargon
+\                       \ companion
+\
+\LDA #3                 \ Fetch the number of Thargoid ships from MANY+THG, and
+\CMP MANY+THG           \ if it is less than or equal to 3, loop back to MJP1 to
+\BCS MJP1               \ spawn another one, until we have four Thargoids
+\
+\STA NOSTM              \ Set NOSTM (the maximum number of stardust particles)
+\                       \ to 3, so there are fewer bits of stardust in
+\                       \ witchspace (normal space has a maximum of 18)
+\
+\LDX #0                 \ Initialise the front space view
+\JSR LOOK1
+\
+\LDA QQ1                \ Fetch the current system's galactic y-coordinate in
+\EOR #%00011111         \ QQ1 and flip bits 0-5, so we end up somewhere in the
+\STA QQ1                \ vicinity of our original destination, but above or
+\                       \ below it in the galactic chart
+\
+\.RTS111
+\
+\RTS                    \ Return from the subroutine
 
-.MJP
-
-\JSR CATLOD             \ This instruction is commented out in the original
-                        \ source
-
- LDA #3                 \ Clear the top part of the screen, draw a border box,
- JSR TT66               \ and set the current view type in QQ11 to 3
-
- JSR LL164              \ Call LL164 to show the hyperspace tunnel and make the
-                        \ hyperspace sound for a second time (as we already
-                        \ called LL164 in TT18)
-
- JSR RES2               \ Reset a number of flight variables and workspaces, as
-                        \ well as setting Y to &FF
-
- STY MJ                 \ Set the mis-jump flag in MJ to &FF, to indicate that
-                        \ we are now in witchspace
-
-IF _EXECUTIVE
-
- LDX #4                 \ Call TALK with X = 4 to say "Oh shit, it's a mis-jump"
- JSR TALK               \ using the Watford Electronics Beeb Speech Synthesiser
-                        \ (if one is fitted and speech has been enabled)
-
-ENDIF
-
-.MJP1
-
- JSR GTHG               \ Call GTHG to spawn a Thargoid ship and a Thargon
-                        \ companion
-
- LDA #3                 \ Fetch the number of Thargoid ships from MANY+THG, and
- CMP MANY+THG           \ if it is less than or equal to 3, loop back to MJP1 to
- BCS MJP1               \ spawn another one, until we have four Thargoids
-
- STA NOSTM              \ Set NOSTM (the maximum number of stardust particles)
-                        \ to 3, so there are fewer bits of stardust in
-                        \ witchspace (normal space has a maximum of 18)
-
- LDX #0                 \ Initialise the front space view
- JSR LOOK1
-
- LDA QQ1                \ Fetch the current system's galactic y-coordinate in
- EOR #%00011111         \ QQ1 and flip bits 0-5, so we end up somewhere in the
- STA QQ1                \ vicinity of our original destination, but above or
-                        \ below it in the galactic chart
-
-.RTS111
-
- RTS                    \ Return from the subroutine
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -25842,103 +25854,107 @@ ENDIF
 \
 \ ******************************************************************************
 
-.TT18
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
-IF _SNG45 OR _SOURCE_DISC
+\.TT18
+\
+\IF _SNG45 OR _SOURCE_DISC
+\
+\LDA QQ14               \ Subtract the distance to the selected system (in QQ8)
+\SEC                    \ from the amount of fuel in our tank (in QQ14) into A
+\SBC QQ8
+\
+\ELIF _EXECUTIVE
+\
+\LDA QQ14               \ Subtract the distance to the selected system (in QQ8)
+\
+\BIT JUMP               \ If infinite jump range is configured, then jump down
+\BMI IJUMP              \ to IJUMP so we don't subtract any fuel for this jump
+\
+\SEC                    \ from the amount of fuel in our tank (in QQ14) into A
+\SBC QQ8
+\
+\ENDIF
+\
+\BCS P%+4               \ If the subtraction didn't overflow, skip the next
+\                       \ instruction
+\
+\LDA #0                 \ The subtraction overflowed, so set A = 0 so we don't
+\                       \ end up with a negative amount of fuel
+\
+\STA QQ14               \ Store the updated fuel amount in QQ14
+\
+\IF _EXECUTIVE
+\
+\.IJUMP
+\
+\ENDIF
+\
+\LDA QQ11               \ If the current view is not a space view, jump to ee5
+\BNE ee5                \ to skip the following
+\
+\JSR TT66               \ Clear the top part of the screen, draw a border box,
+\                       \ and set the current view type in QQ11 to 0 (space
+\                       \ view)
+\
+\JSR LL164              \ Call LL164 to show the hyperspace tunnel and make the
+\                       \ hyperspace sound
+\
+\.ee5
+\
+\JSR CTRL               \ Scan the keyboard to see if CTRL is currently pressed,
+\                       \ returning a negative value in A if it is
+\
+\AND PATG               \ If the game is configured to show the author's names
+\                       \ on the start-up screen, then PATG will contain &FF,
+\                       \ otherwise it will be 0
+\
+\BMI ptg                \ By now, A will be negative if we are holding down CTRL
+\                       \ and author names are configured, which is what we have
+\                       \ to do in order to trigger a manual mis-jump, so jump
+\                       \ to ptg to do a mis-jump (ptg not only mis-jumps, but
+\                       \ updates the competition flags, so Acornsoft could tell
+\                       \ from the competition code whether this feature had
+\                       \ been used)
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\CMP #253               \ If A >= 253 (0.78% chance) then jump to MJP to trigger
+\BCS MJP                \ a mis-jump into witchspace
+\
+\\JSR TT111              \ This instruction is commented out in the original
+\                       \ source. It finds the closest system to coordinates
+\                       \ (QQ9, QQ10), but we don't need to do this as the
+\                       \ crosshairs will already be on a system by this point
+\
+\JSR hyp1+3             \ Jump straight to the system at (QQ9, QQ10) without
+\                       \ first calculating which system is closest
+\
+\JSR RES2               \ Reset a number of flight variables and workspaces
+\
+\JSR SOLAR              \ Halve our legal status, update the missile indicators,
+\                       \ and set up data blocks and slots for the planet and
+\                       \ sun
+\
+\\JSR CATLOD             \ These instructions are commented out in the original
+\\                       \ source
+\\JSR LOMOD
+\
+\LDA QQ11               \ If the current view in QQ11 is not a space view (0) or
+\AND #%00111111         \ one of the charts (64 or 128), return from the
+\BNE RTS111             \ subroutine (as RTS111 contains an RTS)
+\
+\JSR TTX66              \ Otherwise clear the screen and draw a border box
+\
+\LDA QQ11               \ If the current view is one of the charts, jump to
+\BNE TT114              \ TT114 (from which we jump to the correct routine to
+\                       \ display the chart)
+\
+\INC QQ11               \ This is a space view, so increment QQ11 to 1
+\
+\                       \ Fall through into TT110 to show the front space view
 
- LDA QQ14               \ Subtract the distance to the selected system (in QQ8)
- SEC                    \ from the amount of fuel in our tank (in QQ14) into A
- SBC QQ8
-
-ELIF _EXECUTIVE
-
- LDA QQ14               \ Subtract the distance to the selected system (in QQ8)
-
- BIT JUMP               \ If infinite jump range is configured, then jump down
- BMI IJUMP              \ to IJUMP so we don't subtract any fuel for this jump
-
- SEC                    \ from the amount of fuel in our tank (in QQ14) into A
- SBC QQ8
-
-ENDIF
-
- BCS P%+4               \ If the subtraction didn't overflow, skip the next
-                        \ instruction
-
- LDA #0                 \ The subtraction overflowed, so set A = 0 so we don't
-                        \ end up with a negative amount of fuel
-
- STA QQ14               \ Store the updated fuel amount in QQ14
-
-IF _EXECUTIVE
-
-.IJUMP
-
-ENDIF
-
- LDA QQ11               \ If the current view is not a space view, jump to ee5
- BNE ee5                \ to skip the following
-
- JSR TT66               \ Clear the top part of the screen, draw a border box,
-                        \ and set the current view type in QQ11 to 0 (space
-                        \ view)
-
- JSR LL164              \ Call LL164 to show the hyperspace tunnel and make the
-                        \ hyperspace sound
-
-.ee5
-
- JSR CTRL               \ Scan the keyboard to see if CTRL is currently pressed,
-                        \ returning a negative value in A if it is
-
- AND PATG               \ If the game is configured to show the author's names
-                        \ on the start-up screen, then PATG will contain &FF,
-                        \ otherwise it will be 0
-
- BMI ptg                \ By now, A will be negative if we are holding down CTRL
-                        \ and author names are configured, which is what we have
-                        \ to do in order to trigger a manual mis-jump, so jump
-                        \ to ptg to do a mis-jump (ptg not only mis-jumps, but
-                        \ updates the competition flags, so Acornsoft could tell
-                        \ from the competition code whether this feature had
-                        \ been used)
-
- JSR DORND              \ Set A and X to random numbers
-
- CMP #253               \ If A >= 253 (0.78% chance) then jump to MJP to trigger
- BCS MJP                \ a mis-jump into witchspace
-
-\JSR TT111              \ This instruction is commented out in the original
-                        \ source. It finds the closest system to coordinates
-                        \ (QQ9, QQ10), but we don't need to do this as the
-                        \ crosshairs will already be on a system by this point
-
- JSR hyp1+3             \ Jump straight to the system at (QQ9, QQ10) without
-                        \ first calculating which system is closest
-
- JSR RES2               \ Reset a number of flight variables and workspaces
-
- JSR SOLAR              \ Halve our legal status, update the missile indicators,
-                        \ and set up data blocks and slots for the planet and
-                        \ sun
-
-\JSR CATLOD             \ These instructions are commented out in the original
-\                       \ source
-\JSR LOMOD
-
- LDA QQ11               \ If the current view in QQ11 is not a space view (0) or
- AND #%00111111         \ one of the charts (64 or 128), return from the
- BNE RTS111             \ subroutine (as RTS111 contains an RTS)
-
- JSR TTX66              \ Otherwise clear the screen and draw a border box
-
- LDA QQ11               \ If the current view is one of the charts, jump to
- BNE TT114              \ TT114 (from which we jump to the correct routine to
-                        \ display the chart)
-
- INC QQ11               \ This is a space view, so increment QQ11 to 1
-
-                        \ Fall through into TT110 to show the front space view
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
