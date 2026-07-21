@@ -4462,6 +4462,11 @@ ENDIF
                         \
                         \   * Non-zero = first to n*10 hits (n = 1 to 100)
 
+.player2ViewSlot
+
+ SKIP 1                 \ The slot numberof the ship being processed + 10, to
+                        \ give the slot number of the ship in player 2's view
+
 .configHighlight
 
  SKIP 1                 \ The number of the currently highlighted field on the
@@ -4505,6 +4510,18 @@ ENDIF
 .storeData
 
  SKIP NI%               \ Storage area for INWK, ship movement etc.
+
+.storeXX0
+
+ SKIP 2                 \ Storage area for XX0(1 0)
+
+.storeINF
+
+ SKIP 2                 \ Storage area for INF(1 0)
+
+.storeTYPE
+
+ SKIP 1                 \ Storage area for TYPE
 
 .endWP
 
@@ -6942,9 +6959,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If this is not player 2, jump to MA8 to skip the
+ LDA XSAV               \ If this is not player 2, jump to main3 to skip the
  CMP #2                 \ following
- BNE MA8
+ BNE main3
 
                         \ Player 2 has been hit, so process player 2's shields
 
@@ -6954,6 +6971,19 @@ ENDIF
 
  JSR Player2OOPS        \ Remove the relevant energy from player 2's shields
                         \ and update the scores
+
+ JMP MA8                \ Jump to MA8 to skip the following
+
+.main3
+
+                        \ We are not hitting player 2, so we must be hitting a
+                        \ missile, so kill it instantly (as the missile's
+                        \ maximum energy is only 2, which is way less than any
+                        \ individual laser hit)
+
+ ASL INWK+31            \ Set bit 7 of the ship byte #31 to indicate that it has
+ SEC                    \ now been killed
+ ROR INWK+31
 
                         \ --- End of added code ------------------------------->
 
@@ -62305,6 +62335,11 @@ ENDMACRO
 
  JSR SaveShipData       \ Save current INWK state so we can restore it later
 
+ LDA XSAV               \ Set player2ViewSlot to slot #10 + XSAV, which is the
+ CLC                    \ slot number of the ship we are processing but for
+ ADC #10                \ player 2's view
+ STA player2ViewSlot
+
  LDX XSAV               \ If we are drawing the planet or sun, jump to part 2 to
  CPX #2                 \ check whether it is on-screen and if so, only move it
  BCC dshp4              \ by the rotations of player 2's controls
@@ -62370,11 +62405,11 @@ ENDMACRO
 
                         \ Now we need to remove the yellow copy from the scanner
 
- LDA XSAV               \ Fetch the ship's coordinates from slot #10 + ID (i.e.
- CLC                    \ #12 for player 2's ship, or #13 or #14 for a missile)
- ADC #10                \ so that if the ship is already on the scanner, we can
- TAX                    \ remove it (if the ship hasn't yet been processed in
- JSR GetShipDataToINWK  \ this new slot, nothing will happen in the following)
+ LDX player2ViewSlot    \ Fetch the ship's coordinates from slot #10 + ID (i.e.
+ JSR GetShipDataToINWK  \ #12 for player 2's ship, or #13 or #14 for a missile)
+                        \ so that if the ship is already on the scanner, we can
+                        \ remove it (if the ship hasn't yet been processed in
+                        \ this new slot, nothing will happen in the following)
 
  LDA #%00010000         \ Set bit #4 so the call to SCAN will draw the ship on
  STA INWK+31            \ the scanner, thus removing it
@@ -62390,11 +62425,11 @@ ENDMACRO
 
 .dshp3
 
- LDA XSAV               \ Fetch the ship's coordinates from slot #10 + ID (i.e.
- CLC                    \ #12 for player 2's ship, or #13 or #14 for a missile)
- ADC #10                \ so that if the ship is already on the scanner, we can
- TAX                    \ remove it (if the ship hasn't yet been processed in
- JSR GetShipDataToINWK  \ this new slot, nothing will happen in the following)
+ LDX player2ViewSlot    \ Fetch the ship's coordinates from slot #10 + ID (i.e.
+ JSR GetShipDataToINWK  \ #12 for player 2's ship, or #13 or #14 for a missile)
+                        \ so that if the ship is already on the scanner, we can
+                        \ remove it (if the ship hasn't yet been processed in
+                        \ this new slot, nothing will happen in the following)
 
  LDX player1X           \ Set the scanner visiblilty flag from player1INWK31
  LDA player1INWK31,X
@@ -62460,11 +62495,9 @@ ENDMACRO
                         \ instead apply player 2's movement to the current
                         \ position of the planet/sun
 
- LDA XSAV               \ Fetch the ship data for the planet/sun from slot #10
- CLC                    \ or #11, which contains the coordinates for player 2's
- ADC #10                \ view
- TAX
- JSR GetShipDataToINWK
+ LDX player2ViewSlot    \ Fetch the ship data for the planet/sun from slot #10
+ JSR GetShipDataToINWK  \ or #11, which contains the coordinates for player 2's
+                        \ view
 
  JSR SaveShipMovement   \ Switch to player 2's movement data
  JSR GetPlayer2Movement
@@ -62758,10 +62791,7 @@ ENDMACRO
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
 
- LDA XSAV               \ Save the new coordinates into slot #10 + XSAV
- CLC
- ADC #10
- TAX
+ LDX player2ViewSlot    \ Save the new coordinates into slot #10 + XSAV
  JSR SaveShipDataInSlot
 
  LDX player2VIEW        \ Rotate everything into the correct view
@@ -62790,13 +62820,9 @@ ENDMACRO
  LDA INWK+31            \ for this ship
  STA player1INWK31,X
 
- LDA XSAV               \ If this isn't player 2's ship, jump to part 6 to skip
- CMP #2                 \ the following target-related checks
- BNE dshp18
-
- JSR HITCH              \ Call HITCH to see if player 1 is in the crosshairs,
- BCC dshp17             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp17 to skip the
+ JSR HITCH              \ Call HITCH to see if this ship is in the crosshairs,
+ BCC dshp18             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp18 to skip the
                         \ following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
@@ -62807,20 +62833,41 @@ ENDMACRO
  JSR BEEP               \ We have missile lock and an armed missile, so call
                         \ the BEEP subroutine to make a short, high beep
 
- LDX #12                \ Call ABORT2 to store the details of this missile
- LDY #RED2              \ lock, with the targeted ship's slot number in #12
- JSR Player2ABORT2      \ (for player 1) and set the colour of the missile
-                        \ indicator to the colour in Y (red = &0E)
+ LDX player2ViewSlot    \ Call ABORT2 to store the details of this missile
+ LDY #RED2              \ lock, with the targeted ship's slot number in
+ JSR Player2ABORT2      \ player2ViewSlotand set the colour of the missile
+                        \ indicator to the colour in Y
 
 .dshp16
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp17             \ the laser power, so if this is zero, jump down to
-                        \ dshp17 to skip the following
+ BEQ dshp18             \ the laser power, so if this is zero, jump to part 6
+                        \ to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
  JSR EXNO               \ the crosshairs, so call EXNO to make the sound of
                         \ us making a laser strike on another ship
+
+ LDA XSAV               \ If this ship in the crosshairs is player 1, jump to
+ CMP #2                 \ dshp17 to process a hit on player 1
+ BEQ dshp17
+
+                        \ This must be a missile, so kill it instantly (as the
+                        \ missile's maximum energy is only 2, which is way less
+                        \ than any individual laser hit)
+
+ ASL storeData+31       \ Set bit 7 of the missile's byte #31 flag to mark it as
+ SEC                    \ having been killed, so it explodes
+ ROR storeData+31       \
+                        \ We need to update the flag in storeData as we are
+                        \ about to throw away INWK for the missile and restore
+                        \ it from storeData with a call to LoadShipData, so this
+                        \ ensures the new setting is retained and processed back
+                        \ in the main loop
+
+ JMP dshp18             \ Jump to part 6 to finish up
+
+.dshp17
 
                         \ Player 1 has been hit, so process player 1's shields
 
@@ -62832,22 +62879,6 @@ ENDMACRO
  JSR OOPS               \ Remove the relevant energy from player 1's shields and
                         \ update the scores
 
-.dshp17
-
- LDA player2ShipType    \ Switch back to the ship for player 2
- STA TYPE
-
- ASL A                  \ Set Y = ship type * 2
- TAY
-
- LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
- STA XX0                \ table that points to the individual ship blueprints,
-                        \ so this fetches the low byte of this particular ship
-                        \ type's blueprint and stores it in XX0
-
- LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
- STA XX0+1              \ blueprint and store it in XX0+1
-
                         \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
@@ -62855,16 +62886,13 @@ ENDMACRO
 \       Name: DrawPlayer2View (Part 6 of 6)
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: Finish up
+\    Summary: Reload the previous ship data configuration and finish up
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 .dshp18
-
- LDX XSAV               \ Set INF(1 0) for the current ship once again
- JSR GINF
 
  STZ drawPlayerView     \ Back to drawing the view for player 1
 
@@ -63598,6 +63626,19 @@ ENDMACRO
  BPL savs1              \ Loop back for the next byte until we have copied the
                         \ last byte from INF to INWK
 
+ LDA INF                \ Store INF(1 0)
+ STA storeINF
+ LDA INF+1
+ STA storeINF+1
+
+ LDA XX0                \ Store XX0(1 0)
+ STA storeXX0
+ LDA XX0+1
+ STA storeXX0+1
+
+ LDA TYPE                \ Store TYPE
+ STA storeTYPE
+
  RTS                    \ Return from the subroutine
 
                         \ --- End of added code ------------------------------->
@@ -63628,6 +63669,19 @@ ENDMACRO
 
  BPL lods1              \ Loop back for the next byte until we have copied the
                         \ last byte from INF to INWK
+
+ LDA storeINF           \ Restore INF(1 0)
+ STA INF
+ LDA storeINF+1
+ STA INF+1
+
+ LDA storeXX0           \ Restore XX0(1 0)
+ STA XX0
+ LDA storeXX0+1
+ STA XX0+1
+
+ LDA storeTYPE          \ Restore TYPE
+ STA TYPE
 
  RTS                    \ Return from the subroutine
 
