@@ -28072,13 +28072,6 @@ ENDIF
 
 .DOEXP
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- BRA EX2                \ TEST: disable explosions until they are implemented
-                        \ properly
-
-                        \ --- End of added code ------------------------------->
-
  LDA INWK+31            \ If bit 6 of the ship's byte #31 is clear, then the
  AND #%01000000         \ ship is not already exploding so there is no existing
  BEQ P%+5               \ explosion cloud to remove, so skip the following
@@ -28335,16 +28328,79 @@ ENDIF
  JSR EXS1               \ Set (A X) = (A R) +/- random * cloud size
                         \           = y +/- random * cloud size
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\BNE EX11               \ If A is non-zero, the particle is off-screen as the
+\                       \ coordinate is bigger than 255), so jump to EX11 to do
+\                       \ the next particle
+\
+\CPX #2*Y-1             \ If X > the y-coordinate of the bottom of the screen,
+\BCS EX11               \ the particle is off the bottom of the screen, so jump
+\                       \ to EX11 to do the next particle
+\
+\                       \ Otherwise X contains a random y-coordinate within the
+\                       \ cloud
+
+                        \ --- And replaced by: -------------------------------->
+
+ STA S                  \ Set (S R) = (A X)
+ STX R                  \
+                        \ So (S R) contains the y-coordinate of the particle as
+                        \ a signed 16-bit value
+
+ BIT drawPlayerView     \ If we are drawing player 1's view, jump to expl1 to
+ BPL expl1              \ move the particle up into the top half of the screen
+
+                        \ We are drawing player 2's view, so move the particle
+                        \ down into the bottom half of the screen and check the
+                        \ bounds
+
+ LDA R                  \ Set (A X) = (S R) + #Y/2
+ CLC
+ ADC #Y/2
+ TAX
+ LDA S
+ ADC #0
+
  BNE EX11               \ If A is non-zero, the particle is off-screen as the
-                        \ coordinate is bigger than 255), so jump to EX11 to do
-                        \ the next particle
+                        \ coordinate is either negative or bigger than 255, so
+                        \ jump to EX11 to do the next particle
 
- CPX #2*Y-1             \ If X > the y-coordinate of the bottom of the screen,
- BCS EX11               \ the particle is off the bottom of the screen, so jump
-                        \ to EX11 to do the next particle
+ CPX #Y                 \ If the particle is in the top half of the screen, jump
+ BCC EX11               \ to EX11 to do the next particle
 
-                        \ Otherwise X contains a random y-coordinate within the
-                        \ cloud
+ CPX #2*Y-1             \ If the particle is off the bottom of the screen, jump
+ BCS EX11               \ to EX11 to do the next particle
+
+ BCC expl2              \ Otherwise jump to expl2 to draw this particle (this
+                        \ BCC is effectiely a JMP as we just passed through a
+                        \ BCS)
+
+.expl1
+
+                        \ We are drawing player 1's view, so move the particle
+                        \ up into the top half of the screen and check the
+                        \ bounds
+
+ LDA R                  \ Set (A X) = (S R) - #Y/2
+ SEC
+ SBC #Y/2
+ TAX
+ LDA S
+ SBC #0
+
+ BNE EX11               \ If A is non-zero, the particle is off-screen as the
+                        \ coordinate is either negative or bigger than 255, so
+                        \ jump to EX11 to do the next particle
+
+ CPX #Y                 \ If the particle is in the bottom half of the screen,
+ BCS EX11               \ jump to EX11 to do the next particle
+
+                        \ Otherwise keep going to draw the particle
+
+.expl2
+
+                        \ --- End of replacement ------------------------------>
 
  STX Y1                 \ Set Y1 = our random y-coordinate within the cloud
 
@@ -56456,6 +56512,24 @@ ENDIF
 \ETWO 'A', 'R'
 \ETWO 'R', 'A'
 \EQUB VE
+\
+\EJMP 1                 \ Token 9:      "{all caps}COMING SOON: ELITE II"
+\ECHR 'C'               \
+\ECHR 'O'               \ Encoded as:   "{1}COM[195]<235><223>: EL<219>E II"
+\ECHR 'M'
+\ETOK 195
+\ETWO 'S', 'O'
+\ETWO 'O', 'N'
+\ECHR ':'
+\ECHR ' '
+\ECHR 'E'
+\ECHR 'L'
+\ETWO 'I', 'T'
+\ECHR 'E'
+\ECHR ' '
+\ECHR 'I'
+\ECHR 'I'
+\EQUB VE
 
                         \ --- And replaced by: -------------------------------->
 
@@ -56475,25 +56549,9 @@ ENDIF
 
  EQUB VE
 
-                        \ --- End of replacement ------------------------------>
-
- EJMP 1                 \ Token 9:      "{all caps}COMING SOON: ELITE II"
- ECHR 'C'               \
- ECHR 'O'               \ Encoded as:   "{1}COM[195]<235><223>: EL<219>E II"
- ECHR 'M'
- ETOK 195
- ETWO 'S', 'O'
- ETWO 'O', 'N'
- ECHR ':'
- ECHR ' '
- ECHR 'E'
- ECHR 'L'
- ETWO 'I', 'T'
- ECHR 'E'
- ECHR ' '
- ECHR 'I'
- ECHR 'I'
  EQUB VE
+
+                        \ --- End of replacement ------------------------------>
 
  ERND 25                \ Token 10:     "[106-110]"
  EQUB VE                \
