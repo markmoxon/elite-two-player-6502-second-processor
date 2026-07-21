@@ -2197,6 +2197,23 @@ ENDIF
  LDA (OSSC),Y           \ y-coordinate) and store it in Y1
  STA Y1
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ INY                    \ Fetch byte #7 from the parameter block (the ship type)
+ LDA (OSSC),Y
+
+ CMP #1                 \ If this is not a missile, jump to scan1 to draw a
+ BNE scan1              \ double-height dot
+
+ JSR CPIX2              \ Draw a single-height mode 2 dash at (X1, Y1)
+
+ JMP scan2              \ Jump to scan2 to skip the following
+
+.scan1
+
+                        \ --- End of added code ------------------------------->
+
+
  JSR CPIX4              \ Draw a double-height mode 2 dot at (X1, Y1). This also
                         \ leaves the following variables set up for the dot's
                         \ top-right pixel, the last pixel to be drawn (as the
@@ -2211,6 +2228,12 @@ ENDIF
                         \
                         \ We can use there as the starting point for drawing the
                         \ stick, if there is one
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.scan2
+
+                        \ --- End of added code ------------------------------->
 
  LDA CTWOS+2,X          \ Load the same mode 2 one-pixel byte that we just used
  AND COL                \ for the top-right pixel, and mask it with the same
