@@ -2058,12 +2058,13 @@ ENDIF
  CHAR 'T'
  EQUB 0
 
- CONT 6                 \ Token 47:     "DELTA14B"
+ CONT 6                 \ Token 47:     "DELTA 14B"
  CHAR 'D'
  CHAR 'E'
  CHAR 'L'
  CHAR 'T'
  CHAR 'A'
+ CHAR ' '
  CHAR '1'
  CHAR '4'
  CONT 8
@@ -4313,9 +4314,11 @@ ENDIF
 
  SKIP 1                 \ Player 2's control choice:
                         \
-                        \   * 0 = Joystick
+                        \   * 0 = AI Pilot
                         \
-                        \   * 1 = AI Pilot
+                        \   * Non-zero, bit 7 clear = joystick
+                        \
+                        \   * Non-zero, bit 7 set = Delta 14B
 
 .player2LASER
 
@@ -4791,6 +4794,19 @@ ENDIF
                         \
                         \ Toggled by pressing "K" when paused, see the DKS3
                         \ routine for details
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+                        \ For player 1, JSTK is extended to:
+                        \
+                        \   * 0 = keyboard
+                        \
+                        \   * Non-zero, bit 7 clear = joystick
+                        \
+                        \   * Non-zero, bit 7 set = Delta 14B
+
+                        \ --- End of added code ------------------------------->
+
 
 IF _EXECUTIVE
 
@@ -14313,7 +14329,7 @@ ENDIF
  JSR OSWRCH
 
  LDA player2JSTK        \ If this is a human player, jump to dial1 to display
- BEQ dial1              \ the pitch angle in player2BETA as-is
+ BNE dial1              \ the pitch angle in player2BETA as-is
 
  LDA player2BETA        \ Send the signed pitch angle to the I/O processor
  AND #%10000000         \ divided by 4 while retaining the sign
@@ -37239,6 +37255,9 @@ ENDIF
  LDX #&FF               \ Give player 2 an E.C.M.
  STX player2ECM
 
+ LDX #1                 \ Set player 2 to joystick by default
+ STX player2JSTK
+
  JSR DFAULT             \ Call DFAULT to reset the current commander data block
                         \ to the last saved commander
 
@@ -40666,7 +40685,7 @@ ENDIF
  EQUB &78               \ \         KYTB+14     Player 2 E.C.M.
  EQUB &49               \ RETURN    KYTB+15     Player 2 speed up
  EQUB &58               \ ]         KYTB+16     Player 2 slow down
- EQUB &28               \ _         KYTB+17     Player unarm missile
+ EQUB &28               \ _         KYTB+17     Player 2 unarm missile
 
                         \ --- End of replacement ------------------------------>
 
@@ -57356,10 +57375,20 @@ ENDIF
 
  LDX #10                \ Print the text for option #10 (player 1 controls)
 
- LDA #44                \ Set A to 44 ("KEYBOARD") or 45 ("JOYSTICK") depending
- LDY JSTK               \ on whether JSTK is zero
- BEQ P%+4
- LDA #45
+ LDA #44                \ Set A to 44 ("KEYBOARD")
+
+ LDY JSTK               \ If JSTK is zero then joysticks are not configured, so
+ BEQ joys1              \ jump to joys1 to print the configuration in A
+
+ LDA #45                \ Set A to 45 ("JOYSTICK")
+
+ BIT JSTK               \ If bit 7 of JSTK is clear then Delta 14B is not
+ BPL joys1              \ configured, jump to joys1 to print the configuration
+                        \ in A
+
+ LDA #47                \ Set A to 47 ("DELTA 14B")
+
+.joys1
 
  JMP PrintOption0To95   \ Print the control type
 
@@ -57367,10 +57396,20 @@ ENDIF
 
  LDX #11                \ Print the text for option #11 (player 2 controls)
 
- LDA #45                \ Set A to 45 ("JOYSTICK") or 46 ("AI PILOT") depending
- LDY player2JSTK        \ on whether player2JSTK is zero
- BEQ P%+4
- LDA #46
+ LDA #46                \ Set A to 46 ("AI PILOT")
+
+ LDY player2JSTK        \ If player2JSTK is zero then AI Pilot is configured, so
+ BEQ joys2              \ jump to joys2 to print the configuration in A
+
+ LDA #45                \ Set A to 45 ("JOYSTICK")
+
+ BIT player2JSTK        \ If bit 7 of player2JSTK is clear then Delta 14B is not
+ BPL joys2              \ configured, jump to joys2 to print the configuration
+                        \ in A
+
+ LDA #47                \ Set A to 47 ("DELTA 14B")
+
+.joys2
 
  JMP PrintOption0To95   \ Print the control type
 
@@ -57879,24 +57918,70 @@ ENDIF
 
 .ToggleOption10
 
- LDA JSTK               \ Flip the JSTK value for player 1
- EOR #&FF
+ LDA JSTK               \ If the JSTK value for player 1 is zero, jump to tjoy1
+ BNE tjoy1              \ to process the joystick and Delta 14B values
+
+                        \ If we get here then the current setting is keyboard
+
+ LDA #1                 \ Set JSTK to non-zero with bit 7 clear, for joystick
  STA JSTK
+
+ RTS                    \ Return from the subroutine
+
+.tjoy1
+
+ CMP #1                 \ If the JSTK value for player 1 is not 1, jump to tjoy2
+ BNE tjoy2              \ to move on to keyboard
+
+                        \ If we get here then the current setting is joystick
+
+ LDA #%10000001         \ Set JSTK to non-zero with bit 7 set, for Delta 14B
+ STA JSTK
+
+ RTS                    \ Return from the subroutine
+
+.tjoy2
+
+                        \ If we get here then the current setting is Delta 14B
+
+ STZ JSTK               \ Set JSTK to zero for keyboard
 
  RTS                    \ Return from the subroutine
 
 .ToggleOption11
 
- LDX player2JSTK        \ Increment the JSTK value for player 2
- INX
- CPX #2
- BNE P%+4
- LDX #0
+ LDA player2JSTK        \ If the player2JSTK value for player 2 is zero, jump to
+ BNE tjoy3              \ tjoy3 to process the joystick and Delta 14B values
 
- STX player2JSTK        \ Set the JSTK value for player 2
+                        \ If we get here then the current setting is AI Pilot
 
- CPX #1                 \ If the new value is not "AI PILOT", jump to nocp1 to
- BNE nocp1              \ disable ship AI for player 2
+ LDA #1                 \ Set player2JSTK to non-zero with bit 7 clear, for
+ STA player2JSTK        \ joystick
+
+ STZ player2INWK32      \ Disable ship AI for player 2
+
+ LDA player2LASER       \ Enable rear lasers for non-AI player 2
+ STA player2LASER+1
+
+ RTS                    \ Return from the subroutine
+
+.tjoy3
+
+ CMP #1                 \ If the player2JSTK value for player 1 is not 1, jump
+ BNE tjoy4              \ to tjoy4 to move on to AI Pilot
+
+                        \ If we get here then the current setting is joystick
+
+ LDA #%10000001         \ Set player2JSTK to non-zero with bit 7 set, for Delta
+ STA player2JSTK        \ 14B
+
+ RTS                    \ Return from the subroutine
+
+.tjoy4
+
+                        \ If we get here then the current setting is Delta 14B
+
+ STZ player2JSTK        \ Set player2JSTK to zero for AI Pilot
 
  LDA #%11111110         \ Enable ship AI for player 2 by setting the AI flags
  STA player2INWK32      \ for NPC player 2 as follows:
@@ -57911,15 +57996,6 @@ ENDIF
                         \ configured
 
  STZ player2LASER+1     \ Remove rear lasers for AI pilot
-
- RTS                    \ Return from the subroutine
-
-.nocp1
-
- STZ player2INWK32      \ Disable ship AI for player 2
-
- LDA player2LASER       \ Enable rear lasers for non-AI player 2
- STA player2LASER+1
 
  RTS                    \ Return from the subroutine
 
