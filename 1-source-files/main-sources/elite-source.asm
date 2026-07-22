@@ -4312,9 +4312,9 @@ ENDIF
 
 .player2JSTK
 
- SKIP 1                 \ Player 2's control choice:
+ SKIP 1                 \ Player 2's control choice
                         \
-                        \   * 0 = AI Pilot
+                        \   * 0 = AI Pilot (default)
                         \
                         \   * Non-zero, bit 7 clear = joystick
                         \
@@ -4784,29 +4784,32 @@ ENDIF
                         \ Toggled by pressing "J" when paused, see the DKS3
                         \ routine for details
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\.JSTK
+\
+\SKIP 1                 \ Keyboard or joystick configuration setting
+\                       \
+\                       \   * 0 = keyboard (default)
+\                       \
+\                       \   * &FF = joystick
+\                       \
+\                       \ Toggled by pressing "K" when paused, see the DKS3
+\                       \ routine for details
+
+                        \ --- And replaced by: -------------------------------->
+
 .JSTK
 
- SKIP 1                 \ Keyboard or joystick configuration setting
+ SKIP 1                 \ Player 1's control choice
                         \
                         \   * 0 = keyboard (default)
-                        \
-                        \   * &FF = joystick
-                        \
-                        \ Toggled by pressing "K" when paused, see the DKS3
-                        \ routine for details
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-                        \ For player 1, JSTK is extended to:
-                        \
-                        \   * 0 = keyboard
                         \
                         \   * Non-zero, bit 7 clear = joystick
                         \
                         \   * Non-zero, bit 7 set = Delta 14B
 
-                        \ --- End of added code ------------------------------->
-
+                        \ --- End of replacement ------------------------------>
 
 IF _EXECUTIVE
 
@@ -37255,8 +37258,8 @@ ENDIF
  LDX #&FF               \ Give player 2 an E.C.M.
  STX player2ECM
 
- LDX #1                 \ Set player 2 to joystick by default
- STX player2JSTK
+ LDA #%11111110         \ Set player 2 to AI Pilot by default
+ STA player2INWK32
 
  JSR DFAULT             \ Call DFAULT to reset the current commander data block
                         \ to the last saved commander
