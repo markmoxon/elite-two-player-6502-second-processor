@@ -6619,9 +6619,43 @@ ENDMACRO
 \                         * Byte #14: Joystick 1 fire button is being pressed
 \                           (Bit 4 set = no, Bit 4 clear = yes)
 \
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+\                       Changes for two-player Elite:
+\
+\                         * Byte #12: Joystick 2 X value (high byte)
+\
+\                         * Byte #13: Joystick 2 Y value (high byte)
+\
+\                         * Byte #14: Joystick fire button is being pressed
+\
+\                           * Joystick 1: Bit 4 set = no, Bit 4 clear = yes
+\
+\                           * Joystick 2: Bit 5 set = no, Bit 5 clear = yes
+\
+\                         * Byte #15: "]" is being pressed (0 = no, &FF = yes)
+\
+\                         * Byte #16: RETURN is being pressed (0 = no,
+\                           &FF = yes)
+
+                        \ --- End of added code ------------------------------->
+
 \ ******************************************************************************
 
 .KEYBOARD
+
+                        \ --- Mod: Code added for Delta 14B: ------------------>
+
+ LDY #2                 \ Fetch byte #2 from the parameter block (the setting of
+ LDA (OSSC),Y           \ player 1's controls) and store in JSTK
+ STA JSTK
+
+ INY                    \ Fetch byte #3 from the parameter block (the setting of
+ LDA (OSSC),Y           \ player 2's controls) and store in player2JSTK
+ STA player2JSTK
+
+                        \ --- End of added code ------------------------------->
 
  LDY #9                 \ We're going to loop through the seven primary flight
                         \ controls in KYTB and update the block pointed to by
@@ -6658,6 +6692,55 @@ ENDMACRO
 
  CPY #2                 \ Loop back until we have processed all seven primary
  BNE DKL2               \ flight keys, leaving the loop with Y = 2
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+                        \ We want to detect player 2's speed up and slow down
+                        \ keys as primary controls so they get detected even if
+                        \ other keys are being pressed, so let's do that now
+
+ LDA #&58 + 128         \ We now detect player 2's slow down key, so set A to
+                        \ the key number for "]"
+
+ DKS4                   \ Include macro DKS4 to check whether the key in A is
+                        \ being pressed, and if it is, set bit 7 of A
+
+ ASL A                  \ Shift bit 7 of A into the C flag
+
+ LDA #0                 \ Set A = 0 + &FF + C
+ ADC #&FF               \
+                        \ If the C flag is set (i.e. the key is being pressed)
+                        \ then this sets A = 0, otherwise it sets A = &FF
+
+ EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
+                        \ being pressed, or A = 0 if it isn't
+
+ LDY #15                \ Store A in the 15th byte of the block pointed to by
+ STA (OSSC),Y           \ OSSC
+
+ LDA #&49 + 128         \ We now detect player 2's speed up key, so set A to
+                        \ the key number for RETURN
+
+ DKS4                   \ Include macro DKS4 to check whether the key in A is
+                        \ being pressed, and if it is, set bit 7 of A
+
+ ASL A                  \ Shift bit 7 of A into the C flag
+
+ LDA #0                 \ Set A = 0 + &FF + C
+ ADC #&FF               \
+                        \ If the C flag is set (i.e. the key is being pressed)
+                        \ then this sets A = 0, otherwise it sets A = &FF
+
+ EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
+                        \ being pressed, or A = 0 if it isn't
+
+ LDY #16                \ Store A in the 15th byte of the block pointed to by
+ STA (OSSC),Y           \ OSSC
+
+ LDY #2                 \ Set Y back to 2 so any other keys are stored in the
+                        \ correct place
+
+                        \ --- End of added code ------------------------------->
 
                         \ We're now going to scan the keyboard to see if any
                         \ other keys are being pressed

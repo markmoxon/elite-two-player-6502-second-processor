@@ -3208,7 +3208,7 @@ ENDIF
 
 .KY19
 
- SKIP 1                 \ RETURN is being pressed (player 2 speed up)
+ SKIP 1                 \ "_" is being pressed (player 2 unarm missile)
                         \
                         \   * 0 = no
                         \
@@ -3216,7 +3216,7 @@ ENDIF
 
 .KY20
 
- SKIP 1                 \ "]" is being pressed (player 2 slow down)
+ SKIP 1                 \ RETURN is being pressed (player 2 speed up)
                         \
                         \   * 0 = no
                         \
@@ -3224,7 +3224,7 @@ ENDIF
 
 .KY21
 
- SKIP 1                 \ "_" is being pressed (player 2 unarm missile)
+ SKIP 1                 \ "]" is being pressed (player 2 slow down)
                         \
                         \   * 0 = no
                         \
@@ -5888,7 +5888,7 @@ ENDIF
 
 {
 
- LDA KY19               \ If RETURN is being pressed, keep going, otherwise jump
+ LDA KY20               \ If RETURN is being pressed, keep going, otherwise jump
  BEQ MA17               \ down to MA17 to skip the following
 
  LDA player2DELTA       \ The "go faster" key is being pressed, so first we
@@ -5905,7 +5905,7 @@ ENDIF
 
 .MA17
 
- LDA KY20               \ If "]" is being pressed, keep going, otherwise jump
+ LDA KY21               \ If "]" is being pressed, keep going, otherwise jump
  BEQ MA4                \ down to MA4 to skip the following
 
  DEC player2DELTA       \ The "slow down" key is being pressed, so we decrement
@@ -5989,7 +5989,7 @@ ENDIF
 
 {
 
- LDA KY21               \ If "_" is being pressed and the number of missiles
+ LDA KY19               \ If "_" is being pressed and the number of missiles
  AND player2NOMSL       \ in NOMSL is non-zero, keep going, otherwise jump down
  BEQ MA20               \ to MA20 to skip the following
 
@@ -40686,9 +40686,9 @@ ENDIF
  EQUB &65               \ M         KYTB+12     Fire missile
  EQUB &22               \ E         KYTB+13     E.C.M.
  EQUB &78               \ \         KYTB+14     Player 2 E.C.M.
- EQUB &49               \ RETURN    KYTB+15     Player 2 speed up
- EQUB &58               \ ]         KYTB+16     Player 2 slow down
- EQUB &28               \ _         KYTB+17     Player 2 unarm missile
+ EQUB &28               \ _         KYTB+15     Player 2 unarm missile
+ EQUB &49               \ RETURN    KYTB+16     Player 2 speed up
+ EQUB &58               \ ]         KYTB+17     Player 2 slow down
 
                         \ --- End of replacement ------------------------------>
 
@@ -41031,7 +41031,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDY #18                \ We want to clear the 17 key logger locations from
+ LDY #18                \ We want to clear the 18 key logger locations from
                         \ KY1 to KY22, so set a counter in Y
 
                         \ --- End of replacement ------------------------------>
@@ -41101,6 +41101,15 @@ ENDIF
  STA NEEDKEY            \ the key logger buffer
 
  JSR U%                 \ Call U% to clear the key logger
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA KTRAN+13           \ Store player 2's speed controls in the key logger, so
+ STA KY21               \ they get updated as primary controls even if joysticks
+ LDA KTRAN+14           \ are enabled for player 1
+ STA KY20
+
+                        \ --- End of added code ------------------------------->
 
  LDA JSTK               \ If JSTK is non-zero, then we are configured to use
  BNE DKJ1               \ the joystick rather than keyboard, so jump to DKJ1
@@ -41515,15 +41524,17 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDY #17                \ This is a space view, so now we want to check for all
+ LDY #15                \ This is a space view, so now we want to check for all
                         \ the secondary flight keys. The internal key numbers
                         \ are in the keyboard table KYTB from KYTB+8 to
-                        \ KYTB+17, and their key logger locations are from KL+8
-                        \ to KL+17. So set a decreasing counter in Y for the
-                        \ index, starting at 17, so we can loop through them
+                        \ KYTB+15, and their key logger locations are from KL+8
+                        \ to KL+15. So set a decreasing counter in Y for the
+                        \ index, starting at 15, so we can loop through them
                         \
-                        \ We don't check for KY22 (at offset 18) as that is for
-                        \ the joystick fire button
+                        \ We don't check for KY20, KY21 or KY22 (at KL+16, 17 or
+                        \ 18) as those are primary controls for player 2 and are
+                        \ dealt with separately (they are speed up, speed down
+                        \ and joystick fire button)
 
                         \ --- End of replacement ------------------------------>
 
@@ -42772,6 +42783,28 @@ ENDMACRO
 \   KTRAN + 12          Joystick 1 fire button is being pressed (Bit 4 set = no,
 \                       Bit 4 clear = yes)
 \
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+\                       Changes for two-player Elite:
+\
+\   KTRAN + 10          Joystick 2 X value (high byte)
+\
+\   KTRAN + 11          Joystick 2 Y value (high byte)
+\
+\   KTRAN + 12          Joystick fire button is being pressed
+\
+\                         * Joystick 1: Bit 4 set = no, Bit 4 clear = yes
+\
+\                         * Joystick 2: Bit 5 set = no, Bit 5 clear = yes
+\
+\   KTRAN + 13          "]" is being pressed (0 = no, &FF = yes)
+\
+\   KTRAN + 14          RETURN is being pressed (0 = no, &FF = yes)
+\
+
+                        \ --- End of added code ------------------------------->
+
 \ ------------------------------------------------------------------------------
 \
 \ Other entry points:
@@ -42785,7 +42818,15 @@ ENDMACRO
 
  EQUB 2                 \ Transmit 2 bytes as part of this command
 
- EQUB 15                \ Receive 15 bytes as part of this command
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB 15                \ Receive 15 bytes as part of this command
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB 17                \ Receive 17 bytes as part of this command
+
+                        \ --- End of replacement ------------------------------>
 
 .KTRAN
 
@@ -42793,6 +42834,13 @@ ENDMACRO
  EQUS "1234567"         \ KEYBOARD routine in the I/O processor (note that only
                         \ 12 of these bytes are actually updated by the KEYBOARD
                         \ routine)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ EQUS "89"              \ Extend the key logger data buffer for player 2's
+                        \ primary flight controls
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
