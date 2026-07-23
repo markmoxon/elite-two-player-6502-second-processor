@@ -202,30 +202,6 @@
 
                         \ --- End of added code ------------------------------->
 
-                        \ --- Mod: Code added for Delta 14B: ------------------>
-
-.JSTK
-
- SKIP 1                 \ Player 1's control choice
-                        \
-                        \   * 0 = keyboard (default)
-                        \
-                        \   * Non-zero, bit 7 clear = joystick
-                        \
-                        \   * Non-zero, bit 7 set = Delta 14B
-
-.player2JSTK
-
- SKIP 1                 \ Player 2's control choice
-                        \
-                        \   * 0 = AI Pilot (default)
-                        \
-                        \   * Non-zero, bit 7 clear = joystick
-                        \
-                        \   * Non-zero, bit 7 set = Delta 14B
-
-                        \ --- End of added code ------------------------------->
-
  ORG &0090              \ Set the assembly address to &0090
 
 .XX15
@@ -1062,6 +1038,36 @@ ENDIF
 .player2GNTMP
 
  SKIP 1                 \ Player 2's GNTMP value
+
+                        \ --- End of added code ------------------------------->
+
+
+                        \ --- Mod: Code added for Delta 14B: ------------------>
+
+.JSTK
+
+ SKIP 1                 \ Player 1's control choice
+                        \
+                        \   * 0 = keyboard (default)
+                        \
+                        \   * Non-zero, bit 7 clear = joystick
+                        \
+                        \   * Non-zero, bit 7 set = Delta 14B
+
+.player2JSTK
+
+ SKIP 1                 \ Player 2's control choice
+                        \
+                        \   * 0 = AI Pilot (default)
+                        \
+                        \   * Non-zero, bit 7 clear = joystick
+                        \
+                        \   * Non-zero, bit 7 set = Delta 14B
+
+.deltaPlayer
+
+ SKIP 1                 \ The player number for the Delta 14B joystick we are
+                        \ currently scanning
 
                         \ --- End of added code ------------------------------->
 
@@ -6561,19 +6567,80 @@ ENDMACRO
 
                         \ These are the secondary flight controls:
 
- EQUB &60               \ TAB       KYTB+8      Energy bomb
- EQUB &70               \ ESCAPE    KYTB+9      Launch escape pod
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB &60               \ TAB       KYTB+8      Energy bomb
+\EQUB &70               \ ESCAPE    KYTB+9      Launch escape pod
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB &20               \ f0        KYTB+8      Front view
+ EQUB &71               \ f1        KYTB+9      Rear view
+
+                        \ --- End of replacement ------------------------------>
+
  EQUB &23               \ T         KYTB+10     Arm missile
  EQUB &35               \ U         KYTB+11     Unarm missile
  EQUB &65               \ M         KYTB+12     Fire missile
  EQUB &22               \ E         KYTB+13     E.C.M.
- EQUB &45               \ J         KYTB+14     In-system jump
- EQUB &52               \ C         KYTB+15     Docking computer
 
- NOP                    \ In the parasite's version of this table, this byte
-                        \ maps to "P", the key to cancel the docking computer,
-                        \ but because the I/O processor only uses this table for
-                        \ the primary flight keys, this byte isn't used
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUB &45               \ J         KYTB+14     In-system jump
+\EQUB &52               \ C         KYTB+15     Docking computer
+\
+\NOP                    \ In the parasite's version of this table, this byte
+\                       \ maps to "P", the key to cancel the docking computer,
+\                       \ but because the I/O processor only uses this table for
+\                       \ the primary flight keys, this byte isn't used
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB &45               \ J         KYTB+14     In-system jump (unused)
+ EQUB &73               \ f3        KYTB+15     Right view
+ EQUB &72               \ f2        KYTB+16     Left view
+
+                        \ --- End of replacement ------------------------------>
+
+\ ******************************************************************************
+\
+\       Name: KYTB2
+\       Type: Variable
+\   Category: Keyboard
+\    Summary: Lookup table for in-flight keyboard controls for player 2
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for Delta 14B: ------------------>
+
+.KYTB2
+
+ EQUB 0                 \ Pad the table out so that the first key is at KYTB+1
+
+                        \ These are the primary flight controls (pitch, roll,
+                        \ speed and lasers):
+
+ EQUB &58 + 128         \ ]         KYTB+1      Player 2 slow down
+ EQUB &49 + 128         \ RETURN    KYTB+2      Player 2 speed up
+ EQUB &66 + 128         \ <         KYTB+3      Roll left (unused)
+ EQUB &67 + 128         \ >         KYTB+4      Roll right (unused)
+ EQUB &42 + 128         \ X         KYTB+5      Pull up (unused)
+ EQUB &51 + 128         \ S         KYTB+6      Pitch down (unused)
+ EQUB &41 + 128         \ A         KYTB+7      Fire lasers
+
+                        \ These are the secondary flight controls:
+
+ EQUB &39               \ Up        KYTB+8      Front view
+ EQUB &29               \ Down      KYTB+9      Rear view
+ EQUB &38               \ [         KYTB+10     Player 2 arm missile
+ EQUB &28               \ _         KYTB+11     Player 2 unarm missile
+ EQUB &47               \ @         KYTB+12     Player 2 fire missile
+ EQUB &78               \ \         KYTB+13     Player 2 E.C.M.
+ EQUB &45               \ J         KYTB+14     In-system jump (unused)
+ EQUB &79               \ Right     KYTB+15     Right view
+ EQUB &19               \ Left      KYTB+16     Left view
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -6825,12 +6892,12 @@ ENDMACRO
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
  LDA JSTK               \ If neither player is configured to use the Delta 14B,
- ORA player2JSTK        \ jump to fill9 to skip the following
- BPL fill9
+ ORA player2JSTK        \ jump to joys9 to skip the following
+ BPL joys9
 
  LDA JSTK               \ If both players are configured to use the Delta 14B,
- AND player2JSTK        \ jump to both1
- BMI both1
+ AND player2JSTK        \ jump to joys2
+ BMI joys2
 
                         \ If we get here then one player is configured to use
                         \ the Delta 14B
@@ -6838,24 +6905,48 @@ ENDMACRO
  LDY #16                \ So set a decreasing counter in Y to work through the
                         \ Delta 14B buttons
 
-.fill1
+.joys1
 
- LDA #0                 \ Set A to 0, so the call to the b_14 routine only
-                        \ checks the rear joystick
+ LDA player2JSTK        \ Set bit 7 of deltaPlayer to 0 if this is player 1
+ STA deltaPlayer        \ using the Delta 14B, or 1 if this is player 2
+
+ LDA #0                 \ Set A to 0, so the call to the b_14 routine checks the
+                        \ rear joystick
 
  JSR b_14               \ Call b_14 to check the Delta 14B joystick buttons and
                         \ populate the key logger
 
  DEY                    \ Decrement the loop counter
 
- BNE fill1              \ If not, loop back to process the next key
+ BNE joys1              \ If not, loop back to process the next key
 
- BEQ fill9              \ Jump to fill9 to move on to the joystick checks
+ BEQ joys9              \ Jump to joys9 to move on to the joystick checks (this
+                        \ BEQ is effectively a JMP as we just passed through a
+                        \ BNE)
 
-.both1
+.joys2
 
+                        \ If we get here then both players are configured to use
+                        \ the Delta 14B
 
-.fill9
+ LDY #16                \ So set a decreasing counter in Y to work through the
+                        \ Delta 14B buttons
+
+.fill2
+
+ LDA #%10000000         \ Set bit 7 of A, so the call to the b_14 routine checks
+                        \ both joysticks
+
+\JSR b_14               \ Call b_14 to check the Delta 14B joystick buttons and
+                        \ populate the key logger
+
+ DEY                    \ Decrement the loop counter
+
+ BNE fill2              \ If not, loop back to process the next key
+
+\ Move player 2 speed up/down from OSSC +1, +2 to +15, +16
+
+.joys9
 
                         \ --- End of added code ------------------------------->
 
@@ -9980,16 +10071,17 @@ ENDMACRO
  EQUB &80               \ -                           KYTB+4    Roll right
  EQUB &80               \ -                           KYTB+5    Pitch up
  EQUB &80               \ -                           KYTB+6    Pitch down
- EQUB &51               \ Middle column  Top row      KYTB+7    Fire lasers
+ EQUB &80               \ -                           -         Fire lasers
  EQUB &64               \ Left column    Third row    -         Front view
  EQUB &34               \ Right column   Third row    -         Rear view
  EQUB &32               \ Right column   Second row   KYTB+10   Arm missile
  EQUB &62               \ Left column    Second row   KYTB+11   Unarm missile
  EQUB &52               \ Middle column  Second row   KYTB+12   Fire missile
  EQUB &54               \ Middle column  Third row    KYTB+13   E.C.M.
- EQUB &58               \ Middle column  Bottom row   KYTB+14   In-system jump
- EQUB &38               \ Right column   Bottom row   KYTB+15   Docking computer
- EQUB &68               \ Left column    Bottom row   KYTB+16   Cancel docking
+\EQUB &58               \ Middle column  Bottom row   KYTB+14   -
+ EQUB &80               \ -                           -         -
+ EQUB &38               \ Right column   Bottom row   KYTB+15   Right view
+ EQUB &68               \ Left column    Bottom row   KYTB+16   Left view
 
                         \ --- End of added code ------------------------------->
 
@@ -10026,43 +10118,35 @@ ENDMACRO
 
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
-.b_13
-
- LDA #0                 \ Set A = 0 for the second pass through the following,
-                        \ so we can check the joystick plugged into the rear
-                        \ socket of the Delta 14B adaptor
-
 .b_14
 
                         \ This is the entry point for the routine, which is
-                        \ called with A = 128 (the value of BSTK when the Delta
-                        \ 14b is enabled), and if the key we are checking has a
-                        \ corresponding button on the Delta 14B, it is run a
-                        \ second time with A = 0
+                        \ called with:
+                        \
+                        \   * A = 0 to check the rear joystick
+                        \
+                        \   * A = 128 to check the side joystick (only done when
+                        \     both players are on Delta 14B)
+                        \
+                        \   * deltaPlayer = bit 7 clear if this is player 1
+                        \     using the Delta 14B
+                        \
+                        \   * deltaPlayer = bit 7 set if this is player 2 using
+                        \     the Delta 14B
 
- TAX                    \ Store A in X so we can restore it below
+ TAX                    \ Copy A to X, so X contains the stick number
 
- EOR b_table-1,Y        \ We now EOR the value in A with the Y-th entry in
- BEQ b_quit             \ b_table, and jump to b_quit to return from the
-                        \ subroutine if the table entry is 128 (&80) - in other
-                        \ words, we quit if Y is the offset for the roll and
-                        \ pitch controls
+ LDA b_table-1,Y        \ If the entry in b_table for this key is &80, skip this
+ BMI b_quit             \ key (so we skip the roll and pitch keys, for example)
+
+ TXA                    \ Copy X back to A, so A contains the stick number
+
+ ORA b_table-1,Y        \ We now OR the value in A with the Y-th entry in
+                        \ b_table to apply the stick number to bit 7
 
                         \ If we get here, then the offset in Y points to a
-                        \ control with a corresponding button on the Delta 14B,
-                        \ and we pass through the following twice, once with a
-                        \ starting value of A = 128, and again with a starting
-                        \ value of A = 0
-                        \
-                        \ On the first pass, the EOR will set A to the value
-                        \ from b_table but with bit 7 set, which means we scan
-                        \ the joystick plugged into the side socket of the
-                        \ Delta 14B adaptor
-                        \
-                        \ On the second pass, the EOR will set A to the value
-                        \ from b_table (i.e. with bit 7 clear), which means we
-                        \ scan the joystick plugged into the rear socket of the
-                        \ Delta 14B adaptor
+                        \ control with a corresponding button on the Delta 14B
+                        \ stick specified in the argument A
 
  STA VIA+&60            \ Set 6522 User VIA output register ORB (SHEILA &60) to
                         \ the value in A, which tells the Delta 14B adaptor box
@@ -10130,11 +10214,6 @@ ENDMACRO
                         \ all, then the result will be non-zero and we move on
                         \ to the next button
 
- TXA                    \ Restore the original value of A that we stored in X
-
- BMI b_13               \ If we just did the above with A = 128, then loop back
-                        \ to b_13 to do it again with A = 0
-
 .b_quit
 
  RTS                    \ Return from the subroutine
@@ -10149,6 +10228,14 @@ ENDMACRO
  STY P                  \ Store the value of Y so we can preserve it the button
                         \ number
 
+ BIT deltaPlayer        \ If this is not player 2 on the Delta 14B, jump to
+ BPL delt1              \ delt1 to skip the following
+
+ CPY #3                 \ If this is player 2 on the Delta 14B and this is a
+ BCC delt2              \ speed key, jump to delt2
+
+.delt1
+
  LDA #&FF               \ Store &FF in the Y+2-th byte of the block at OSSC, so
  INY                    \ button 1 (slow down) updates byte #3 of the OSSC block
  INY                    \ and key 7 (fire lasers) updates byte #9, for example
@@ -10158,18 +10245,34 @@ ENDMACRO
 
  RTS                    \ Return from the subroutine
 
+.delt2
+
+ TYA                    \ Set Y = Y + 12 + 2
+ CLC                    \
+ ADC #14                \ So that's 2 for the conversion from b_table offset to
+ TAY                    \ OSSC offset, and 12 to go from OSSC bytes #3/4 for
+                        \ speed to bytes #15/16
+
+ LDA #&FF               \ Store &FF in the Y+2-th byte of the block at OSSC, so
+ STA (OSSC),Y           \ button 1 (slow down) updates byte #3 of the OSSC block
+                        \ and key 7 (fire lasers) updates byte #9, for example
+
+ LDY P                  \ Restore the button number into Y
+
+ RTS                    \ Return from the subroutine
+
 .b_button
-
- CPY #8                 \ If this is the front view button, jump to b_front to
- BEQ b_front            \ process it
-
- CPY #9                 \ If this is the front view button, jump to b_rear to
- BEQ b_rear             \ process it
 
  LDA KYTB,Y             \ Fetch the equivalent internal key number of the button
                         \ pressed on the Delta 14B
 
-.b_press
+ BIT deltaPlayer        \ If this is not player 2 on the Delta 14B, jump to
+ BPL delt3              \ delt3 to skip the following
+
+ LDA KYTB2,Y            \ Fetch the equivalent internal key number of the button
+                        \ pressed on the Delta 14B
+
+.delt3
 
  STY P                  \ Store the value of Y so we can preserve it the button
                         \ number
@@ -10180,20 +10283,6 @@ ENDMACRO
  LDY P                  \ Restore the button number into Y
 
  RTS                    \ Return from the subroutine
-
-.b_front
-
- LDA #&20               \ Set the key "pressed" to f0 (internal key &20)
-
- BNE b_press            \ Jump to b_press to "press" the key (this BNE is
-                        \ effectively a JMP as A is never zero)
-
-.b_rear
-
- LDA #&71               \ Set the key "pressed" to f1 (internal key &71)
-
- BNE b_press            \ Jump to b_press to "press" the key (this BNE is
-                        \ effectively a JMP as A is never zero)
 
                         \ --- End of added code ------------------------------->
 
