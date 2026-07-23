@@ -40021,6 +40021,16 @@ ENDIF
 
 .RDKEY
 
+                        \ --- Mod: Code added for Delta 14B: ------------------>
+
+ LDA JSTK               \ Send the configuration of player 1's controls to the
+ STA KTRAN              \ I/O processor
+
+ LDA player2JSTK        \ Send the configuration of player 2's controls to the
+ STA KTRAN+1            \ I/O processor
+
+                        \ --- End of added code ------------------------------->
+
  LDA #240               \ Set A in preparation for sending an OSWORD 240 command
 
  LDY #HI(buf)           \ Set (Y X) to point to the parameter block at buf
@@ -42841,7 +42851,15 @@ ENDMACRO
 
 .buf
 
- EQUB 2                 \ Transmit 2 bytes as part of this command
+                        \ --- Mod: Code removed for Delta 14B: ---------------->
+
+\EQUB 2                 \ Transmit 2 bytes as part of this command
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUB 4                 \ Transmit 4 bytes as part of this command
+
+                        \ --- End of replacement ------------------------------>
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
