@@ -37231,14 +37231,16 @@ ENDIF
  LDA #0                 \ Set A = 0 to use as a zero reset
 
  LDX #(endWP-startWP)   \ We're going to zero the player workspace variables
+                        \ from startWP to endWP (not including endWP), so set a
+                        \ counter in X for the correct number of bytes
 
 .zero1
 
- STA splitScreen,X      \ Zero the X-th byte of splitScreen
+ STA startWP-1,X        \ Zero the X-1-th byte of startWP
 
  DEX                    \ Decrement the loop counter
 
- BPL zero1              \ Loop back to zero the next variable until we have done
+ BNE zero1              \ Loop back to zero the next variable until we have done
                         \ them all
 
  LDX #POW               \ Give player 2 front and rear pulse lasers by default
@@ -38669,16 +38671,16 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LDX #(endZero-startWP) \ We're going to zero the workspace variables from
-                        \ startWP to endZero, so set a counter in X for the
-                        \ correct number of bytes
+                        \ startWP to endZero (not including endZero), so set a
+                        \ counter in X for the correct number of bytes
 
 .ZEL2a
 
- STA startWP,X          \ Zero the X-th byte of startWP to endZero
+ STA startWP-1,X        \ Zero the X-1-th byte of startWP to endZero
 
  DEX                    \ Decrement the loop counter
 
- BPL ZEL2a              \ Loop back to zero the next variable until we have done
+ BNE ZEL2a              \ Loop back to zero the next variable until we have done
                         \ them all
 
                         \ --- End of added code ------------------------------->
