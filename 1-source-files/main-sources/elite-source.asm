@@ -41524,6 +41524,27 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
+ LDY player2JSTK        \ If player 2 is not an AI Pilot, jump to dkey1
+ BNE dkey1
+
+                        \ Player 2 is an AI Pilot, so we don't check secondary
+                        \ flight keys for player 2
+
+ LDY #9                 \ Modify the CMP #7 after DK1 to CMP #9 so we don't
+ STY DK1+2              \ check KL+8 (player 2 arm missile) or KL+9 (player 2
+                        \ fire missile)
+
+ LDY #13                \ Set the loop so we don't check KL+14 (player 2 E.C.M.)
+                        \ or KY+15 (player 2 unarm missile)
+
+ BNE dkey2              \ Jump to dkey2 to perform the loop (this BNE is
+                        \ effectively a JMP as Y is never zero)
+
+.dkey1
+
+ LDY #7                 \ Set the CMP #7 after DK1 correctly to undo the above
+ STY DK1+2              \ modification
+
  LDY #15                \ This is a space view, so now we want to check for all
                         \ the secondary flight keys. The internal key numbers
                         \ are in the keyboard table KYTB from KYTB+8 to
@@ -41535,6 +41556,8 @@ ENDIF
                         \ 18) as those are primary controls for player 2 and are
                         \ dealt with separately (they are speed up, speed down
                         \ and joystick fire button)
+
+.dkey2
 
                         \ --- End of replacement ------------------------------>
 
