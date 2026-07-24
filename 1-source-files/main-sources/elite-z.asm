@@ -1069,6 +1069,16 @@ ENDIF
  SKIP 1                 \ The player number for the Delta 14B joystick we are
                         \ currently scanning
 
+.rearKeyPress
+
+ SKIP 1                 \ The key press from the rear Delta 14B stick, if any
+
+.delta14KeyToggle
+
+ SKIP 1                 \ A toggle used to share the secondary key press between
+                        \ two Delta 14B sticks
+
+
                         \ --- End of added code ------------------------------->
 
  PRINT "I/O variables workspace (I/O processor) from ", ~XC, "to ", ~P%-1, "inclusive"
@@ -6892,8 +6902,8 @@ ENDMACRO
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
  LDA JSTK               \ If neither player is configured to use the Delta 14B,
- ORA player2JSTK        \ jump to joys9 to skip the following
- BPL joys9
+ ORA player2JSTK        \ jump to joys5 to skip the following
+ BPL joys5
 
  LDA JSTK               \ If both players are configured to use the Delta 14B,
  AND player2JSTK        \ jump to joys2
@@ -6918,9 +6928,9 @@ ENDMACRO
 
  DEY                    \ Decrement the loop counter
 
- BNE joys1              \ If not, loop back to process the next key
+ BNE joys1              \ Loop back to process the next key
 
- BEQ joys9              \ Jump to joys9 to move on to the joystick checks (this
+ BEQ joys5              \ Jump to joys5 to move on to the joystick checks (this
                         \ BEQ is effectively a JMP as we just passed through a
                         \ BNE)
 
@@ -6932,21 +6942,67 @@ ENDMACRO
  LDY #16                \ So set a decreasing counter in Y to work through the
                         \ Delta 14B buttons
 
-.fill2
+.joys3
 
- LDA #%10000000         \ Set bit 7 of A, so the call to the b_14 routine checks
-                        \ both joysticks
+ LDA #0                 \ Set A to 0, so the call to the b_14 routine checks the
+                        \ rear joystick
 
-\JSR b_14               \ Call b_14 to check the Delta 14B joystick buttons and
+ STA deltaPlayer        \ Clear bit 7 of deltaPlayer so this is player 1
+
+ JSR b_14               \ Call b_14 to check the Delta 14B joystick buttons and
                         \ populate the key logger
 
  DEY                    \ Decrement the loop counter
 
- BNE fill2              \ If not, loop back to process the next key
+ BNE joys3              \ Loop back to process the next key
 
-\ Move player 2 speed up/down from OSSC +1, +2 to +15, +16
+ LDY #2                 \ Fetch the key "pressed" value for the rear stick
+ LDA (OSSC),Y
+ STA rearKeyPress
 
-.joys9
+ LDY #16                \ So set a decreasing counter in Y to work through the
+                        \ Delta 14B buttons
+
+.joys4
+
+ LDA #%10000000         \ Set bit 7 of A, so the call to the b_14 routine checks
+                        \ the side joystick
+
+ STA deltaPlayer        \ Set bit 7 of deltaPlayer so this is player 2
+
+ JSR b_14               \ Call b_14 to check the Delta 14B joystick buttons and
+                        \ populate the key logger
+
+ DEY                    \ Decrement the loop counter
+
+ BNE joys4              \ Loop back to process the next key
+
+ LDA rearKeyPress       \ If no key was pressed on the rear stick, jump to joys5
+ BEQ joys5              \ to skip the following
+
+ LDY #2                 \ Fetch the key "pressed" value for the rear stick
+ LDA (OSSC),Y
+ BEQ joys2
+
+                        \ If we get here then both sticks have pressed a
+                        \ secondary flight key, with the side stick's key in A
+                        \ and the rear stick's key in rearKeyPress
+                        \
+                        \ We can only pass one secondary key back to the
+                        \ parasite, so let's flip between the two on each visit
+                        \ to this bit of the code
+
+ LDA delta14KeyToggle   \ Flip bit 7 of delta14KeyToggle so it changes each time
+ EOR #%10000000         \ we have to make this decision
+ STA delta14KeyToggle
+
+ BMI joys5              \ If bit 7 is set, skip the following to keep the side
+                        \ stick key "pressed"
+
+ LDA rearKeyPress       \ Bit 7 is now clear, so "press" the key for the rear
+ STA (OSSC),Y           \ stick
+ 
+.joys5
 
                         \ --- End of added code ------------------------------->
 
