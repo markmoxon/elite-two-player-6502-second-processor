@@ -35170,6 +35170,17 @@ ENDIF
 
 .yu
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA player2ECMA        \ Fetch the E.C.M. status flag, and if E.C.M. is off,
+ BEQ yu2                \ skip the next instruction
+
+ JSR Player2ECMOF       \ Turn off the E.C.M. sound
+
+.yu2
+
+                        \ --- End of added code ------------------------------->
+
  JSR WPSHPS             \ Wipe all ships from the scanner
 
  JSR ZERO               \ Reset the ship slots for the local bubble of universe,
