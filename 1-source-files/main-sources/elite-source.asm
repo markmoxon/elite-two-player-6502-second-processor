@@ -6219,6 +6219,10 @@ ENDIF
 
 .main2
 
+ LDA K%+NI%*2+31        \ Clear bit 6 of player 2's INWK+31 byte so we switch
+ AND #%10111111         \ the lasers off by default
+ STA K%+NI%*2+31
+
  LDA #0                 \ Set LAS = 0, to switch the laser off while we do the
  STA player2LAS         \ following logic
 
@@ -6293,6 +6297,9 @@ ENDIF
 }
 
                         \ --- End of added code ------------------------------->
+ LDA player1INWK31      \ Clear bit 6 of player 1's INWK+31 byte so we switch
+ AND #%10111111         \ the lasers off by default
+ STA player1INWK31
 
  LDA LASCT              \ If LASCT is zero, keep going, otherwise the laser is
  BNE MA3                \ a pulse laser that is between pulses, so jump down to
