@@ -15317,8 +15317,13 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- JMP Player2ECBLB2      \ The target has E.C.M., so jump to ECBLB2 to set it
-                        \ off, returning from the subroutine using a tail call
+ LDA player2JSTK        \ If player 2 is not an AI Pilot, jump tp TA19S so we
+ BNE TA19S              \ don't set off player 2's E.C.M.
+
+ JMP Player2ECBLB2      \ The target has E.C.M. so it must be player 2, and we
+                        \ know it is an AI Pilot, so jump to ECBLB2 to set off
+                        \ the E.C.M., returning from the subroutine using a tail
+                        \ call
 
                         \ --- End of replacement ------------------------------>
 
