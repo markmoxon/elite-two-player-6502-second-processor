@@ -4214,6 +4214,20 @@ ENDIF
 
  SKIP 1                 \ Player 2's laser status when an NPC
 
+.player1Missile
+
+ SKIP 1                 \ The slot number of the missile that player 1 launched
+                        \ and which is currently in-flight (0 = no missile)
+
+.player2Missile
+
+ SKIP 1                 \ The slot number of the missile that player 2 launched
+                        \ and which is currently in-flight (0 = no missile)
+
+.newShipSlot
+
+ SKIP 1                 \ The slot number of the ship spawned by NWSHP
+
 .endZero
 
  SKIP 0                 \ The end of the player variables that are zeroed in
@@ -6042,12 +6056,24 @@ ENDIF
  BMI MA64               \ MA64 to skip the following (also skipping the checks
                         \ for TAB, ESCAPE, "J" and "E")
 
+ LDA player2Missile     \ If player 2 does not already have a missile in-flight,
+ BEQ miss1              \ then player2Missile will be zero, so jump to miss1 to
+                        \ keep going
+
+ JSR Player2FR1         \ Otherwise call Player2FR1 to display "missile jammed"
+                        \ as player 2 can't fire a second missile
+
+ JMP MA64               \ Jump to MA64 to skip the following (also skipping the
+                        \ checks for TAB, ESCAPE, "J" and "E")
+
+.miss1
+
  LDX #2                 \ Fetch the ship's coordinates in slot #2
  JSR GetShipDataToINWK
 
- LDA player2MSTG        \ If the target is player 2's ship, jump to miss1 to
+ LDA player2MSTG        \ If the target is player 2's ship, jump to miss2 to
  CMP #12                \ spawn a hostile missile (which will attack player 1)
- BEQ miss1
+ BEQ miss2
 
                         \ If we get here then the target must be a missile, so
                         \ we need to set that as the target
@@ -6060,24 +6086,17 @@ ENDIF
  LDX #MSL               \ Set X to the ship type of a missile, and call SFS1
  JSR SFS1               \ to add a missile with the AI byte in A
 
- JSR Player2SFRMIS      \ Spawn the missile
+ JSR frmi2              \ Spawn the missile by jumping into SFRMIS at frmi2 (to
+                        \ allow us to spawn a missile with a custom AI flag)
 
- JMP miss2              \ Skip the following instruction
+ JMP MA24               \ Skip the following instruction
 
-.miss1
+.miss2
 
  JSR SFRMIS             \ The "fire missile" key is being pressed and we have
                         \ a missile lock, so call the SFRMIS routine to spawn a
                         \ missile as a child of player 2's ship, make a noise
                         \ and print a message warning of incoming missiles
-
-.miss2
-
- LDY #0                 \ We have just launched a missile, so we need to remove
- JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
-                        \ dashboard by setting it to black (Y = 0)
-
- DEC player2NOMSL       \ Reduce the number of missiles we have by 1
 
 .MA24
 
@@ -15864,15 +15883,7 @@ ENDIF
 \
 \.TA16
 
-                        \ --- And replaced by: -------------------------------->
-
- LDY #0                 \ Player 2 just launched a missile, so we need to remove
- JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
-                        \ dashboard by setting it to black (Y = 0)
-
- DEC player2NOMSL       \ Reduce the number of player 2 missiles by 1
-
-                        \ --- End of replacement ------------------------------>
+                        \ --- End of removed code ----------------------------->
 
  JMP SFRMIS             \ Jump to SFRMIS to spawn a missile as a child of the
                         \ current ship, make a noise and print a message warning
@@ -17258,12 +17269,27 @@ ENDIF
 
 .FRMIS
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX player1Missile     \ If player 1 already has a missile in-flight, then its
+ BNE FR1                \ non-zero slot number will be in player1Missile, so
+                        \ jump to FR1 to display a "missile jammed" message
+
+                        \ --- End of added code ------------------------------->
+
  LDX #MSL               \ Call FRS1 to launch a missile straight ahead of us
  JSR FRS1
 
  BCC FR1                \ If FRS1 returns with the C flag clear, then there
                         \ isn't room in the universe for our missile, so jump
                         \ down to FR1 to display a "missile jammed" message
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA newShipSlot        \ Set player1Missile to the slot number of the new
+ STA player1Missile     \ missile
+
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for two-player Elite: --------->
 
@@ -17296,133 +17322,6 @@ ENDIF
  LDA #48                \ Call the NOISE routine with A = 48 to make the sound
  JMP NOISE              \ of a missile launch, returning from the subroutine
                         \ using a tail call
-
-\ ******************************************************************************
-\
-\       Name: Player2FRS1
-\       Type: Subroutine
-\   Category: Tactics
-\    Summary: Launch a ship straight ahead of us, below the laser sights
-\
-\ ------------------------------------------------------------------------------
-\
-\ This is used in three places:
-\
-\   * When we launch a missile, in which case the missile is the ship that is
-\     launched ahead of us
-\
-\   * When we launch our escape pod, in which case it's our abandoned Cobra Mk
-\     III that is launched ahead of us
-\
-\   * The fq1 entry point is used to launch a bunch of cargo canisters ahead of
-\     us as part of the death screen
-\
-\ ------------------------------------------------------------------------------
-\
-\ Arguments:
-\
-\   X                   The type of ship to launch ahead of us
-\
-\ ------------------------------------------------------------------------------
-\
-\ Returns:
-\
-\   C flag              Set if the ship was successfully launched, clear if it
-\                       wasn't (as there wasn't enough free memory)
-\
-\ ------------------------------------------------------------------------------
-\
-\ Other entry points:
-\
-\   fq1                 Used to add a cargo canister to the universe
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-
-.Player2FRS1
-
- JSR ZINF               \ Call ZINF to reset the INWK ship workspace
-
- LDA #28                \ Set y_lo = 28
- STA INWK+3
-
- LSR A                  \ Set z_lo = 14, so the launched ship starts out
- STA INWK+6             \ ahead of us
-
- LDA #%10000000         \ Set y_sign to be negative, so the launched ship is
- STA INWK+5             \ launched just below our line of sight
-
- LDA player2MSTG        \ Set A to the missile lock target, shifted left so the
- ASL A                  \ slot number is in bits 1-5
-
- ORA #%10000000         \ Set bit 7 and store the result in byte #32, the AI
- STA INWK+32            \ flag launched ship for the launched ship. For missiles
-                        \ this enables AI (bit 7), makes it friendly towards us
-                        \ (bit 6), sets the target to the value of MSTG (bits
-                        \ 1-5), and sets its lock status as launched (bit 0).
-                        \ It doesn't matter what it does for our abandoned
-                        \ Cobra, as the AI flag gets overwritten once we return
-                        \ from the subroutine back to the ESCAPE routine that
-                        \ called FRS1 in the first place
-
- LDA #&60               \ Set byte #14 (nosev_z_hi) to 1 (&60), so the launched
- STA INWK+14            \ ship is pointing away from us
-
- ORA #128               \ Set byte #22 (sidev_x_hi) to -1 (&D0), so the launched
- STA INWK+22            \ ship has the same orientation as spawned ships, just
-                        \ pointing away from us (if we set sidev to +1 instead,
-                        \ this ship would be a mirror image of all the other
-                        \ ships, which are spawned with -1 in nosev and +1 in
-                        \ sidev)
-
- LDA DELTA              \ Set byte #27 (speed) to 2 * DELTA, so the launched
- ROL A                  \ ship flies off at twice our speed
- STA INWK+27
-
- TXA                    \ Add a new ship of type X to our local bubble of
- JMP NWSHP              \ universe and return from the subroutine using a tail
-                        \ call
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: Player2FRMIS
-\       Type: Subroutine
-\   Category: Tactics
-\    Summary: Fire a missile from our ship
-\
-\ ------------------------------------------------------------------------------
-\
-\ We fired a missile, so send it streaking away from us to unleash mayhem and
-\ destruction on our sworn enemies.
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
-.Player2FRMIS
-
- LDX #MSL               \ Call FRS1 to launch a missile straight ahead of us
- JSR Player2FRS1
-
- BCC FR1                \ If FRS1 returns with the C flag clear, then there
-                        \ isn't room in the universe for our missile, so jump
-                        \ down to FR1 to display a "missile jammed" message
-
- LDY #0                 \ We have just launched a missile, so we need to remove
- JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
-                        \ dashboard by setting it to black (Y = 0)
-
- DEC player2NOMSL       \ Reduce the number of missiles we have by 1
-
- LDA #48                \ Call the NOISE routine with A = 48 to make the sound
- JMP NOISE              \ of a missile launch, returning from the subroutine
-                        \ using a tail call
-
-                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -17537,6 +17436,68 @@ ENDIF
  LDA #201               \ Print recursive token 41 ("MISSILE JAMMED") as an
  JMP MESS               \ in-flight message and return from the subroutine using
                         \ a tail call
+
+\ ******************************************************************************
+\
+\       Name: Player2FR1
+\       Type: Subroutine
+\   Category: Tactics
+\    Summary: Display the "missile jammed" message for player 2
+\
+\ ------------------------------------------------------------------------------
+\
+\ This is shown if there isn't room in the local bubble of universe for a new
+\ missile.
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   FR1-2               Clear the C flag and return from the subroutine
+\
+\ ******************************************************************************
+
+.Player2FR1
+
+ LDA #201               \ Print recursive token 41 ("MISSILE JAMMED") as an
+ JMP Player2MESS        \ in-flight message and return from the subroutine using
+                        \ a tail call
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+\ ******************************************************************************
+\
+\       Name: RemoveMissile
+\       Type: Subroutine
+\   Category: Tactics
+\    Summary: Remove a missile from the player counts so the relevant player can
+\             launch another one
+\
+\ ------------------------------------------------------------------------------
+\
+\ Arguments:
+\
+\  Y                    The number of the missile slot that we are removing
+\                       (4 or 5)
+\ ******************************************************************************
+
+.RemoveMissile
+
+ CPY player1Missile     \ If player1Missile matches Y then we are removing the
+ BNE rmis1              \ missile launched by player 1, so zero player1Missile
+ STZ player1Missile
+
+.rmis1
+
+ CPY player2Missile     \ If player2Missile matches Y then we are removing the
+ BNE rmis2              \ missile launched by player 2, so zero player2Missile
+ STZ player2Missile
+
+.rmis2
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -30357,6 +30318,13 @@ ENDIF
                         \ when we are done, copying the block from INWK into
                         \ the K% workspace (specifically, to INF)
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STX newShipSlot        \ Store the slot number of the new ship in newShipSlot,
+                        \ so we return it from the subroutine
+
+                        \ --- End of added code ------------------------------->
+
  JSR GINF               \ Get the address of the data block for ship slot X
                         \ (which is in workspace K%) and store it in INF
 
@@ -30523,10 +30491,9 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDY #19                \ Fetch the configured number of missiles for player 2 before storing in
- LDA player2Missiles    \ number of missiles and laser power, and AND with %111
- STA INWK+31            \ to 
-                        \ byte #31
+ LDY #19                \ Fetch the configured number of missiles for player 2
+ LDA player2Missiles    \ and store it in byte #31
+ STA INWK+31
 
                         \ --- End of replacement ------------------------------>
 
@@ -34497,6 +34464,9 @@ ENDIF
  CPY #4                 \ If we are not removing the missile in slot #4, jump to
  BNE kshp2              \ kshp2 to keep checking
 
+ JSR RemoveMissile      \ Remove this missile from the relevant player's count,
+                        \ so they can fire another one if they want
+
  STZ player1INWK31+2    \ Reset the INWK+31 value for the missile to remove it
                         \ from the screen
 
@@ -34513,6 +34483,9 @@ ENDIF
                         \ slot #4 then we will also need to shuffle the data
                         \ for slot #14 down into slot #13, so we keep the slots
                         \ for the player 1 and player 2 view in sync
+
+ JSR RemoveMissile      \ Remove this missile from the relevant player's count,
+                        \ so they can fire another one if they want
 
  LDA player1INWK31+2    \ First, shuffle the INWK+31 value for slot #4 down into
  STA player1INWK31+1    \ slot #3
@@ -37145,6 +37118,9 @@ ENDIF
 \JSR DET1               \ the dashboard
 
                         \ --- And replaced by: -------------------------------->
+
+ JSR ECMOF              \ Switch off the E.C.M.
+ JSR Player2ECMOF
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
  LDA player2ShipType    \ it in yellow
@@ -40398,6 +40374,19 @@ ENDIF
 
 .SFRMIS
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDX player2Missile     \ If player 2 does not already have a missile in-flight,
+ BEQ frmi1              \ then player2Missile will be zero, so jump to frmi1 to
+                        \ keep going
+
+ JMP Player2FR1         \ Otherwise call Player2FR1 to display "missile jammed"
+                        \ as player 2 can't fire a second missile, returning
+                        \ from the subroutine using a tail call
+
+.frmi1
+                        \ --- End of added code ------------------------------->
+
  LDX #MSL               \ Set X to the ship type of a missile, and call SFS1-2
  JSR SFS1-2             \ to add a missile to our universe that has AI (bit 7
                         \ set), is hostile (bit 6 set) and has been launched
@@ -40407,13 +40396,27 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.Player2SFRMIS
+.frmi2
 
                         \ --- End of added code ------------------------------->
 
  BCC KYTB               \ The C flag will be set if the call to SFS1-2 was a
                         \ success, so if it's clear, jump to KYTB to return from
                         \ the subroutine (as KYTB contains an RTS)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA newShipSlot        \ Set player2Missile to the slot number of the new
+ STA player2Missile     \ missile, to record the fact that player 2 has fired a
+                        \ missile
+
+ LDY #0                 \ We have just launched a missile, so we need to remove
+ JSR Player2ABORT       \ missile lock and hide the leftmost indicator on the
+                        \ dashboard by setting it to black (Y = 0)
+
+ DEC player2NOMSL       \ Reduce the number of missiles we have by 1
+
+                        \ --- End of added code ------------------------------->
 
 IF _EXECUTIVE
 
