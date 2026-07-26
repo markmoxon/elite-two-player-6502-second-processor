@@ -4529,6 +4529,10 @@ ENDIF
 
  SKIP 1                 \ Storage area for TYPE
 
+.gameOverCounter
+
+ SKIP 1                 \ A counter for the game over animation
+
 .endWP
 
  SKIP 0                 \ A marker for the end of the player workspace
@@ -35710,6 +35714,8 @@ ENDIF
 
  DEC MCNT               \ Decrement the main loop counter in MCNT
 
+                        \ Fall through into MLOOP
+
                         \ --- Mod: Code removed for two-player Elite: --------->
 
 \BEQ P%+5               \ If the counter has reached zero, which it will do
@@ -35717,16 +35723,12 @@ ENDIF
 \                       \ (or to put it another way, if the counter hasn't
 \                       \ reached zero, jump down to MLOOP, skipping all the
 \                       \ following checks)
-
-                        \ --- End of removed code ----------------------------->
-
-.ytq
-
- JMP MLOOP              \ Jump down to MLOOP to do some end-of-loop tidying and
-                        \ restart the main loop
-
-                        \ --- Mod: Code removed for two-player Elite: --------->
-
+\
+\.ytq
+\
+\JMP MLOOP              \ Jump down to MLOOP to do some end-of-loop tidying and
+\                       \ restart the main loop
+\
 \                       \ We only get here once every 256 iterations of the
 \                       \ main loop. If we aren't in witchspace and don't
 \                       \ already have 3 or more asteroids in our local bubble,
@@ -37119,8 +37121,19 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- JSR ECMOF              \ Switch off the E.C.M.
- JSR Player2ECMOF
+ LDA ECMA               \ Fetch the E.C.M. status flag, and if E.C.M. is off,
+ BEQ deaf1              \ skip the next instruction
+
+ JSR ECMOF              \ Turn off the E.C.M. sound
+
+.deaf1
+
+ LDA player2ECMA        \ Fetch the E.C.M. status flag, and if E.C.M. is off,
+ BEQ deaf2              \ skip the next instruction
+
+ JSR Player2ECMOF       \ Turn off the E.C.M. sound
+
+.deaf2
 
  LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
  LDA player2ShipType    \ it in yellow
@@ -37128,27 +37141,27 @@ ENDIF
  JSR WipeShip
 
  LDA FRIN+3             \ If slot #3 is empty, skip the following
- BEQ deaf1
+ BEQ deaf3
 
  LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
  LDY #YELLOW2           \ it in yellow
  JSR WipeShip
 
-.deaf1
+.deaf3
 
  LDA FRIN+4             \ If slot #4 is empty, skip the following
- BEQ deaf2
+ BEQ deaf4
 
  LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
  LDY #YELLOW2           \ it in yellow
  JSR WipeShip
 
-.deaf2
+.deaf4
 
  PLA                    \ Set A to the winning player
 
- CMP #2                 \ If A = 2 then player 2 has won, so jump to deaf3 to
- BEQ deaf3              \ process this
+ CMP #2                 \ If A = 2 then player 2 has won, so jump to deaf5 to
+ BEQ deaf5              \ process this
 
                         \ Player 1 wins
 
@@ -37158,9 +37171,9 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 2
  JSR Player2MESS        \ in-flight message
 
- JMP deaf4              \ Jump to deaf4 to wait for a key press
+ JMP deaf6              \ Jump to deaf6 to wait for a key press
 
-.deaf3
+.deaf5
 
                         \ Player 2 wins
 
@@ -37170,10 +37183,31 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
  JSR MESS               \ in-flight message
 
-.deaf4
+ LDA #48                \ Set gameOverCounter to set the length of the game over
+ STA gameOverCounter    \ sequence
 
- JSR t                  \ Scan the keyboard until a key is pressed, returning
-                        \ the ASCII code in A and X
+ LDA #7                 \ Set MCNT = 7 so tactics will be applied to slot #7,
+ STA MCNT               \ which we know is unused (so this disables tactics)
+
+.deaf6
+
+                        \ We now continue to run the game for a short period,
+                        \ but with controls disabled
+
+ JSR U%                 \ Clear the key logger
+
+ JSR RestartSync        \ Restart the sync counter
+
+ JSR M%                 \ Call M% to iterate through the main flight loop
+
+ JSR WaitForSync        \ Wait for the sync counter to count down
+
+ JSR DIALS              \ Call DIALS to update the dashboard
+
+ DEC gameOverCounter    \ Decrement the loop counter
+
+ BNE deaf6              \ Loop back until gameOverCounter runs down, at which
+                        \ point we stop looping and return to the main menu
 
                         \ --- End of replacement ------------------------------>
 
