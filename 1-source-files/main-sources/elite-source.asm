@@ -4228,6 +4228,11 @@ ENDIF
 
  SKIP 1                 \ The slot number of the ship spawned by NWSHP
 
+.collisionCounter
+
+ SKIP 1                 \ A counter for ensuring collisions are only detected
+                        \ every few iterations around the main loop
+
 .endZero
 
  SKIP 0                 \ The end of the player variables that are zeroed in
@@ -6232,15 +6237,15 @@ ENDIF
 {
 
  LDA K%+NI%*2+32        \ If player 2 is not an NPC, skip the following check
- BPL main2
+ BPL main6
 
  BIT player2Firing      \ If player 2 is not firing its laser then skip the
- BPL main2              \ following
+ BPL main6              \ following
 
  LDA #&FF               \ Fire the NPC's front lasers
  STA KY22
 
-.main2
+.main6
 
  LDA K%+NI%*2+31        \ Clear bit 6 of player 2's INWK+31 byte so we switch
  AND #%10111111         \ the lasers off by default
@@ -6649,7 +6654,97 @@ ENDIF
 \                       \ this means we can't scoop the item, so jump to MA58
 \                       \ to process a collision
 
-                        \ --- End of removed code ----------------------------->
+                        \ --- And replaced by: -------------------------------->
+
+ LDA XSAV               \ If this isn't player 2's ship, jump to main4 to skip
+ CMP #2                 \ the collision checks, as we're only interested in
+ BNE main4              \ collisions between the two players
+
+ LDA collisionCounter   \ If collisionCounter is zere then it's been long enough
+ BEQ main1              \ since the last collision, so jump to main1 to check
+                        \ whether the ships are colliding
+
+ DEC collisionCounter   \ We recently had a collision, so decrement the
+                        \ collision counter
+
+ BRA main4              \ Jump to main4 to skip all the collision code
+
+.main1
+
+ LDA #0                 \ If any of x_hi, y_hi or z_hi are non-zero, then jump
+ JSR MAS4               \ to main4 as the ships are too far away to collide
+ BNE main4
+
+ LDA INWK               \ Set A = (x_lo OR y_lo OR z_lo), and if bit 7 of the
+ ORA INWK+3             \ result is set, the ship is still a fair distance
+ ORA INWK+6             \ away (further than 127 in at least one axis), so jump
+ BMI main4              \ to main4 to skip the following, as it's too far away
+                        \ to collide with
+
+                        \ If we get here then we have a collision
+
+ JSR EXNO3              \ Make the sound of a collision
+
+ LDA #20                \ Set collisionCounter = 10 to we don't check for any
+ STA collisionCounter   \ more collisions for this many iterations of the main
+                        \ loop (to prevent a single collision from cascading the
+                        \ scores to zero)
+
+ LDA player2DELTA       \ Set A = player2DELTA * 3 / 4
+ ASL A                  \
+ CLC                    \ This makes player 2's in-game speed match that of
+ ADC player2DELTA       \ player 1 (I'm not sure why this is required, but
+ LSR A                  \ player 2 is way too fast without this scaling)
+ LSR A
+
+ CMP DELTA              \ If A < DELTA then player 1 is faster than player 2, so
+ BCC main3              \ jump to main3 to process the damage
+
+ BNE main2              \ If A > DELTA then player 1 is slower than player 2, so
+                        \ jump to main2 to process the damage
+
+                        \ If we get here then player 1 and player 2 are going at
+                        \ the same speed
+
+ LDA #80                \ Call oops1 to damage player 1 by 80 and without
+ STA T                  \ affecting the scoree
+ JSR oops1
+
+ LDA #80                \ Call opps1 to damage player 2 by 80 and without
+ STA T                  \ affecting the scoree
+ JSR opps1
+
+ BRA main4              \ Jump to main4 to keep going
+
+.main2
+
+                        \ If we get here then player 1 is slower than player 2
+
+ LDA #80                \ Call oops1 to damage player 1 by 80 and without
+ STA T                  \ affecting the scoree
+ JSR oops1
+
+ LDA #250               \ Call opps1 to damage player 2 by 250 and without
+ STA T                  \ affecting the scoree
+ JSR opps1
+
+ BRA main4              \ Jump to main4 to keep going
+
+.main3
+
+                        \ If we get here then player 1 is faster than player 2
+
+ LDA #250               \ Call oops1 to damage player 1 by 250 and without
+ STA T                  \ affecting the scoree
+ JSR oops1
+
+ LDA #80                \ Call opps1 to damage player 2 by 80 and without
+ STA T                  \ affecting the scoree
+ JSR opps1
+
+.main4
+
+                         \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -7021,9 +7116,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LDA XSAV               \ If this is not player 2, jump to main3 to skip the
+ LDA XSAV               \ If this is not player 2, jump to main7 to skip the
  CMP #2                 \ following
- BNE main3
+ BNE main7
 
                         \ Player 2 has been hit, so process player 2's shields
 
@@ -7036,7 +7131,7 @@ ENDIF
 
  JMP MA8                \ Jump to MA8 to skip the following
 
-.main3
+.main7
 
                         \ We are not hitting player 2, so we must be hitting a
                         \ missile, so kill it instantly (as the missile's
@@ -7130,12 +7225,12 @@ ENDIF
 
  STZ drawPlayerView     \ Draw ship for player 1
 
- BIT INWK+31            \ If the ship is not exploding, jump to main1 to skip
- BPL main1              \ the following
+ BIT INWK+31            \ If the ship is not exploding, jump to main5 to skip
+ BPL main5              \ the following
 
  LDX XSAV               \ If this is not a missile, skip the following
  CMP #3
- BCC main1
+ BCC main5
 
  DEX                    \ This is a missile, so set bit 7 of player1INWK31 so
  DEX                    \ the missile explodes in player 2's view as well as
@@ -7143,7 +7238,7 @@ ENDIF
  SEC
  ROR player1INWK31,X
 
-.main1
+.main5
 
                         \ --- End of added code ------------------------------->
 
@@ -29806,6 +29901,14 @@ ENDIF
 
 .oops2
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STZ ENERGY             \ Zero the energy levels
+
+ JSR DIALS              \ Update the dashboard to show the new energy levels
+
+                        \ --- End of added code ------------------------------->
+
  LDA #2                 \ Set A to indicate that player 2 has won (as player 1
                         \ just ran out of energy)
 
@@ -29848,8 +29951,6 @@ ENDIF
 
 .Player2OOPS
 
-{
-
  STA T                  \ Store the amount of damage in T
 
                         \ Player 2 has been hit, so increment player 1's score
@@ -29863,20 +29964,22 @@ ENDIF
  JSR ee3                \ Print player 1's score
 
  LDA player1GameType    \ If player 1 is playing survival, they don't have a
- BEQ oops1              \ score, so jump to oops1 to keep playing
+ BEQ opps1              \ score, so jump to opps1 to keep playing
 
- LDA player1Score+1     \ If the score is less than the target, jump to oops1 to
+ LDA player1Score+1     \ If the score is less than the target, jump to opps1 to
  CMP player1Target+1    \ keep playing
- BCC oops1
+ BCC opps1
  LDA player1Score
  CMP player1Target
- BCC oops1
+ BCC opps1
 
  LDA #1                 \ If we get here then player 1 has reached their target,
  JMP DEATH              \ so set A to indicate that player 1 has won and jump to
                         \ DEATH to end the game
 
-.oops1
+.opps1
+
+{
 
  LDA K%+NI%*12+8        \ Fetch byte #8 (z_sign) for player 1 in player 2's
                         \ frame of reference, so we can work out whether player
@@ -29943,6 +30046,10 @@ ENDIF
                         \ damage sound
 
 .oops2
+
+ STZ player2ENERGY      \ Zero the energy levels
+
+ JSR DIALS              \ Update the dashboard to show the new energy levels
 
  LDA #1                 \ Set A to indicate that player 1 has won (as player 2
                         \ just ran out of energy)
