@@ -4214,18 +4214,6 @@ ENDIF
 
  SKIP 1                 \ Player 2's laser status when an NPC
 
-.player1LaserOn
-
- SKIP 1                 \ A flag to record whether player 1's main laser lines
-                        \ are on-screen, so we can remove them for the game over
-                        \ screen (non-zero = laser lines are on-screen)
-
-.player2LaserOn
-
- SKIP 1                 \ A flag to record whether player 2's main laser lines
-                        \ are on-screen, so we can remove them for the game over
-                        \ screen (non-zero = laser lines are on-screen)
-
 .player1Missile
 
  SKIP 1                 \ The slot number of the missile that player 1 launched
@@ -20558,13 +20546,6 @@ ENDIF
 
 .LASLI
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- LDA #&FF               \ Set player1LaserOn to non-zero to record the fact that
- STA player1LaserOn     \ player 1's main laser lines are on-screen
-
-                        \ --- End of added code ------------------------------->
-
  JSR DORND              \ Set A and X to random numbers
 
  AND #7                 \ Restrict A to a random value in the range 0 to 7
@@ -20597,23 +20578,7 @@ ENDIF
 
  JSR DENGY              \ Call DENGY to deplete our energy banks by 1
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- BRA lasi1              \ Skip the next instruction so player1LaserOn stays
-                        \ non-zero
-
-                        \ --- End of added code ------------------------------->
-
 .LASLI2
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
-
- STZ player1LaserOn     \ Zero player1LaserOn to denote that the laser lines
-                        \ have been removed from the screen
-
-.lasi1
-
-                        \ --- End of added code ------------------------------->
 
  LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
  BNE LASLI-1            \ then jump to MA9 to return from the main flight loop
@@ -20732,9 +20697,6 @@ ENDIF
 
 .Player2LASLI
 
- LDA #&FF               \ Set player2LaserOn to non-zero to record the fact that
- STA player2LaserOn     \ player 2's main laser lines are on-screen
-
  JSR DORND              \ Set A and X to random numbers
 
  AND #7                 \ Restrict A to a random value in the range 0 to 7
@@ -20757,15 +20719,7 @@ ENDIF
 
  JSR Player2DENGY       \ Call DENGY to deplete player 2's energy banks by 1
 
- BRA lasj1              \ Skip the next instruction so player2LaserOn stays
-                        \ non-zero
-
 .Player2LASLI2
-
- STZ player2LaserOn     \ Zero player2LaserOn to denote that the laser lines
-                        \ have been removed from the screen
-
-.lasj1
 
 {
 
@@ -37182,7 +37136,7 @@ ENDIF
 
 .deaf2
 
- LDA player1LaserOn     \ If player 1's main laser lines are not on-screen, jump
+ LDA LAS2               \ If player 1's main laser lines are not on-screen, jump
  BEQ deaf3              \ to deaf3 to skip the following
 
  JSR LASLI2             \ Redraw the existing laser lines, which has the effect
@@ -37190,7 +37144,7 @@ ENDIF
 
 .deaf3
 
- LDA player2LaserOn     \ If player 2's main laser lines are not on-screen, jump
+ LDA player2LAS2        \ If player 2's main laser lines are not on-screen, jump
  BEQ deaf4              \ to deaf4 to skip the following
 
  JSR Player2LASLI2      \ Redraw the existing laser lines, which has the effect
