@@ -4214,6 +4214,18 @@ ENDIF
 
  SKIP 1                 \ Player 2's laser status when an NPC
 
+.player1LaserOn
+
+ SKIP 1                 \ A flag to record whether player 1's main laser lines
+                        \ are on-screen, so we can remove them for the game over
+                        \ screen (non-zero = laser lines are on-screen)
+
+.player2LaserOn
+
+ SKIP 1                 \ A flag to record whether player 2's main laser lines
+                        \ are on-screen, so we can remove them for the game over
+                        \ screen (non-zero = laser lines are on-screen)
+
 .player1Missile
 
  SKIP 1                 \ The slot number of the missile that player 1 launched
@@ -6320,6 +6332,7 @@ ENDIF
 }
 
                         \ --- End of added code ------------------------------->
+
  LDA player1INWK31      \ Clear bit 6 of player 1's INWK+31 byte so we switch
  AND #%10111111         \ the lasers off by default
  STA player1INWK31
@@ -20545,6 +20558,13 @@ ENDIF
 
 .LASLI
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #&FF               \ Set player1LaserOn to non-zero to record the fact that
+ STA player1LaserOn     \ player 1's main laser lines are on-screen
+
+                        \ --- End of added code ------------------------------->
+
  JSR DORND              \ Set A and X to random numbers
 
  AND #7                 \ Restrict A to a random value in the range 0 to 7
@@ -20577,7 +20597,23 @@ ENDIF
 
  JSR DENGY              \ Call DENGY to deplete our energy banks by 1
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BRA lasi1              \ Skip the next instruction so player1LaserOn stays
+                        \ non-zero
+
+                        \ --- End of added code ------------------------------->
+
 .LASLI2
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ STZ player1LaserOn     \ Zero player1LaserOn to denote that the laser lines
+                        \ have been removed from the screen
+
+.lasi1
+
+                        \ --- End of added code ------------------------------->
 
  LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
  BNE LASLI-1            \ then jump to MA9 to return from the main flight loop
@@ -20696,6 +20732,9 @@ ENDIF
 
 .Player2LASLI
 
+ LDA #&FF               \ Set player2LaserOn to non-zero to record the fact that
+ STA player2LaserOn     \ player 2's main laser lines are on-screen
+
  JSR DORND              \ Set A and X to random numbers
 
  AND #7                 \ Restrict A to a random value in the range 0 to 7
@@ -20718,7 +20757,15 @@ ENDIF
 
  JSR Player2DENGY       \ Call DENGY to deplete player 2's energy banks by 1
 
+ BRA lasj1              \ Skip the next instruction so player2LaserOn stays
+                        \ non-zero
+
 .Player2LASLI2
+
+ STZ player2LaserOn     \ Zero player2LaserOn to denote that the laser lines
+                        \ have been removed from the screen
+
+.lasj1
 
 {
 
@@ -37135,28 +37182,32 @@ ENDIF
 
 .deaf2
 
- LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA player2ShipType    \ it in yellow
- LDY #YELLOW2
- JSR WipeShip
+ LDA player1LaserOn     \ If player 1's main laser lines are not on-screen, jump
+ BEQ deaf3              \ to deaf3 to skip the following
 
- LDA FRIN+3             \ If slot #3 is empty, skip the following
- BEQ deaf3
-
- LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
- LDY #YELLOW2           \ it in yellow
- JSR WipeShip
+ JSR LASLI2             \ Redraw the existing laser lines, which has the effect
+                        \ of removing them from the screen
 
 .deaf3
 
- LDA FRIN+4             \ If slot #4 is empty, skip the following
- BEQ deaf4
+ LDA player2LaserOn     \ If player 2's main laser lines are not on-screen, jump
+ BEQ deaf4              \ to deaf4 to skip the following
 
- LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
- LDY #YELLOW2           \ it in yellow
- JSR WipeShip
+ JSR Player2LASLI2      \ Redraw the existing laser lines, which has the effect
+                        \ of removing them from the screen
 
 .deaf4
+
+ STZ LAS2               \ Zero LAS2 for both players so the main laser lines
+ STZ player2LAS2        \ don't get redrawn in the main loop
+
+ LDA player1ShipType    \ Remove the red laser line from player 1, if present
+ LDX #2
+ JSR EraseShipLaserLine
+
+ LDA player2ShipType    \ Remove the red laser line from player 2, if present
+ LDX #12
+ JSR EraseShipLaserLine
 
  PLA                    \ Set A to the winning player
 
@@ -37183,13 +37234,15 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
  JSR MESS               \ in-flight message
 
- LDA #48                \ Set gameOverCounter to set the length of the game over
+.deaf6
+
+ LDA #64                \ Set gameOverCounter to set the length of the game over
  STA gameOverCounter    \ sequence
 
  LDA #7                 \ Set MCNT = 7 so tactics will be applied to slot #7,
  STA MCNT               \ which we know is unused (so this disables tactics)
 
-.deaf6
+.deaf7
 
                         \ We now continue to run the game for a short period,
                         \ but with controls disabled
@@ -37206,8 +37259,31 @@ ENDIF
 
  DEC gameOverCounter    \ Decrement the loop counter
 
- BNE deaf6              \ Loop back until gameOverCounter runs down, at which
+ BNE deaf7              \ Loop back until gameOverCounter runs down, at which
                         \ point we stop looping and return to the main menu
+
+ LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
+ LDA player2ShipType    \ it in yellow
+ LDY #YELLOW2
+ JSR WipeShip
+
+ LDA FRIN+3             \ If slot #3 is empty, skip the following
+ BEQ deaf8
+
+ LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
+ LDY #YELLOW2           \ it in yellow
+ JSR WipeShip
+
+.deaf8
+
+ LDA FRIN+4             \ If slot #4 is empty, skip the following
+ BEQ deaf9
+
+ LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
+ LDY #YELLOW2           \ it in yellow
+ JSR WipeShip
+
+.deaf9
 
                         \ --- End of replacement ------------------------------>
 
@@ -44392,7 +44468,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- JSR RemoveRedLaserLine \ If there is a red laser line on-screen, remove it
+ JSR EraseRedLaserLine  \ If there is a red laser line on-screen, remove it
 
                         \ --- End of added code ------------------------------->
 
@@ -46124,7 +46200,7 @@ ENDIF
                         \ We now need to check whether there is a laser line
                         \ on-screen, and if so remove it
 
- JSR RemoveRedLaserLine \ If there is a red laser line on-screen, remove it
+ JSR EraseRedLaserLine  \ If there is a red laser line on-screen, remove it
 
                         \ --- End of added code ------------------------------->
 
@@ -46741,7 +46817,36 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: RemoveRedLaserLine
+\       Name: EraseShipLaserLine
+\       Type: Subroutine
+\   Category: Drawing lines
+\    Summary: Remove a red laser line, if there is one
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.EraseShipLaserLine
+
+ STA TYPE               \ Set the ship type to A, to pass to EraseRedLaserLine
+
+ JSR GINF               \ Fetch INF(1 0) for slot X
+
+ LDY #33                \ Set XX19(1 0) to the ship line heap address for the
+ LDA (INF),Y            \ ship in slot X
+ STA XX19
+ INY
+ LDA (INF),Y
+ STA XX19+1
+
+                        \ Fall through into EraseRedLaserLine to remove the line
+                        \ from the screen
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: EraseRedLaserLine
 \       Type: Subroutine
 \   Category: Drawing lines
 \    Summary: Remove a red laser line, if there is one
@@ -46750,7 +46855,7 @@ ENDIF
 
                         \ --- Mod: Code added for red enemy lasers: ----------->
 
-.RemoveRedLaserLine
+.EraseRedLaserLine
 
  LDY #1                 \ Set X1 to the first coordinate on the ship line heap,
  LDA (XX19),Y           \ which is the start of the laser line
