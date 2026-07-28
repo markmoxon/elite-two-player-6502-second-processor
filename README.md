@@ -20,9 +20,9 @@ See [my profile](https://github.com/markmoxon) for more repositories to explore.
 
 ![Screenshot of the two-player Elite title screen](https://elite.bbcelite.com/images/github/two-player-title.png)
 
-This repository contains source code for two-player Elite on the BBC Micro with 6502 Second Processor or BBC Master with 6502 Second Processor.
+This repository contains source code for two-player Elite on the BBC Micro with 6502 Second Processor or BBC Master Turbo.
 
-Two-player Elite takes the deep space aspect of BBC Micro Elite and adds a split-screen so two players can dogfight. For more information, see the [elite.bbcelite.com website](https://elite.bbcelite.com/hacks/two-player_elite.html).
+Two-player Elite adds a split screen to the original BBC Micro version of Elite, so that two players can dogfight in deep space. Keyboard, joysticks and Delta 14B are supported, and one player can be configured as an AI Pilot, so you don't need two humans to play it. For more information, see the [elite.bbcelite.com website](https://elite.bbcelite.com/hacks/two-player_elite.html).
 
 This repository contains the full source code for two-player Elite, which you can build yourself on a modern computer. See below for more details on [browsing the source code](#browsing-the-source-in-an-ide) and [building two-player Elite from the source](#building-two-player-elite-from-the-source).
 
