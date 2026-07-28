@@ -4583,8 +4583,6 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.K2%
-
  SKIP NOSH * NI%        \ Ship data blocks and ship line heap for player 2's
                         \ frame of reference
 
@@ -6744,7 +6742,7 @@ ENDIF
 
 .main4
 
-                         \ --- End of replacement ------------------------------>
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -10213,8 +10211,8 @@ ENDIF
  LDA X2
  STA HBUF+1,Y
 
- LDA Y1                 \ This is player 2's view, so move the line to the bottom
- CLC                    \ half of the screen
+ LDA Y1                 \ This is player 2's view, so move the line to the
+ CLC                    \ bottom half of the screen
  ADC #Y
  STA HBUF+2,Y
 
@@ -38363,7 +38361,8 @@ ENDIF
 .titl4
 
                         \ If we get here then either the left or right arrow was
-                        \ pressed, so we move the highlight into the other column
+                        \ pressed, so we move the highlight into the other
+                        \ column
 
  LDA configHighlight    \ Redraw the first highlight to remove it
  JSR PrintOptionA
@@ -50519,37 +50518,14 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-\LDA # 1                \ Move the text cursor to column 1 to print player
-\JSR DOXC               \ number
-
  BIT drawPlayerView     \ If we are drawing player 1's view, jump to clsc6
  BPL clsc6
-
-                        \ We are drawing player 2's view
-
-\LDA #'P'               \ Print "P2"
-\JSR TT27
-\LDA #'2'
-\JSR TT27
-
-\LDA #160+57            \ Print token 56 ("PLAYER 2")
-\JSR TT27
 
  JSR Player2ee3         \ Print player 2's score
 
  JMP tt66               \ Skip the following
 
 .clsc6
-
-                        \ We are drawing player 1's view
-
-\LDA #'P'               \ Print "P1"
-\JSR TT27
-\LDA #'1'
-\JSR TT27
-
-\LDA #160+56            \ Print token 56 ("PLAYER 1")
-\JSR TT27
 
  JSR ee3                \ Print player 1's score
 
@@ -58685,10 +58661,10 @@ MACRO ROTATE_VECTORS_16 c, v1, v2, v3, w1, w2, w3
  LDA XX12+5
  STA XX15+3
 
- LDA P                  \ Set K(3 2 1) = P(2 1 0)
- STA K+1                \              = (nosev_z * sidev_z) + (nosev_x * sidev_x)
- LDA P+1
- STA K+2
+ LDA P                  \ Set:
+ STA K+1                \
+ LDA P+1                \   K(3 2 1) = P(2 1 0)
+ STA K+2                \            = (nosev_z * sidev_z) + (nosev_x * sidev_x)
  LDA P+2
  STA K+3
 
@@ -63502,8 +63478,8 @@ ENDMACRO
 
  JSR HITCH              \ Call HITCH to see if this ship is in the crosshairs,
  BCC dshp18             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp18 to skip the
-                        \ following)
+                        \ no missile or laser lock, we jump to dshp18 to skip
+                        \ the following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
  BEQ dshp16             \ missile is currently armed, and if not, jump to dshp16
@@ -63789,17 +63765,18 @@ ENDMACRO
  LDA #0
 
  JSR MULT3              \ K(3 2 1 0) = (A P+1 P) * Q
-                        \            = |nosev_x_hi nosev_x_lo| * |sidev_x_lo >> 1|
+                        \            = |nosev_x_hi nosev_x_lo|
+                        \                                    * |sidev_x_lo >> 1|
                         \
                         \ Y, P and P+1 are unchanged
 
  LDA K                  \ Set XX15(3 2 1 0) = K(3 2 1 0) << 1
  ASL A                  \
- STA XX15               \ So XX15(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_lo|
+ STA XX15               \ So:
  LDA K+1                \
- ROL A                  \ We know the sign bit is positive so we can ignore it
- STA XX15+1
- LDA K+2
+ ROL A                  \ XX15(3 2 1 0) = |nosev_x_hi nosev_x_lo| * |sidev_x_lo|
+ STA XX15+1             \
+ LDA K+2                \ We know the sign bit is positive so we can ignore it
  ROL A
  STA XX15+2
  LDA K+3

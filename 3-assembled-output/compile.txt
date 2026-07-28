@@ -3093,7 +3093,6 @@ UP workspace from &800 to &A14 inclusive
 WP workspace from &D00 to &ECF inclusive
 .K%
      8200
-.K2%
      8372
 K% workspace from &8200 to &84E3 inclusive
 .LP
