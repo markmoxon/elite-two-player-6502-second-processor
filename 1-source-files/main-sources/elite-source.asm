@@ -37262,11 +37262,11 @@ ENDIF
 
  LDA player1ShipType    \ Remove the red laser line from player 1, if present
  LDX #2
- JSR EraseShipLaserLine
+ JSR RemoveLaserLineX
 
  LDA player2ShipType    \ Remove the red laser line from player 2, if present
  LDX #12
- JSR EraseShipLaserLine
+ JSR RemoveLaserLineX
 
  PLA                    \ Set A to the winning player
 
@@ -44528,7 +44528,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- JSR EraseRedLaserLine  \ If there is a red laser line on-screen, remove it
+ JSR RemoveLaserLine    \ Check whether there is a laser line on-screen, and if
+                        \ there is, remove it
 
                         \ --- End of added code ------------------------------->
 
@@ -46257,10 +46258,8 @@ ENDIF
 
                         \ --- Mod: Code added for red enemy lasers: ----------->
 
-                        \ We now need to check whether there is a laser line
-                        \ on-screen, and if so remove it
-
- JSR EraseRedLaserLine  \ If there is a red laser line on-screen, remove it
+ JSR RemoveLaserLine    \ Check whether there is a laser line on-screen, and if
+                        \ there is, remove it
 
                         \ --- End of added code ------------------------------->
 
@@ -46877,18 +46876,18 @@ ENDIF
 
 \ ******************************************************************************
 \
-\       Name: EraseShipLaserLine
+\       Name: RemoveLaserLineX
 \       Type: Subroutine
 \   Category: Drawing lines
-\    Summary: Remove a red laser line, if there is one
+\    Summary: Remove a red laser line from the ship in slot X, if there is one
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.EraseShipLaserLine
+.RemoveLaserLineX
 
- STA TYPE               \ Set the ship type to A, to pass to EraseRedLaserLine
+ STA TYPE               \ Set the ship type to A, to pass to RemoveLaserLine
 
  JSR GINF               \ Fetch INF(1 0) for slot X
 
@@ -46899,23 +46898,26 @@ ENDIF
  LDA (INF),Y
  STA XX19+1
 
-                        \ Fall through into EraseRedLaserLine to remove the line
+                        \ Fall through into RemoveLaserLine to remove the line
                         \ from the screen
 
                         \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
-\       Name: EraseRedLaserLine
+\       Name: RemoveLaserLine
 \       Type: Subroutine
 \   Category: Drawing lines
-\    Summary: Remove a red laser line, if there is one
+\    Summary: Remove the laser line from the screen, if there is one
 \
 \ ******************************************************************************
 
                         \ --- Mod: Code added for red enemy lasers: ----------->
 
-.EraseRedLaserLine
+.RemoveLaserLine
+
+                        \ We now need to check whether there is a laser line
+                        \ on-screen, and if so remove it
 
  LDY #1                 \ Set X1 to the first coordinate on the ship line heap,
  LDA (XX19),Y           \ which is the start of the laser line
@@ -46927,8 +46929,8 @@ ENDIF
  STA Y1                 \ which is the start of the laser line
 
  CMP #255               \ If the Y1 coordinate is 255 then there is no laser
- BEQ rlas1              \ line currently on-screen, so jump to rlas1 to skip
-                        \ the removal of the old line
+ BEQ noLaserLine        \ line currently on-screen, so jump to noLaserLine to
+                        \ skip the removal of the old line
 
  LDA #255               \ Set the Y2 coordinate of the laser line in the ship
  STA (XX19),Y           \ line heap to 255 to remove the laser line from the
@@ -46963,7 +46965,7 @@ ENDIF
  JSR DOCOL              \ Send a #SETCOL command to the I/O processor to switch
                         \ back to the ship's colour
 
-.rlas1
+.noLaserLine
 
  RTS                    \ Return from the subroutine
 

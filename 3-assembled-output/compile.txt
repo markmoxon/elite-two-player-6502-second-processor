@@ -15983,7 +15983,7 @@ Saving file '3-assembled-output/ELTF.bin'
      6696   91 66      STA (&66),Y
 .LL82
      6698   60         RTS
-.EraseShipLaserLine
+.RemoveLaserLineX
      6699   85 8B      STA &8B
      669B   20 E3 42   JSR &42E3
      669E   A0 21      LDY #&21
@@ -15992,7 +15992,7 @@ Saving file '3-assembled-output/ELTF.bin'
      66A4   C8         INY
      66A5   B1 1F      LDA (&1F),Y
      66A7   85 67      STA &67
-.EraseRedLaserLine
+.RemoveLaserLine
      66A9   A0 01      LDY #&01
      66AB   B1 66      LDA (&66),Y
      66AD   85 33      STA &33
@@ -16018,7 +16018,7 @@ Saving file '3-assembled-output/ELTF.bin'
      66D6   10 02      BPL &66DA
      66D8   A9 FF      LDA #&FF
      66DA   20 17 31   JSR &3117
-.rlas1
+.noLaserLine
      66DD   60         RTS
 .LSPUT
      66DE   A4 99      LDY &99
