@@ -41,44 +41,24 @@
  EQUB 10, 13
  EQUS "---------------------------------------"
  EQUB 10, 13
- EQUS "Acornsoft Elite (flicker-free version)"
+ EQUS "Two-player Elite"
+ EQUB 10, 13
+ EQUS "by Mark Moxon"
  EQUB 10, 13
  EQUB 10, 13
- EQUS "Version: BBC with 6502 Second Processor"
- EQUB 10, 13
-
-IF _SOURCE_DISC
-
- EQUS "Variant: Ian Bell's source disc"
- EQUB 10, 13
-
-ELIF _SNG45
-
- EQUS "Variant: Acornsoft SNG45 release"
- EQUB 10, 13
- EQUS "Product: Acornsoft SNG45"
- EQUB 10, 13
- EQUS "         Acornsoft SNG47"
- EQUB 10, 13
-
-ELIF _EXECUTIVE
-
- EQUS "Variant: The Executive version"
- EQUB 10, 13
-
-ENDIF
-
- EQUB 10, 13
- EQUS "Contains the flicker-free ship drawing"
- EQUB 10, 13
- EQUS "routines from the BBC Master version,"
- EQUB 10, 13
- EQUS "backported by Mark Moxon"
+ EQUS "For the following machines:"
  EQUB 10, 13
  EQUB 10, 13
- EQUS "Contains flicker-free planet drawing"
+ EQUS "* BBC Micro with 6502 Second Processor"
  EQUB 10, 13
- EQUS "routines by Mark Moxon"
+ EQUS "* BBC Master Turbo"
+ EQUB 10, 13
+ EQUB 10, 13
+ EQUS "Based on the Acornsoft SNG47 release"
+ EQUB 10, 13
+ EQUS "of Elite by Ian Bell and David Braben"
+ EQUB 10, 13
+ EQUS "Copyright (c) Acornsoft 1986"
  EQUB 10, 13
  EQUB 10, 13
  EQUS "See www.bbcelite.com for details"

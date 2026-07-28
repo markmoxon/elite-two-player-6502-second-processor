@@ -1,21 +1,19 @@
 
 ---------------------------------------
-Acornsoft Elite (flicker-free version)
+Two-player Elite
+by Mark Moxon
 
-Version: BBC with 6502 Second Processor
-Variant: Acornsoft SNG45 release
-Product: Acornsoft SNG45
-         Acornsoft SNG47
+For the following machines:
 
-Contains the flicker-free ship drawing
-routines from the BBC Master version,
-backported by Mark Moxon
+* BBC Micro with 6502 Second Processor
+* BBC Master Turbo
 
-Contains flicker-free planet drawing
-routines by Mark Moxon
+Based on the Acornsoft SNG47 release
+of Elite by Ian Bell and David Braben
+Copyright (c) Acornsoft 1986
 
 See www.bbcelite.com for details
 
-Build: 2026-07-27 17:27:13
+Build: 2026-07-28 09:41:50
 ---------------------------------------
 
