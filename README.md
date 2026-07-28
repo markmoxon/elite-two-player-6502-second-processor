@@ -18,7 +18,7 @@ See [my profile](https://github.com/markmoxon) for more repositories to explore.
 <hr>
 </details>
 
-![Screenshot of two-player Elite](https://elite.bbcelite.com/images/github/two-player-gameplay.png)
+![Screenshot of the two-player Elite title screen](https://elite.bbcelite.com/images/github/two-player-title.png)
 
 This repository contains source code for two-player Elite on the BBC Micro with 6502 Second Processor or BBC Master with 6502 Second Processor.
 
@@ -26,7 +26,7 @@ Two-player Elite takes the deep space aspect of BBC Micro Elite and adds a split
 
 This repository contains the full source code for two-player Elite, which you can build yourself on a modern computer. See below for more details on [browsing the source code](#browsing-the-source-in-an-ide) and [building two-player Elite from the source](#building-two-player-elite-from-the-source).
 
-![Screenshot of the two-player Elite title screen](https://elite.bbcelite.com/images/github/two-player-title.png)
+![Screenshot of two-player Elite](https://elite.bbcelite.com/images/github/two-player-gameplay.png)
 
 ## Contents
 
