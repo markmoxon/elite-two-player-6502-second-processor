@@ -6,7 +6,7 @@
 
 **Elite sources:** [BBC Micro (cassette)](https://github.com/markmoxon/elite-source-code-bbc-micro-cassette) | [BBC Micro (disc)](https://github.com/markmoxon/elite-source-code-bbc-micro-disc) | [Elite Demonstration Disc](https://github.com/markmoxon/elite-demo-source-code-bbc-micro) | [Acorn Electron](https://github.com/markmoxon/elite-source-code-acorn-electron) | [6502 Second Processor](https://github.com/markmoxon/elite-source-code-6502-second-processor) | [Commodore 64](https://github.com/markmoxon/elite-source-code-commodore-64) | [Apple II](https://github.com/markmoxon/elite-source-code-apple-ii) | [BBC Master](https://github.com/markmoxon/elite-source-code-bbc-master) | [NES](https://github.com/markmoxon/elite-source-code-nes)
 
-**Elite hacks:** [Elite-A](https://github.com/markmoxon/elite-a-source-code-bbc-micro) | [Two-player Elite](https://github.com/markmoxon/elite-two-player-6502-second-processor) | [Teletext Elite](https://github.com/markmoxon/teletext-elite) | [Elite Universe Editor](https://github.com/markmoxon/elite-universe-editor) | [Flicker-free Commodore 64 Elite](https://github.com/markmoxon/c64-elite-flicker-free) | [Elite over Econet](https://github.com/markmoxon/elite-over-econet) | [!EliteNet](https://github.com/markmoxon/elite-over-econet-acorn-archimedes)
+**Elite hacks:** [Elite-A](https://github.com/markmoxon/elite-a-source-code-bbc-micro) | [Two-player Elite](https://github.com/markmoxon/elite-two-player-6502-second-processor) | [Teletext Elite](https://github.com/markmoxon/teletext-elite) | [Elite 3D](https://github.com/markmoxon/elite-3d) | [Elite Universe Editor](https://github.com/markmoxon/elite-universe-editor) | [Flicker-free Commodore 64 Elite](https://github.com/markmoxon/c64-elite-flicker-free) | [Elite over Econet](https://github.com/markmoxon/elite-over-econet) | [!EliteNet](https://github.com/markmoxon/elite-over-econet-acorn-archimedes)
 
 **Elite Compendium:** [BBC Master](https://github.com/markmoxon/elite-compendium-bbc-master) | [BBC Micro](https://github.com/markmoxon/elite-compendium-bbc-micro) | [BBC Micro B+](https://github.com/markmoxon/elite-compendium-bbc-micro-b-plus) | [Acorn Electron](https://github.com/markmoxon/elite-compendium-acorn-electron)
 
@@ -54,7 +54,7 @@ This repository contains the full source code for two-player Elite, which you ca
 
 The code on this site is identical to the source discs released on [Ian Bell's personal website](http://www.elitehomepage.org/) (it's just been reformatted to be more readable).
 
-The commentary  and two-player conversion code are copyright &copy; Mark Moxon. Any misunderstandings or mistakes in the documentation are entirely my fault.
+The commentary and two-player conversion code are copyright &copy; Mark Moxon. Any misunderstandings or mistakes in the documentation are entirely my fault.
 
 Huge thanks are due to the original authors for not only creating such an important piece of my childhood, but also for releasing the source code for us to play with; to Paul Brink for his annotated disassembly; and to Kieran Connell for his [BeebAsm version](https://github.com/kieranhj/elite-beebasm), which I forked as the original basis for this project. You can find more information about this project in the [accompanying website's project page](https://elite.bbcelite.com/about_site/about_this_project.html).
 
@@ -160,15 +160,13 @@ will produce a file called `elite-two-player-6502sp.ssd` in the `5-compiled-game
 
 By default the build process will create a typical Elite game disc with a standard commander. There is one argument you can pass to the build to change how it works. It is:
 
-* `commander=max` - Start with a maxed-out commander (specifically, this is the test commander file from the original source, which is almost but not quite maxed-out)
-
 * `verify=no` - Disable crc32 verification of the game binaries
 
 So, for example:
 
-`make commander=max`
+`make verify=no`
 
-will build two-player Elite with a maxed-out commander.
+will build the game with no crc32 verification.
 
 See below for more on the verification process.
 
@@ -181,37 +179,27 @@ The Python script `crc32.py` in the `2-build-files` folder does the actual verif
 The binaries in the `4-reference-binaries` folder are the game binaries for the released game, while those in the `3-assembled-output` folder are produced by the build process. For example, if you don't make any changes to the code and build the project with `make`, then this is the output of the verification process:
 
 ```
-Results for variant: sth
+Results for variant: sng45
 [--originals--]  [---output----]
 Checksum   Size  Checksum   Size  Match  Filename
 -----------------------------------------------------------
-352aba53  21889  352aba53  21889   Yes   D.CODE.bin
-9b17e59d  21889  9b17e59d  21889   Yes   D.CODE.unprot.bin
-c55ab2f5   2560  c55ab2f5   2560   Yes   D.MOA.bin
-83fb82f1   2560  83fb82f1   2560   Yes   D.MOB.bin
-c9ee981b   2560  c9ee981b   2560   Yes   D.MOC.bin
-3ef85dbc   2560  3ef85dbc   2560   Yes   D.MOD.bin
-dabf09f1   2560  dabf09f1   2560   Yes   D.MOE.bin
-e27f5708   2560  e27f5708   2560   Yes   D.MOF.bin
-28e9201c   2560  28e9201c   2560   Yes   D.MOG.bin
-73a67889   2560  73a67889   2560   Yes   D.MOH.bin
-54fa021d   2560  54fa021d   2560   Yes   D.MOI.bin
-2301ae15   2560  2301ae15   2560   Yes   D.MOJ.bin
-df0dce97   2560  df0dce97   2560   Yes   D.MOK.bin
-6a3553d0   2560  6a3553d0   2560   Yes   D.MOL.bin
-8cd0a690   2560  8cd0a690   2560   Yes   D.MOM.bin
-332057cf   2560  332057cf   2560   Yes   D.MON.bin
-19da6bcf   2560  19da6bcf   2560   Yes   D.MOO.bin
-f60de1ba   2560  f60de1ba   2560   Yes   D.MOP.bin
-c73d535a    256  c73d535a    256   Yes   ELITE2.bin
-17eefeec   2816  17eefeec   2816   Yes   ELITE3.bin
-166691a9   5104  166691a9   5104   Yes   ELITE4.bin
-02d83bdb   5104  02d83bdb   5104   Yes   ELITE4.unprot.bin
-0f9e270b    256  0f9e270b    256   Yes   MISSILE.bin
-fbf74546    883  fbf74546    883   Yes   MNUCODE.bin
-98b4ea88  21491  98b4ea88  21491   Yes   T.CODE.bin
-932c3ba3  21491  932c3ba3  21491   Yes   T.CODE.unprot.bin
-11768233   1024  11768233   1024   Yes   WORDS.bin
+5aff2635    793  5aff2635    793   Yes   ELITE.bin
+75223ba8   5769  75223ba8   5769   Yes   ELITEa.bin
+8a2b44dd   2148  8a2b44dd   2148   Yes   ELTA.bin
+50115cf1   3203  50115cf1   3203   Yes   ELTB.bin
+e9bc6e0e   3006  e9bc6e0e   3006   Yes   ELTC.bin
+d48b43a7   3215  d48b43a7   3215   Yes   ELTD.bin
+c4fd5475   3194  c4fd5475   3194   Yes   ELTE.bin
+25357cd6   4489  25357cd6   4489   Yes   ELTF.bin
+30fd0902   3653  30fd0902   3653   Yes   ELTG.bin
+e95111b6   1799  e95111b6   1799   Yes   ELTH.bin
+a533fd08     39  a533fd08     39   Yes   ELTI.bin
+03d20e66   4115  03d20e66   4115   Yes   ELTJ.bin
+a244b56a   7077  a244b56a   7077   Yes   I.CODE.bin
+b02310ae  40137  b02310ae  40137   Yes   P.CODE.bin
+bccaa702  40137  bccaa702  40137   Yes   P.CODE.unprot.bin
+08d6c612  10083  08d6c612  10083   Yes   SHIPS.bin
+dc64f379   1024  dc64f379   1024   Yes   WORDS.bin
 ```
 
 All the compiled binaries match the originals, so we know we are producing the same final game as the released variant.
