@@ -2154,7 +2154,7 @@ ENDIF
  CHAR 'S'
  EQUB 0
 
- CHAR ' '                \ Token 60:     " F0 TO PLAY"
+ CHAR ' '               \ Token 60:     " F0 TO PLAY"
  CHAR 'F'
  CHAR '0'
  CHAR ' '
