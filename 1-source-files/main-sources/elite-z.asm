@@ -6816,8 +6816,8 @@ ENDMACRO
  EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
                         \ being pressed, or A = 0 if it isn't
 
- LDY #15                \ Store A in the 15th byte of the block pointed to by
- STA (OSSC),Y           \ OSSC
+ LDY #15                \ Store A in byte #15 of the block pointed to by OSCC
+ STA (OSSC),Y
 
  LDA #&49 + 128         \ We now detect player 2's speed up key, so set A to
                         \ the key number for RETURN
@@ -6835,8 +6835,8 @@ ENDMACRO
  EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
                         \ being pressed, or A = 0 if it isn't
 
- LDY #16                \ Store A in the 15th byte of the block pointed to by
- STA (OSSC),Y           \ OSSC
+ LDY #16                \ Store A in byte #16 of the block pointed to by OSCC
+ STA (OSSC),Y
 
  LDY #2                 \ Set Y back to 2 so any other keys are stored in the
                         \ correct place
@@ -6980,9 +6980,11 @@ ENDMACRO
  LDA rearKeyPress       \ If no key was pressed on the rear stick, jump to joys5
  BEQ joys5              \ to skip the following
 
- LDY #2                 \ Fetch the key "pressed" value for the rear stick
+ LDY #2                 \ Fetch the key "pressed" value for the side stick
  LDA (OSSC),Y
- BEQ joys2
+
+ BEQ joys5              \ If no key was pressed on the side stick, jump to joys5
+                        \ to skip the following
 
                         \ If we get here then both sticks have pressed a
                         \ secondary flight key, with the side stick's key in A
