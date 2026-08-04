@@ -7317,15 +7317,19 @@ ENDIF
 
 .MAC1
 
- LDA TYPE               \ If the ship we are processing is a planet or sun,
- BMI MA27               \ jump to MA27 to skip the following two instructions
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR FAROF              \ If the ship we are processing is a long way away (its
- BCC KS1S               \ distance in any one direction is > 224, jump to KS1S
-                        \ to remove the ship from our local bubble, as it's just
-                        \ left the building
+\LDA TYPE               \ If the ship we are processing is a planet or sun,
+\BMI MA27               \ jump to MA27 to skip the following two instructions
+\
+\JSR FAROF              \ If the ship we are processing is a long way away (its
+\BCC KS1S               \ distance in any one direction is > 224, jump to KS1S
+\                       \ to remove the ship from our local bubble, as it's just
+\                       \ left the building
+\
+\.MA27
 
-.MA27
+                        \ --- End of removed code ----------------------------->
 
  LDY #31                \ Fetch the ship's explosion/killed state from byte #31
  LDA INWK+31            \ and copy it to byte #31 in INF (so the ship's data in
