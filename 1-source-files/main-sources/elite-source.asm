@@ -4234,7 +4234,24 @@ ENDIF
                         \ every few iterations around the main loop
                         \
                         \ If bit 7 is set then collisions are disabled for the
-                        \ game over screen
+                        \ game over screen (so we can also use this as a way of
+                        \ detecting whether the game over screen is active)
+
+.player1Exploding
+
+ SKIP 1                 \ The state of player 1 at the end of the game:
+                        \
+                        \   * Bit 7 set = player 1 has just exploded
+                        \
+                        \   * Bit 6 set = player 1 is currently exploding
+
+.player2Exploding
+
+ SKIP 1                 \ The state of player 2 at the end of the game:
+                        \
+                        \   * Bit 7 set = player 2 has just exploded
+                        \
+                        \   * Bit 6 set = player 2 is currently exploding
 
 .endZero
 
@@ -6248,6 +6265,11 @@ ENDIF
 
 .main6
 
+ LDA player2Exploding   \ If player2Exploding is non-zero then player 2's ship
+ BNE MA3                \ is exploding at the end of the game, so we need to
+                        \ skip the laser checks as bit 6 of INWK+31 is now being
+                        \ used for tracking the explosion
+
  LDA K%+NI%*2+31        \ Clear bit 6 of player 2's INWK+31 byte so we switch
  AND #%10111111         \ the lasers off by default
  STA K%+NI%*2+31
@@ -6365,7 +6387,7 @@ ENDIF
  JSR LASLI              \ Call LASLI to draw the laser lines
 
  LDA player1INWK31      \ Set bit 6 of player 1's INWK+31 byte so we draw a
- ORA #%001000000        \ laser line for player 1
+ ORA #%01000000         \ laser line for player 1
  STA player1INWK31
 
  PLA                    \ Restore the current view's laser power into A
@@ -16106,6 +16128,9 @@ ENDIF
  LDA XSAV               \ If this is not player 2, skip the following
  CMP #2
  BNE tact4
+
+ BIT collisionCounter   \ If this is the game over screen, jump to tact4 to skip
+ BMI tact4              \ processing the scores
 
  JSR Player2ee3         \ Print player 2's score to remove it from the screen
 
@@ -29791,6 +29816,14 @@ ENDIF
 
 .OOPS
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT collisionCounter   \ If this is the game over screen, return from the
+ BPL P%+3               \ subroutine without processing damage
+ RTS
+
+                        \ --- End of added code ------------------------------->
+
  STA T                  \ Store the amount of damage in T
 
                         \ --- Mod: Code added for two-player Elite: ----------->
@@ -29959,6 +29992,10 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
 .Player2OOPS
+
+ BIT collisionCounter   \ If this is the game over screen, return from the
+ BPL P%+3               \ subroutine without processing damage
+ RTS
 
  STA T                  \ Store the amount of damage in T
 
@@ -37299,6 +37336,13 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 2
  JSR Player2MESS        \ in-flight message
 
+ LDA K%+NI%*2+31        \ Set bit 7 of player 2's INWK+31 byte so it explodes
+ ORA #%10000000
+ STA K%+NI%*2+31
+
+ LDA #%10000000         \ Set bit 7 of player2Exploding to record the start of
+ STA player2Exploding   \ the explosion
+
  JMP deaf6              \ Jump to deaf6 to wait for a key press
 
 .deaf5
@@ -37310,6 +37354,13 @@ ENDIF
 
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
  JSR MESS               \ in-flight message
+
+ ASL player1INWK31      \ Set player 1 to explode in player 2's view
+ SEC
+ ROR player1INWK31
+
+ LDA #%10000000         \ Set bit 7 of player1Exploding to record the start of
+ STA player1Exploding   \ the explosion
 
 .deaf6
 
@@ -63024,7 +63075,8 @@ ENDMACRO
 
  LDX XSAV               \ If we are drawing the planet or sun, jump to part 2 to
  CPX #2                 \ check whether it is on-screen and if so, only move it
- BCC dshp4              \ by the rotations of player 2's controls
+ BCS P%+5               \ by the rotations of player 2's controls
+ JMP dshp4
 
  CPX #5                 \ If this is slot #5 or above then return without
  BCC P%+3               \ drawing anything, as we only process slots #0 to #4
@@ -63068,9 +63120,59 @@ ENDMACRO
 
 .dshp1
 
+ CPX #0                 \ If this is not the player's ship, jump to over3 to
+ BNE over3              \ skip the explosion checks
+
+ LDA player2Exploding   \ If player2Exploding is non-zero then player 2's ship
+ BEQ over1              \ is exploding at the end of the game, so we do not want
+                        \ to copy this over into player 1's ship in player 2's
+                        \ view
+
+ LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
+ AND #%01011111         \ exploding
+ STA player1INWK31
+
+ LDA INWK+31            \ Prevent player 1's ship in player 2's view from
+ AND #%01011111         \ exploding
+ STA INWK+31
+
+ BRA dshp3              \ Jump to dshp3 to skip the explosion checks for player
+                        \ 1, as we know it is not exploding
+
+.over1
+
+ BIT player1Exploding   \ If bit 7 of player1Exploding is clear then player 1
+ BPL over2              \ has not just exploded, so jump to over2 to check bit 6
+
+                        \ If we get here then player 1 has just exploded
+
+ LDA #%01000000         \ Clear bit 7 and set bit 6 of player1Exploding to move
+ STA player1Exploding   \ the explosion on to the second stage
+
+ BRA over3              \ Jump to over3 to keep going
+
+.over2
+
+ BIT player1Exploding   \ If bit 6 of player1Exploding is clear then player 1 is
+ BVC over3              \ not currently exploding, so jump to over3 to keep going
+
+                        \ If we get here then player 1 is currently exploding
+ 
+ LDA player1INWK31      \ Set bits 5, 6 and 7 to indicate that the ship is
+ ORA #%11100000         \ exploding and that the explosion is on-screen
+ STA player1INWK31
+
+ BRA over4              \ Jump to over4 to skip the INWK+31 check, as we are no
+                        \ longer taking any notice of slot #2's INWK+31 (as that
+                        \ is for player 2's ship in player 1's view)
+
+.over3
+
  LDA INWK+31            \ If the ship is not exploding, jump to dshp3
  AND #%10100000
  BEQ dshp3
+
+.over4
 
  LDA player1INWK31,X    \ If we have already noted the explosion in the copy of
  AND #%00100000         \ INWK+31 in player1INWK31, jump to part 3 to skip the
