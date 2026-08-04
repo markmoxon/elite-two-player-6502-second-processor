@@ -63195,7 +63195,7 @@ ENDMACRO
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
- JMP dshp15             \ Jump to part 4 to draw the planet/sun
+ JMP dshp14             \ Jump to part 4 to draw the planet/sun
 
                         \ --- End of added code ------------------------------->
 
@@ -63383,7 +63383,7 @@ ENDMACRO
 
  LDA XSAV               \ If this is the planet or sun, jump to part 4 to skip
  CMP #2                 \ the transpose, as we don't bother to rotate the planet
- BCC dshp15             \ or sun or need to override its type
+ BCC dshp14             \ or sun or need to override its type
 
  LDX player1X           \ Set the scan visiblilty flag from player1INWK31
  LDA player1INWK31,X
@@ -63413,24 +63413,16 @@ ENDMACRO
  SBC #&20               \ the ship in player 1's view
  STA INWK+34
 
- LDA XSAV               \ If this is player 2's ship, jump to dshp13 so we only
- CMP #3                 \ do the following for missiles
- BCS dshp13
-
-                        \ Multiply by missile orientation vectors
-
-.dshp13
-
  LDA #1                 \ Set A to the correct ship type for a missile
 
- LDX XSAV               \ If we're drawing a missile, jump to dshp14 to skip the
+ LDX XSAV               \ If we're drawing a missile, jump to dshp13 to skip the
  CPX #3                 \ next instruction
- BCS dshp14
+ BCS dshp13
 
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
                         \ type
 
-.dshp14
+.dshp13
 
  STA TYPE               \ Store the correct type for the ship we are drawing
 
@@ -63462,7 +63454,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp15
+.dshp14
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
@@ -63490,19 +63482,19 @@ ENDMACRO
 
  LDA XSAV               \ If we are drawing the planet or sun, jump to part 6 to
  CMP #2                 \ skip the following ship-related checks
- BCC dshp18
+ BCC dshp17
 
  LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
  LDA INWK+31            \ for this ship
  STA player1INWK31,X
 
  JSR HITCH              \ Call HITCH to see if this ship is in the crosshairs,
- BCC dshp18             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp18 to skip
+ BCC dshp17             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp17 to skip
                         \ the following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
- BEQ dshp16             \ missile is currently armed, and if not, jump to dshp16
+ BEQ dshp15             \ missile is currently armed, and if not, jump to dshp15
                         \ to process laser fire, as we can't lock an unarmed
                         \ missile
 
@@ -63514,10 +63506,10 @@ ENDMACRO
  JSR Player2ABORT2      \ player2ViewSlot and set the colour of the missile
                         \ indicator to the colour in Y
 
-.dshp16
+.dshp15
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp18             \ the laser power, so if this is zero, jump to part 6
+ BEQ dshp17             \ the laser power, so if this is zero, jump to part 6
                         \ to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
@@ -63525,8 +63517,8 @@ ENDMACRO
                         \ us making a laser strike on another ship
 
  LDA XSAV               \ If this ship in the crosshairs is player 1, jump to
- CMP #2                 \ dshp17 to process a hit on player 1
- BEQ dshp17
+ CMP #2                 \ dshp16 to process a hit on player 1
+ BEQ dshp16
 
                         \ This must be a missile, so kill it instantly (as the
                         \ missile's maximum energy is only 2, which is way less
@@ -63541,9 +63533,9 @@ ENDMACRO
                         \ ensures the new setting is retained and processed back
                         \ in the main loop
 
- JMP dshp18             \ Jump to part 6 to finish up
+ JMP dshp17             \ Jump to part 6 to finish up
 
-.dshp17
+.dshp16
 
                         \ Player 1 has been hit, so process player 1's shields
 
@@ -63568,7 +63560,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp18
+.dshp17
 
  STZ drawPlayerView     \ Back to drawing the view for player 1
 
