@@ -4232,6 +4232,9 @@ ENDIF
 
  SKIP 1                 \ A counter for ensuring collisions are only detected
                         \ every few iterations around the main loop
+                        \
+                        \ If bit 7 is set then collisions are disabled for the
+                        \ game over screen
 
 .endZero
 
@@ -6658,8 +6661,12 @@ ENDIF
  CMP #2                 \ the collision checks, as we're only interested in
  BNE main4              \ collisions between the two players
 
- LDA collisionCounter   \ If collisionCounter is zere then it's been long enough
- BEQ main1              \ since the last collision, so jump to main1 to check
+ LDA collisionCounter   \ If bit 7 of collisionCounter is set then we are on the
+ BMI main4              \ game over screen and collisions are disabled, so jump
+                        \ to main4 to skip all the collision code
+
+ BEQ main1              \ If collisionCounter is zero then it's been long enough
+                        \ since the last collision, so jump to main1 to check
                         \ whether the ships are colliding
 
  DEC collisionCounter   \ We recently had a collision, so decrement the
@@ -6683,9 +6690,9 @@ ENDIF
 
  JSR EXNO3              \ Make the sound of a collision
 
- LDA #20                \ Set collisionCounter = 10 to we don't check for any
- STA collisionCounter   \ more collisions for this many iterations of the main
-                        \ loop (to prevent a single collision from cascading the
+ LDA #20                \ Set collisionCounter so we don't check for any more
+ STA collisionCounter   \ collisions for this many iterations of the main loop
+                        \ (to prevent a single collision from cascading the
                         \ scores to zero)
 
  LDA player2DELTA       \ Set A = player2DELTA * 3 / 4
@@ -37078,7 +37085,14 @@ ENDIF
 
 .DEATH
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
  PHA                    \ Store the winning player number on the stack
+
+ LDA #%10000000         \ Set bit 7 of collisionCounter to disable collisions
+ STA collisionCounter   \ during the game over screen
+
+                        \ --- End of added code ------------------------------->
 
  JSR EXNO3              \ Make the sound of us dying
 
