@@ -63122,8 +63122,8 @@ ENDMACRO
                         \ called this routine for this ship, so we need to do
                         \ some initiaisation
 
- LDA #%00010000         \ Set bit #4 to indicate that in future we should remove
- STA player1INWK31,X    \ the ship from the scanner (and to make player1INWK31
+ LDA #%00010000         \ Set bit #4 to indicate that the new ship should be
+ STA player1INWK31,X    \ drawn on the scanner (and to make player1INWK31
                         \ non-zero so we don't repeat these initialisation
                         \ steps)
 
@@ -63140,7 +63140,8 @@ ENDMACRO
  PLA                    \ Restore the original heap address
  STA INWK+34
 
- JMP dshp6              \ Jump to part 3 to skip the following
+ JMP dshp11             \ Jump to part 3 to draw the ship, as we don't need to
+                        \ do explosion and scanner checks on a new ship
 
 .dshp1
 
