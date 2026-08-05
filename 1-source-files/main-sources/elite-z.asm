@@ -2221,6 +2221,14 @@ ENDIF
 \                         * Byte #6 = The screen y-coordinate of the dot on the
 \                                     scanner
 \
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+\                         * Byte #7 = The type of the ship on the scanner
+\
+
+                        \ --- End of added code ------------------------------->
+
 \ ******************************************************************************
 
 .SC48
