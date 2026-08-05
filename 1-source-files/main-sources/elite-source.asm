@@ -4558,6 +4558,10 @@ ENDIF
 
  SKIP 1                 \ A counter for the game over animation
 
+.damageToApply
+
+ SKIP 1                 \ The damage to apply to a player's ship
+
 .endWP
 
  SKIP 0                 \ A marker for the end of the player workspace
@@ -29816,17 +29820,17 @@ ENDIF
 
 .OOPS
 
-                        \ --- Mod: Code added for two-player Elite: ----------->
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\STA T                  \ Store the amount of damage in T
+
+                        \ --- And replaced by: -------------------------------->
 
  BIT collisionCounter   \ If this is the game over screen, return from the
  BPL P%+3               \ subroutine without processing damage
  RTS
 
-                        \ --- End of added code ------------------------------->
-
- STA T                  \ Store the amount of damage in T
-
-                        \ --- Mod: Code added for two-player Elite: ----------->
+ STA damageToApply      \ Store the amount of damage in damageToApply
 
                         \ Player 2 has been hit, so increment player 1's score
 
@@ -29863,8 +29867,18 @@ ENDIF
  BMI OO1                \ If A is negative, then we got hit in the rear, so jump
                         \ to OO1 to process damage to the aft shield
 
- LDA FSH                \ Otherwise the forward shield was damaged, so fetch the
- SBC T                  \ shield strength from FSH and subtract the damage in T
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA FSH                \ Otherwise the forward shield was damaged, so fetch the
+\SBC T                  \ shield strength from FSH and subtract the damage in T
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA player2FSH         \ Otherwise the forward shield was damaged, so fetch the
+ SBC damageToApply      \ shield strength from FSH and subtract the damage to
+                        \ apply
+
+                        \ --- End of replacement ------------------------------>
 
  BCC OO2                \ If the C flag is clear then this amount of damage was
                         \ too much for the shields, so jump to OO2 to set the
@@ -29885,8 +29899,17 @@ ENDIF
 
 .OO1
 
- LDA ASH                \ The aft shield was damaged, so fetch the shield
- SBC T                  \ strength from ASH and subtract the damage in T
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA ASH                \ The aft shield was damaged, so fetch the shield
+\SBC T                  \ strength from ASH and subtract the damage in T
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA player2ASH         \ The aft shield was damaged, so fetch the shield
+ SBC damageToApply      \ strength from ASH and subtract the damage to apply
+
+                        \ --- End of replacement ------------------------------>
 
  BCC OO5                \ If the C flag is clear then this amount of damage was
                         \ too much for the shields, so jump to OO5 to set the
@@ -29997,7 +30020,7 @@ ENDIF
  BPL P%+3               \ subroutine without processing damage
  RTS
 
- STA T                  \ Store the amount of damage in T
+ STA damageToApply      \ Store the amount of damage in damageToApply
 
                         \ Player 2 has been hit, so increment player 1's score
 
@@ -30036,7 +30059,8 @@ ENDIF
                         \ so jump to OO1 to process damage to the aft shield
 
  LDA player2FSH         \ Otherwise the forward shield was damaged, so fetch the
- SBC T                  \ shield strength from FSH and subtract the damage in T
+ SBC damageToApply      \ shield strength from FSH and subtract the damage to
+                        \ apply
 
  BCC OO2                \ If the C flag is clear then this amount of damage was
                         \ too much for the shields, so jump to OO2 to set the
@@ -30058,7 +30082,7 @@ ENDIF
 .OO1
 
  LDA player2ASH         \ The aft shield was damaged, so fetch the shield
- SBC T                  \ strength from ASH and subtract the damage in T
+ SBC damageToApply      \ strength from ASH and subtract the damage to apply
 
  BCC OO5                \ If the C flag is clear then this amount of damage was
                         \ too much for the shields, so jump to OO5 to set the
@@ -37355,7 +37379,7 @@ ENDIF
  LDA #160+68            \ Print recursive token 68 ("GAME OVER") as a player 1
  JSR MESS               \ in-flight message
 
- ASL player1INWK31      \ Set player 1 to explode in player 2's view
+ ASL player1INWK31      \ Set bit 7 of player 1's INWK+31 byte so it explodes
  SEC
  ROR player1INWK31
 
