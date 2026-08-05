@@ -37414,32 +37414,79 @@ ENDIF
  BNE deaf7              \ Loop back until gameOverCounter runs down, at which
                         \ point we stop looping and return to the main menu
 
- LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA player2ShipType    \ it in yellow
- LDY #YELLOW2
- JSR WipeShip
-
- LDA FRIN+3             \ If slot #3 is empty, skip the following
- BEQ deaf8
-
- LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
- LDY #YELLOW2           \ it in yellow
- JSR WipeShip
-
-.deaf8
-
- LDA FRIN+4             \ If slot #4 is empty, skip the following
- BEQ deaf9
-
- LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
- LDY #YELLOW2           \ it in yellow
- JSR WipeShip
-
-.deaf9
+ JSR WipePlayer2Scanner \ Clear all player 2 (yellow) ships from the scanner
 
                         \ --- End of replacement ------------------------------>
 
  JMP DEATH2             \ Jump to DEATH2 to reset and restart the game
+
+\ ******************************************************************************
+\
+\       Name: WipePlayer2Scanner
+\       Type: Subroutine
+\   Category: Two-player Elite
+\    Summary: Clear all player 2 (yellow) ships from the scanner
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.WipePlayer2Scanner
+
+ LDA #%00010000         \ If bit #4 of INWK+31 is clear for player 1's ship in
+ BIT player1INWK31      \ player 2's view then the ship is not on the scanner,
+ BEQ wscn1              \ so skip the following
+
+ LDA #%00100000         \ If bit #5 of INWK+31 is set for player 1's ship in
+ BIT player1INWK31      \ player 2's view then the ship is exploding,
+ BNE wscn1              \ so skip the following
+
+ LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
+ LDA player1ShipType    \ it in yellow
+ LDY #YELLOW2
+ JSR WipeShip
+
+.wscn1
+
+ LDA FRIN+3             \ If slot #3 is empty, skip the following
+ BEQ wscn2
+
+ LDA #%00010000         \ If bit #4 of INWK+31 is clear for ship slot #3 in
+ BIT player1INWK31+1    \ player 2's view then the ship is not on the scanner,
+ BEQ wscn2              \ so skip the following
+
+ LDA #%00100000         \ If bit #5 of INWK+31 is set for ship slot #3 in
+ BIT player1INWK31+1    \ player 2's view then the ship is exploding,
+ BNE wscn2              \ so skip the following
+
+ LDX #13                \ Remove the ship in slot #13 from the scanner, drawing
+ LDA FRIN+3             \ it in yellow
+ LDY #YELLOW2
+ JSR WipeShip
+
+.wscn2
+
+ LDA FRIN+4             \ If slot #4 is empty, skip the following
+ BEQ wscn3
+
+ LDA #%00010000         \ If bit #4 of INWK+31 is clear for ship slot #4 in
+ BIT player1INWK31+2    \ player 2's view then the ship is not on the scanner,
+ BEQ wscn3              \ so skip the following
+
+ LDA #%00100000         \ If bit #5 of INWK+31 is set for ship slot #4 in
+ BIT player1INWK31+2    \ player 2's view then the ship is exploding,
+ BNE wscn3              \ so skip the following
+
+ LDX #14                \ Remove the ship in slot #14 from the scanner, drawing
+ LDA FRIN+4             \ it in yellow
+ LDY #YELLOW2
+ JSR WipeShip
+
+.wscn3
+
+ RTS                    \ Return from the subroutine
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -41817,10 +41864,7 @@ ENDIF
  CPX #&70               \ If ESCAPE is not being pressed, skip over the next
  BNE deat1              \ set of instructions
 
- LDX #12                \ Remove the ship in slot #12 from the scanner, drawing
- LDA player2ShipType    \ it in yellow
- LDY #YELLOW2
- JSR WipeShip
+ JSR WipePlayer2Scanner \ Clear all player 2 (yellow) ships from the scanner
 
  JMP DEATH2             \ ESCAPE is being pressed, so jump to DEATH2 to end
                         \ the game
@@ -58971,7 +59015,7 @@ ENDMACRO
 
  JSR TIDY               \ Tidy the missile's new orientation vectors
 
- JMP dshp16             \ Return from the subroutine, rejoining DrawPlayer2View
+ JMP dshp18             \ Return from the subroutine, rejoining DrawPlayer2View
                         \ just after the call to this routine
 
                         \ --- End of added code ------------------------------->
@@ -63100,7 +63144,7 @@ ENDMACRO
  LDX XSAV               \ If we are drawing the planet or sun, jump to part 2 to
  CPX #2                 \ check whether it is on-screen and if so, only move it
  BCS P%+5               \ by the rotations of player 2's controls
- JMP dshp8
+ JMP dshp9
 
  CPX #5                 \ If this is slot #5 or above then return without
  BCC P%+3               \ drawing anything, as we only process slots #0 to #4
@@ -63140,46 +63184,68 @@ ENDMACRO
  PLA                    \ Restore the original heap address
  STA INWK+34
 
- JMP dshp11             \ Jump to part 3 to draw the ship, as we don't need to
+ JMP dshp12             \ Jump to part 3 to draw the ship, as we don't need to
                         \ do explosion and scanner checks on a new ship
 
 .dshp1
 
- CPX #0                 \ If this is not the player's ship, jump to dshp4 to
- BNE dshp4              \ skip the explosion checks
+ CPX #0                 \ If this is not the player's ship, jump to dshp5 to
+ BNE dshp5              \ skip the explosion checks
 
- LDA player2Exploding   \ If player2Exploding is non-zero then player 2's ship
- BEQ dshp2              \ is exploding at the end of the game, so we do not want
-                        \ to copy this over into player 1's ship in player 2's
-                        \ view
+ BIT player2Exploding   \ If bit 7 of player2Exploding is clear then player 2
+ BPL dshp3              \ has not just exploded, so jump to dshp3 to check bit 6
 
- LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
- AND #%01011111         \ exploding
- STA player1INWK31
+                        \ If we get here then player 2 has just exploded
 
- LDA INWK+31            \ Prevent player 1's ship in player 2's view from
- AND #%01011111         \ exploding
+ LDA #%01000000         \ Clear bit 7 and set bit 6 of player2Exploding to move
+ STA player2Exploding   \ the explosion on to the second stage
+
+ LDX player2ViewSlot    \ Fetch the ship's coordinates from slot #10 + ID (i.e.
+ JSR GetShipDataToINWK  \ #12 for player 2's ship, or #13 or #14 for a missile)
+                        \ so that if the ship is already on the scanner, we can
+                        \ remove it (if the ship hasn't yet been processed in
+                        \ this new slot, nothing will happen in the following)
+
+ LDX player1X           \ Set the scanner visiblilty flag from player1INWK31
+ LDA player1INWK31,X
  STA INWK+31
 
- BRA dshp7              \ Jump to dshp7 to skip the explosion checks for player
-                        \ 1, as we know it is not exploding
+ LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
+ JSR SCAN
+
+ LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
+ AND #%01001111         \ exploding
+ STA player1INWK31
+
+ JMP dshp12             \ Jump to part 3 to skip all the other explosion checks
 
 .dshp2
 
+ BIT player2Exploding   \ If bit 6 of player2Exploding is clear then player 1 is
+ BVC dshp3              \ not currently exploding, so jump to dshp5 to keep going
+
+ LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
+ AND #%01001111         \ exploding
+ STA player1INWK31
+
+ JMP dshp12             \ Jump to part 3 to skip all the other explosion checks
+
+.dshp3
+
  BIT player1Exploding   \ If bit 7 of player1Exploding is clear then player 1
- BPL dshp3              \ has not just exploded, so jump to dshp3 to check bit 6
+ BPL dshp4              \ has not just exploded, so jump to dshp4 to check bit 6
 
                         \ If we get here then player 1 has just exploded
 
  LDA #%01000000         \ Clear bit 7 and set bit 6 of player1Exploding to move
  STA player1Exploding   \ the explosion on to the second stage
 
- BRA dshp4              \ Jump to dshp4 to keep going
+ BRA dshp5              \ Jump to dshp5 to keep going
 
-.dshp3
+.dshp4
 
  BIT player1Exploding   \ If bit 6 of player1Exploding is clear then player 1 is
- BVC dshp4              \ not currently exploding, so jump to dshp4 to keep going
+ BVC dshp5              \ not currently exploding, so jump to dshp5 to keep going
 
                         \ If we get here then player 1 is currently exploding
  
@@ -63187,21 +63253,21 @@ ENDMACRO
  ORA #%11100000         \ exploding and that the explosion is on-screen
  STA player1INWK31
 
- BRA dshp5              \ Jump to dshp5 to skip the INWK+31 check, as we are no
+ BRA dshp6              \ Jump to dshp6 to skip the INWK+31 check, as we are no
                         \ longer taking any notice of slot #2's INWK+31 (as that
                         \ is for player 2's ship in player 1's view)
 
-.dshp4
-
- LDA INWK+31            \ If the ship is not exploding, jump to dshp7
- AND #%10100000
- BEQ dshp7
-
 .dshp5
+
+ LDA INWK+31            \ If the ship is not exploding, jump to dshp8
+ AND #%10100000
+ BEQ dshp8
+
+.dshp6
 
  LDA player1INWK31,X    \ If we have already noted the explosion in the copy of
  AND #%00100000         \ INWK+31 in player1INWK31, jump to part 3 to skip the
- BNE dshp6              \ following, as we have already removed the ship from
+ BNE dshp7              \ following, as we have already removed the ship from
                         \ the scanner
 
                         \ If we get here then bit 7 is set but bit 5 is not, so
@@ -63226,11 +63292,11 @@ ENDMACRO
  LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
  JSR SCAN
 
-.dshp6
-
- JMP dshp11             \ Jump to part 3
-
 .dshp7
+
+ JMP dshp12             \ Jump to part 3
+
+.dshp8
 
  LDX player2ViewSlot    \ Fetch the ship's coordinates from slot #10 + ID (i.e.
  JSR GetShipDataToINWK  \ #12 for player 2's ship, or #13 or #14 for a missile)
@@ -63245,7 +63311,7 @@ ENDMACRO
  LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
  JSR SCAN
 
- JMP dshp11             \ Jump to part 3 to skip the planet/sun code in part 2
+ JMP dshp12             \ Jump to part 3 to skip the planet/sun code in part 2
 
                         \ --- End of added code ------------------------------->
 
@@ -63261,37 +63327,37 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp8
+.dshp9
 
  LDA INWK+5             \ If the planet/sun is within |y_sign| < 2 then it is
  AND #%01111111         \ close to the player's view, so apply player 2's
  CMP #2                 \ movement to the current position of the planet by
- BCC dshp10             \ jumping to dshp10 (to prevent it jumping back onto the
+ BCC dshp11             \ jumping to dshp11 (to prevent it jumping back onto the
                         \ screen when we start using the correct position again)
 
- CPX #1                 \ If we are drawing the sun, jump to dshp9
- BEQ dshp9
+ CPX #1                 \ If we are drawing the sun, jump to dshp10
+ BEQ dshp10
 
  LDA LSX2a              \ If LSX2a is non-zero then the ball line heap for
- BNE dshp11             \ player 2's view is empty, so the planet is not
-                        \ currently visible to player 2, so jump to dshp11 to
+ BNE dshp12             \ player 2's view is empty, so the planet is not
+                        \ currently visible to player 2, so jump to dshp12 to
                         \ move the planet to the correct position in space
 
- BEQ dshp10             \ If we get here then the planet is visible in player
+ BEQ dshp11             \ If we get here then the planet is visible in player
                         \ 2's view, so instead of calculating its correct
                         \ position in space (which will make it jump around
                         \ due to the approximate maths used in rotations), we
                         \ instead apply player 2's movement to the current
-                        \ position of the planet by jumping to dshp10
-
-.dshp9
-
- LDA LSXa               \ If LSXa < 0 then the sun line heap for player 2's view
- BMI dshp11             \ is empty, so the sun is not currently visible to
-                        \ player 2, so jump to dshp11 to move the sun to the
-                        \ correct position in space
+                        \ position of the planet by jumping to dshp11
 
 .dshp10
+
+ LDA LSXa               \ If LSXa < 0 then the sun line heap for player 2's view
+ BMI dshp12             \ is empty, so the sun is not currently visible to
+                        \ player 2, so jump to dshp12 to move the sun to the
+                        \ correct position in space
+
+.dshp11
 
                         \ If we get here then the planet/sun is visible in
                         \ player 2's view, so instead of calculating its correct
@@ -63322,7 +63388,7 @@ ENDMACRO
 
  JSR LoadShipMovement   \ Switch back to the previous movement data
 
- JMP dshp18             \ Jump to part 4 to draw the planet/sun
+ JMP dshp20             \ Jump to part 4 to draw the planet/sun
 
                         \ --- End of added code ------------------------------->
 
@@ -63338,7 +63404,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp11
+.dshp12
 
  LDX XSAV               \ Refetch the current ship data so that it's the correct
  JSR GetShipDataToINWK  \ way around for the following calculation, even if
@@ -63402,11 +63468,11 @@ ENDMACRO
 
                         \ Step 1: negate [x y z] (if this is player 2's ship)
 
- LDA XSAV               \ If this is the planet or sun, jump to dshp14 to skip
+ LDA XSAV               \ If this is the planet or sun, jump to dshp15 to skip
  CMP #2                 \ the following, so we don't change the coordinates for
- BCC dshp14             \ the sun and planet
+ BCC dshp15             \ the sun and planet
 
- BEQ dshp13             \ If this is player 2's ship, jump to dshp13 so we only
+ BEQ dshp14             \ If this is player 2's ship, jump to dshp14 so we only
                         \ do the following for missiles
 
                         \ If we get here then this is a missile and INWK is set
@@ -63433,14 +63499,14 @@ ENDMACRO
  LDX #8                 \ We now want to copy the result from K3 to INWK, so set
                         \ up a counter for 9 bytes
 
-.dshp12
+.dshp13
 
  LDA K3,X               \ Copy the X-th byte from K3 to the X-th byte of INWK
  STA INWK,X
 
  DEX                    \ Decrement the counter
 
- BPL dshp12             \ Loop back until we have copied all 9 bytes
+ BPL dshp13             \ Loop back until we have copied all 9 bytes
 
                         \ INWK now contains:
                         \
@@ -63448,11 +63514,11 @@ ENDMACRO
                         \
                         \ which is the result we want
 
- BMI dshp14             \ We have the result we want, so skip the negation and
+ BMI dshp15             \ We have the result we want, so skip the negation and
                         \ move on to the coordinate rotation (this BMI is
                         \ effectively a JMP as we just passed through a BPL)
 
-.dshp13
+.dshp14
 
  LDA INWK+2             \ Negate x_sign
  EOR #%10000000
@@ -63466,7 +63532,7 @@ ENDMACRO
  EOR #%10000000
  STA INWK+8
 
-.dshp14
+.dshp15
 
                         \ Step 2: Rotate x-coordinate
                         \ c = [ v1 v2 v3 ] . [ c1 c2 c3 ]
@@ -63510,27 +63576,32 @@ ENDMACRO
 
  LDA XSAV               \ If this is the planet or sun, jump to part 4 to skip
  CMP #2                 \ the transpose, as we don't bother to rotate the planet
- BCC dshp18             \ or sun or need to override its type
+ BCC dshp20             \ or sun or need to override its type
 
  LDX player1X           \ Set the scan visiblilty flag from player1INWK31
  LDA player1INWK31,X
  STA INWK+31
 
- LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
+ AND #%10100000         \ If the ship is exploding, skip the following so we do
+ BNE dshp16             \ not draw the ship on the scanner
+
+ LDA #YELLOW2           \ Draw the ship on the scanner
  JSR SCAN
 
- LDA XSAV               \ If this is player 2's ship, jump to dshp15 to skip
+.dshp16
+
+ LDA XSAV               \ If this is player 2's ship, jump to dshp17 to skip
  CMP #2                 \ the following instruction
- BEQ dshp15
+ BEQ dshp17
 
  JMP OrientateMissile   \ Step 3: Calculate the missile's orientation matrix,
-                        \ jumping back to dshp16 when we're done
+                        \ jumping back to dshp18 when we're done
 
-.dshp15
+.dshp17
 
  JSR TransposeMatrix    \ Step 3: Transpose the player 2 orientation matrix
 
-.dshp16
+.dshp18
 
                         \ Set heap for player 2's view to be &2000 below player
                         \ 1's view
@@ -63542,14 +63613,14 @@ ENDMACRO
 
  LDA #1                 \ Set A to the correct ship type for a missile
 
- LDX XSAV               \ If we're drawing a missile, jump to dshp17 to skip the
+ LDX XSAV               \ If we're drawing a missile, jump to dshp19 to skip the
  CPX #3                 \ next instruction
- BCS dshp17
+ BCS dshp19
 
  LDA player1ShipType    \ We're drawing player 1, so switch to the correct ship
                         \ type
 
-.dshp17
+.dshp19
 
  STA TYPE               \ Store the correct type for the ship we are drawing
 
@@ -63581,7 +63652,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp18
+.dshp20
 
  SEC                    \ Configure drawing for player 2
  ROR drawPlayerView
@@ -63609,19 +63680,19 @@ ENDMACRO
 
  LDA XSAV               \ If we are drawing the planet or sun, jump to part 6 to
  CMP #2                 \ skip the following ship-related checks
- BCC dshp21
+ BCC dshp23
 
  LDX player1X           \ Copy "on-screen" state from INWK+31 to player1INWK31
  LDA INWK+31            \ for this ship
  STA player1INWK31,X
 
  JSR HITCH              \ Call HITCH to see if this ship is in the crosshairs,
- BCC dshp21             \ in which case the C flag will be set (so if there is
-                        \ no missile or laser lock, we jump to dshp21 to skip
+ BCC dshp23             \ in which case the C flag will be set (so if there is
+                        \ no missile or laser lock, we jump to dshp23 to skip
                         \ the following)
 
  LDA player2MSAR        \ We have missile lock, so check whether the leftmost
- BEQ dshp19             \ missile is currently armed, and if not, jump to dshp19
+ BEQ dshp21             \ missile is currently armed, and if not, jump to dshp21
                         \ to process laser fire, as we can't lock an unarmed
                         \ missile
 
@@ -63633,10 +63704,10 @@ ENDMACRO
  JSR Player2ABORT2      \ player2ViewSlot and set the colour of the missile
                         \ indicator to the colour in Y
 
-.dshp19
+.dshp21
 
  LDA player2LAS         \ If player 2 is firing a laser then LAS will contain
- BEQ dshp21             \ the laser power, so if this is zero, jump to part 6
+ BEQ dshp23             \ the laser power, so if this is zero, jump to part 6
                         \ to skip the following
 
  LDX #15                \ Player 2 is firing a laser and the ship in INWK is in
@@ -63644,8 +63715,8 @@ ENDMACRO
                         \ us making a laser strike on another ship
 
  LDA XSAV               \ If this ship in the crosshairs is player 1, jump to
- CMP #2                 \ dshp20 to process a hit on player 1
- BEQ dshp20
+ CMP #2                 \ dshp22 to process a hit on player 1
+ BEQ dshp22
 
                         \ This must be a missile, so kill it instantly (as the
                         \ missile's maximum energy is only 2, which is way less
@@ -63660,9 +63731,9 @@ ENDMACRO
                         \ ensures the new setting is retained and processed back
                         \ in the main loop
 
- JMP dshp21             \ Jump to part 6 to finish up
+ JMP dshp23             \ Jump to part 6 to finish up
 
-.dshp20
+.dshp22
 
                         \ Player 1 has been hit, so process player 1's shields
 
@@ -63687,7 +63758,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.dshp21
+.dshp23
 
  STZ drawPlayerView     \ Back to drawing the view for player 1
 
