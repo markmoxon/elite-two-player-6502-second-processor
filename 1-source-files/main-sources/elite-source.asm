@@ -2147,14 +2147,27 @@ ENDIF
  CHAR 'S'
  EQUB 0
 
- CONT 6                 \ Token 59:     "PRESS"
+ CONT 6                 \ Token 59:     "PRESS S"
  CHAR 'P'
  TWOK 'R', 'E'
  CHAR 'S'
  CHAR 'S'
+ CHAR ' '
+ CHAR 'S'
  EQUB 0
 
- CHAR ' '               \ Token 60:     " F0 TO PLAY"
+ CHAR ' '               \ Token 60:     " TO SHUFFLE, F0 TO PLAY"
+ CHAR 'T'
+ CHAR 'O'
+ CHAR ' '
+ CHAR 'S'
+ CHAR 'H'
+ CHAR 'U'
+ CHAR 'F'
+ CHAR 'F'
+ TWOK 'L', 'E'
+ CHAR ','
+ CHAR ' '
  CHAR 'F'
  CHAR '0'
  CHAR ' '
@@ -4507,6 +4520,11 @@ ENDIF
 
  SKIP 1                 \ The number of the next highlighted field on the
                         \ configuration screen
+
+.toggleCount
+
+ SKIP 1                 \ The number of toggles to apply to the option we are
+                        \ randomising on the configuration screen
 
 .coordinateIndex
 
@@ -38218,7 +38236,7 @@ ENDIF
  LDA #160+51
  JSR TT27
 
- LDA #8                 \ Print token 59 ("PRESS") at (8, 22)
+ LDA #1                 \ Print token 59 ("PRESS S") at (1, 22)
  JSR DOXC
  LDA #22
  JSR DOYC
@@ -38228,7 +38246,7 @@ ENDIF
  LDA #1                 \ Set QQ17 = 1 to switch standard tokens to lower
  STA QQ17               \ case
 
- LDA #160+60            \ Print token 60 (" F0 TO PLAY")
+ LDA #160+60            \ Print token 60 (" TO SHUFFLE, F0 TO PLAY")
  JSR TT27
 
  LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
@@ -38450,14 +38468,16 @@ ENDIF
 \DEC JSTK               \ Joystick fire button was pressed, so set JSTK to &FF
 \                       \ (it was set to 0 above), to disable keyboard and
 \                       \ enable joysticks
+\
+\.TL3
+\
+\RTS                    \ Return from the subroutine
 
                         \ --- And replaced by: -------------------------------->
 
 .titl2
 
  JMP TLL2               \ Loop back to keep rotating the ships
-
-                        \ --- End of replacement ------------------------------>
 
 .TL3
 
@@ -38591,10 +38611,13 @@ ENDIF
 
 .titl10
 
+ CMP #&51               \ If "S" was pressed, jump to titl12 to shuffle the
+ BEQ titl12             \ loadout options
+
  LDA configHighlight    \ Redraw the highlight to remove it
  JSR PrintOptionA
 
- JSR ToggleHighlight    \ Call UpdateOption to toggle the highlighted option
+ JSR ToggleHighlight    \ Call ToggleHighlight to toggle the highlighted option
 
  LDA configHighlight    \ Draw the highlight to update it
  JSR PrintOptionA
@@ -38602,6 +38625,125 @@ ENDIF
 .titl11
 
  JMP TLL2               \ Loop back to keep rotating the ships
+
+.titl12
+
+                        \ If we get here then "S" was pressed, so we now
+                        \ randomise the loadout in options 0 to 9
+
+ LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
+ STA YSAV               \ following loop to work through all ten options
+
+.titl13
+
+ LSR A                  \ Set Y = A / 2 so we can use it as an index into the
+ TAY                    \ option tables below
+
+.titl14
+
+ JSR DORND              \ Set A and X to random numbers
+
+ AND optionsMask,Y      \ Reduce A to the nearest power-of-2 above the required
+                        \ range for this option
+
+ CMP optionsCount,Y     \ If A is in the range specified by the optionsCount
+ BCC titl15             \ table (i.e. in the range 0 <= A < optionsCount) then
+                        \ we can use this as our random choice, so jump to
+                        \ titl15 to toggle the option this many times
+
+ BCS titl14             \ Otherwise A is out of range, so fetch another random
+                        \ number
+
+.titl15
+
+                        \ If we get here then A is in the range 0 to n-1 for
+                        \ an option with n choices, so now we toggle the choice
+                        \ this many times
+
+ ADC optionsCount,Y     \ Add the number of options for this configuration to A,
+                        \ so we always run through the whole set of options
+                        \ before applying the random number of toggles (this is
+                        \ purely aesthetic, to make the options look a bit more
+                        \ like a fruit machine)
+                        \
+                        \ The addition works because we know the C flag is clear
+                        \ as we got here via a BCC
+
+ STA toggleCount        \ Set toggleCount to the number of toggles to apply to
+                        \ this option in the following loop
+
+.titl16
+
+ LDA YSAV               \ Print the current option to remove it
+ JSR PrintOptionA
+
+ LDA YSAV               \ Call ToggleHighlight+3 to toggle the current option
+ JSR ToggleHighlight+3
+
+ LDA YSAV               \ Print the current option to show the updated value
+ JSR PrintOptionA
+
+ LDY #3                 \ Wait for 3/50 of a second (0.06 seconds), to slow the
+ JSR DELAY              \ toggling down a bit
+
+ DEC toggleCount        \ Decrement the toggle counter
+
+ BNE titl16
+
+.titl17
+
+ INC YSAV               \ Move on to the next option
+
+ LDA YSAV               \ Loop back until we have printed all options
+ CMP #10
+ BNE titl13
+
+ JMP TLL2               \ Loop back to keep rotating the ships
+
+                        \ --- End of replacement ------------------------------>
+
+\ ******************************************************************************
+\
+\       Name: optionsCount
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: The number of available options for each configuration
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.optionsCount
+
+ EQUB 9                 \ Ship
+ EQUB 4                 \ Lasers
+ EQUB 3                 \ Energy
+ EQUB 5                 \ Missiles
+ EQUB 2                 \ E.C.M.
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: optionsMask
+\       Type: Variable
+\   Category: Two-player Elite
+\    Summary: Bitmask to reduce a random number into the correct power-of-2
+\             range for the specified option
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.optionsMask
+
+ EQUB %00001111         \ Ship
+ EQUB %00000011         \ Lasers
+ EQUB %00000010         \ Energy
+ EQUB %00000111         \ Missiles
+ EQUB %00000001         \ E.C.M.
+
+                        \ --- End of added code ------------------------------->
 
 \ ******************************************************************************
 \
@@ -58111,7 +58253,13 @@ ENDIF
 \       Name: ToggleHighlight
 \       Type: Subroutine
 \   Category: Two-player Elite
-\    Summary: Toggle configuration option A
+\    Summary: Toggle the currently highlighted configuration option
+\
+\ ------------------------------------------------------------------------------
+\
+\ Other entry points:
+\
+\   ToggleHighlight+3   Toggle configuration option A
 \
 \ ******************************************************************************
 
