@@ -1039,8 +1039,16 @@ ENDIF
 
  SKIP 1                 \ Player 2's GNTMP value
 
-                        \ --- End of added code ------------------------------->
+.scannerMissile
 
+ SKIP 1                 \ A flag to denote whether we are drawing a missile on
+                        \ the scanner
+                        \
+                        \   * Bit 7 clear = not a missile
+                        \
+                        \   * Bit 7 set = missile
+
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
@@ -2247,11 +2255,17 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+ LDA #0                 \ Clear bit 7 of scannerMissile to indicate that we are
+ STA scannerMissile     \ not drawing a missile on the scanner
+
  INY                    \ Fetch byte #7 from the parameter block (the ship type)
  LDA (OSSC),Y
 
  CMP #1                 \ If this is not a missile, jump to scan1 to draw a
  BNE scan1              \ double-height dot
+
+ LDA #%10000000         \ Set bit 7 of scannerMissile to indicate that we are
+ STA scannerMissile     \ drawing a missile on the scanner
 
  JSR CPIX2              \ Draw a single-height mode 2 dash at (X1, Y1)
 
@@ -2260,7 +2274,6 @@ ENDIF
 .scan1
 
                         \ --- End of added code ------------------------------->
-
 
  JSR CPIX4              \ Draw a double-height mode 2 dot at (X1, Y1). This also
                         \ leaves the following variables set up for the dot's
@@ -2355,6 +2368,14 @@ ENDIF
                         \ the dot is above the ellipse and the stick is below
                         \ the dot, and we need to draw the stick downwards from
                         \ the dot)
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT scannerMissile     \ If we are drawing a missile, skip the following
+ BMI P%+3               \ instruction so we draw the stick down from the top
+                        \ right (i.e. the right) pixel of the one-pixel high dot
+
+                        \ --- End of added code ------------------------------->
 
  INY                    \ We want to draw the stick downwards, so we first
                         \ increment the row counter so that it's pointing to the
