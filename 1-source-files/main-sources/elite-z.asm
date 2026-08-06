@@ -1003,6 +1003,7 @@ ENDIF
                         \ --- End of removed code ----------------------------->
 
                         \ --- Mod: Code added for two-player Elite: ----------->
+
 .player2ENERGY
 
  SKIP 1                 \ Player 2's ENERGY value
@@ -1086,6 +1087,13 @@ ENDIF
  SKIP 1                 \ A toggle used to share the secondary key press between
                         \ two Delta 14B sticks
 
+.MOS
+
+ SKIP 1                 \ Determines whether we are running on a BBC Master
+                        \
+                        \   * 0 = This is not a BBC Master
+                        \
+                        \   * &FF = This is a BBC Master
 
                         \ --- End of added code ------------------------------->
 
@@ -1213,6 +1221,23 @@ ENDIF
 
  LDA #&FF               \ Set the text and graphics colour to cyan
  STA COL
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ LDA #0                 \ Set MOS to 0 by default, to indicate that this not a
+ STA MOS                \ BBC Master
+
+ LDX #1                 \ Call OSBYTE with A = 0 and X = 1 to fetch the
+ JSR OSBYTE             \ operating system version into X
+
+ CPX #3                 \ If X =< 3 then this is not a BBC Master, so jump to
+ BCC star1              \ star1 to skip the following
+
+ DEC MOS                \ Set MOS to &FF to indicate that this is a BBC Master
+
+.star1
+
+                        \ --- End of added code ------------------------------->
 
  LDA TINA               \ If the contents of locations TINA to TINA+3 are "TINA"
  CMP #'T'               \ then keep going, otherwise jump to PUTBACK to point
@@ -6681,19 +6706,45 @@ ENDMACRO
  EQUB &67 + 128         \ >         KYTB+4      Roll right (unused)
  EQUB &42 + 128         \ X         KYTB+5      Pull up (unused)
  EQUB &51 + 128         \ S         KYTB+6      Pitch down (unused)
- EQUB &41 + 128         \ A         KYTB+7      Fire lasers
+ EQUB &41 + 128         \ A         KYTB+7      Fire lasers (unused)
 
                         \ These are the secondary flight controls:
 
- EQUB &39               \ Up        KYTB+8      Front view
- EQUB &29               \ Down      KYTB+9      Rear view
+ EQUB &39               \ Up        KYTB+8      Player 2 front view
+ EQUB &29               \ Down      KYTB+9      Player 2 rear view
  EQUB &38               \ [         KYTB+10     Player 2 arm missile
  EQUB &28               \ _         KYTB+11     Player 2 unarm missile
  EQUB &47               \ @         KYTB+12     Player 2 fire missile
  EQUB &78               \ \         KYTB+13     Player 2 E.C.M.
  EQUB &45               \ J         KYTB+14     In-system jump (unused)
- EQUB &79               \ Right     KYTB+15     Right view
- EQUB &19               \ Left      KYTB+16     Left view
+ EQUB &79               \ Right     KYTB+15     Player 2 right view
+ EQUB &19               \ Left      KYTB+16     Player 2 left view
+
+                        \ --- End of added code ------------------------------->
+
+\ ******************************************************************************
+\
+\       Name: numpadKYTB
+\       Type: Variable
+\   Category: Keyboard
+\    Summary: Lookup table for in-flight keyboard controls for player 2 on the
+\             BBC Master's numeric keypad
+\
+\ ******************************************************************************
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.numpadKYTB
+
+ EQUB &2A               \ 8         KYTB+8      Player 2 front view
+ EQUB &7C               \ 2         KYTB+9      Player 2 rear view
+ EQUB &3A               \ +         KYTB+10     Player 2 arm missile
+ EQUB &3B               \ -         KYTB+11     Player 2 unarm missile
+ EQUB &5B               \ *         KYTB+12     Player 2 fire missile
+ EQUB &4B               \ DELETE    KYTB+13     Player 2 E.C.M.
+ EQUB &7B               \ 5         KYTB+9      Player 2 rear view (option 2)
+ EQUB &1A               \ 6         KYTB+15     Player 2 right view
+ EQUB &7A               \ 4         KYTB+16     Player 2 left view
 
                         \ --- End of added code ------------------------------->
 
@@ -6883,6 +6934,59 @@ ENDMACRO
  LDY #16                \ Store A in byte #16 of the block pointed to by OSCC
  STA (OSSC),Y
 
+ BIT MOS                \ If this is not a BBC Master, skip the numeric keypad
+ BPL keys2              \ check
+
+ LDA #&4C + 128         \ We now detect player 2's slow down key on the Master's
+                        \ numeric keypad, so set A to the key number for "." on
+                        \ the keypad
+
+ DKS4                   \ Include macro DKS4 to check whether the key in A is
+                        \ being pressed, and if it is, set bit 7 of A
+
+ ASL A                  \ Shift bit 7 of A into the C flag
+
+ LDA #0                 \ Set A = 0 + &FF + C
+ ADC #&FF               \
+                        \ If the C flag is set (i.e. the key is being pressed)
+                        \ then this sets A = 0, otherwise it sets A = &FF
+
+ EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
+                        \ being pressed, or A = 0 if it isn't
+
+ BEQ keys1              \ The key is not being pressed, so skip the following to
+                        \ leave the main keyboard value in-place
+
+ LDY #15                \ Store A in byte #15 of the block pointed to by OSCC
+ STA (OSSC),Y
+
+.keys1
+
+ LDA #&3C + 128         \ We now detect player 2's speed up key on the Master's
+                        \ numeric keypad, so set A to the key number for RETURN
+                        \ on the keypad
+
+ DKS4                   \ Include macro DKS4 to check whether the key in A is
+                        \ being pressed, and if it is, set bit 7 of A
+
+ ASL A                  \ Shift bit 7 of A into the C flag
+
+ LDA #0                 \ Set A = 0 + &FF + C
+ ADC #&FF               \
+                        \ If the C flag is set (i.e. the key is being pressed)
+                        \ then this sets A = 0, otherwise it sets A = &FF
+
+ EOR #%11111111         \ Flip all the bits in A, so now A = &FF if the key is
+                        \ being pressed, or A = 0 if it isn't
+
+ BEQ keys2              \ The key is not being pressed, so skip the following to
+                        \ leave the main keyboard value in-place
+
+ LDY #16                \ Store A in byte #16 of the block pointed to by OSCC
+ STA (OSSC),Y
+
+.keys2
+
  LDY #2                 \ Set Y back to 2 so any other keys are stored in the
                         \ correct place
 
@@ -6943,6 +7047,65 @@ ENDMACRO
  STA (OSSC),Y           \ We exited the first loop above with Y = 2, so this
                         \ stores the "other key" result in byte #2 of the block
                         \ pointed to by OSSC
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BNE keys8              \ If a key has already been detected, skip the numeric
+                        \ keypad check
+
+ BIT MOS                \ If this is not a BBC Master, skip the numeric keypad
+ BPL keys8              \ check
+
+ LDY #8                 \ We now scan through the keys in the numpadKYTB table,
+                        \ so set X as a loop counter
+
+.keys3
+
+ LDA numpadKYTB,Y       \ Fetch the key number to check on the numeric keypad
+
+ DKS4                   \ Include macro DKS4 to check whether the key in A is
+                        \ being pressed, and if it is, set bit 7 of A
+
+ TAX                    \ Copy the key press result into X
+
+ BMI keys5              \ If bit 7 is set, i.e. the key is being pressed, skip
+                        \ to keys5
+
+.keys4
+
+ DEY                    \ Decrement the counter to check the next key
+
+ BPL keys3              \ Loop back to check the next key
+
+ BMI keys8              \ If we didn't detect any key presses on the numeric
+                        \ keypad, jump to keys8 to keep going (this BMI is
+                        \ effectively a JMP as we just passed through a BPL)
+
+.keys5
+
+ CPY #6                 \ If this is not entry 6, jump to keys6
+ BNE keys6
+
+ LDA KYTB2+8+1          \ This is the second option for the rear view, so fetch
+                        \ the non-numeric keypad key number for the rear view
+
+ BNE keys7              \ Jump to keys7 to store this key (this is effectively a
+                        \ JMP as A is never zero)
+
+.keys6
+
+ LDA KYTB2+8,Y          \ Fetch the non-numeric keypad key number that is the
+                        \ equivalent to this numeric keypad key from the latter
+                        \ half of the KYTB2 table
+
+.keys7
+
+ LDY #2                 \ Store the "other key" result in byte #2 of the block
+ STA (OSSC),Y           \ pointed to by OSSC
+
+.keys8
+
+                        \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
