@@ -38631,6 +38631,10 @@ ENDIF
                         \ If we get here then "S" was pressed, so we now
                         \ randomise the loadout in options 0 to 9
 
+ LDA RAND               \ Seed the random number generator by EOR'ing with the
+ EOR MCNT               \ current loop counter, to introduce a bit of entropy
+ STA RAND
+
  LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
  STA YSAV               \ following loop to work through all ten options
 
