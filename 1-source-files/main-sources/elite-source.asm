@@ -2147,27 +2147,27 @@ ENDIF
  CHAR 'S'
  EQUB 0
 
- CONT 6                 \ Token 59:     "PRESS S"
+ CONT 6                 \ Token 59:     "PRESS"
  CHAR 'P'
  TWOK 'R', 'E'
  CHAR 'S'
  CHAR 'S'
- CHAR ' '
- CHAR 'S'
+\CHAR ' '
+\CHAR 'S'
  EQUB 0
 
- CHAR ' '               \ Token 60:     " TO SHUFFLE, F0 TO PLAY"
- CHAR 'T'
- CHAR 'O'
- CHAR ' '
- CHAR 'S'
- CHAR 'H'
- CHAR 'U'
- CHAR 'F'
- CHAR 'F'
- TWOK 'L', 'E'
- CHAR ','
- CHAR ' '
+ CHAR ' '               \ Token 60:     " F0 TO PLAY"
+\CHAR 'T'
+\CHAR 'O'
+\CHAR ' '
+\CHAR 'S'
+\CHAR 'H'
+\CHAR 'U'
+\CHAR 'F'
+\CHAR 'F'
+\TWOK 'L', 'E'
+\CHAR ','
+\CHAR ' '
  CHAR 'F'
  CHAR '0'
  CHAR ' '
@@ -38236,7 +38236,7 @@ ENDIF
  LDA #160+51
  JSR TT27
 
- LDA #1                 \ Print token 59 ("PRESS S") at (1, 22)
+ LDA #8                 \ Print token 59 ("PRESS") at (8, 22)
  JSR DOXC
  LDA #22
  JSR DOYC
@@ -38246,7 +38246,7 @@ ENDIF
  LDA #1                 \ Set QQ17 = 1 to switch standard tokens to lower
  STA QQ17               \ case
 
- LDA #160+60            \ Print token 60 (" TO SHUFFLE, F0 TO PLAY")
+ LDA #160+60            \ Print token 60 (" F0 TO PLAY")
  JSR TT27
 
  LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
