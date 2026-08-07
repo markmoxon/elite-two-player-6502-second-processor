@@ -50,7 +50,7 @@ ENDIF
  PUTFILE "3-assembled-output/ELITEa.bin", "I.ELITEa", &FF2000, &FF2000
 
 IF _SNG45 OR _SOURCE_DISC
- PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE", &FF2400, &FF2C95
+ PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE", &FF2400, &FF2C96
 ELIF _EXECUTIVE
  PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE", &032400, &032C89
 ENDIF

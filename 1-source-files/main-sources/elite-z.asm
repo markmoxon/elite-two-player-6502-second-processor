@@ -1082,10 +1082,20 @@ ENDIF
 
  SKIP 1                 \ The key press from the rear Delta 14B stick, if any
 
-.delta14KeyToggle
+.player2Turn
 
  SKIP 1                 \ A toggle used to share the secondary key press between
-                        \ two Delta 14B sticks
+                        \ the two players in case both players are pressing a
+                        \ secondary flight key
+                        \
+                        \   * Bit 7 clear = player 1's key takes predecence
+                        \
+                        \   * Bit 7 set = player 2's key takes predecence
+
+.fallbackKey
+
+ SKIP 1                 \ The key press we have detected for the player who does
+                        \ not have precedence
 
 .MOS
 
@@ -6852,6 +6862,43 @@ ENDMACRO
  LDA (OSSC),Y           \ player 2's controls) and store in player2JSTK
  STA player2JSTK
 
+ LDA player2Turn        \ Flip bit 7 of player2Turn so it changes each time we
+ EOR #%10000000         \ check the keyboard
+ STA player2Turn
+
+                        \ We now do the following:
+                        \
+                        \   * Detect the primary flight controls on the keyboard
+                        \     for player 1 (i.e. steering, speed and lasers, as
+                        \     in the first half of KYTB)
+                        \
+                        \   * Detect the primary flight controls on the keyboard
+                        \     for player 2 (i.e. speed, as steering and lasers
+                        \     are on the joystick, which we check later)
+                        \
+                        \   * Scan the keyboard to see if any other keys on the
+                        \     main keyboard are being pressed, ensuring that if
+                        \     both players are pressing keys, then the player
+                        \     with precedence wins (with the precedence swapping
+                        \     on each call to KEYBOARD)
+                        \
+                        \   * If this is a Master, detect the primary flight
+                        \     controls on the numeric keypad for player 2 (i.e.
+                        \     speed), but only if one of the following is true:
+                        \     (a) player 2 has precedence or (b) player 1 has
+                        \     precedence and no key was detected in the previous
+                        \     step
+                        \
+                        \   * If Delta 14B sticks are configured for one or both
+                        \     players, scan the buttons on the congigured sticks
+                        \
+                        \   * Read all four analogue joystick channels and both
+                        \     fire buttons
+                        \
+                        \ This process supports both the keyboard and either one
+                        \ or two joysticks/Delta 14Bs, while ensuring that both
+                        \ player's key presses are detected correctly
+
                         \ --- End of added code ------------------------------->
 
  LDY #9                 \ We're going to loop through the seven primary flight
@@ -6990,6 +7037,9 @@ ENDMACRO
  LDY #2                 \ Set Y back to 2 so any other keys are stored in the
                         \ correct place
 
+ LDA #0                 \ Zero the fallback key, ready for the key press
+ STA fallbackKey        \ precedence logic below
+
                         \ --- End of added code ------------------------------->
 
                         \ We're now going to scan the keyboard to see if any
@@ -7026,6 +7076,12 @@ ENDMACRO
  BMI DK1                \ If bit 7 is set, i.e. the key is being pressed, skip
                         \ to DK1
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+.keys3
+
+                        \ --- End of added code ------------------------------->
+
  CLC                    \ Otherwise this key is not being pressed, so increment
  ADC #1                 \ the loop counter in A. We couldn't use an INX or INY
                         \ instruction here because the only instructions that
@@ -7050,16 +7106,95 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BNE keys8              \ If a key has already been detected, skip the numeric
-                        \ keypad check
+ BNE keys4              \ If a key has been detected, jump to keys4 to work out
+                        \ if it's for the player with precedence
+
+ LDA fallbackKey        \ No key has been detected, so use the fallback key if
+ STA (OSSC),Y           \ there is one
+
+ JMP keys7              \ Jump to keys7 to check the numeric keypad
+
+.keys4
+
+                        \ A key has been pressed, so now we work out which
+                        \ player pressed it
+
+ STA P                  \ Store the key press in P
+
+ LDX #8                 \ We now check player 2's keys, so set a loop counter in
+                        \ X for the nine keys in the latter half of KYTB2
+
+.keys5
+
+ LDA KYTB2+8,X          \ If the pressed key matches the X-th player 2 key, jump
+ CMP P                  \ to keys6 to process it
+ BEQ keys6
+
+ DEX                    \ Decrement the key counter
+
+ BPL keys5              \ Loop back to check the next key
+
+                        \ If we get here then we have detected a player 1 key
+
+ BIT player2Turn        \ If player 1 is taking precedence, jump to keys12 to
+ BPL keys12             \ keep this key and skip checking the numeric keypad (as
+                        \ the latter is for player 2 only)
+
+                        \ Player 2 is taking precedence but this is a player 1
+                        \ key
+
+ LDA P                  \ Set A to the key we just checked
+
+ STA fallbackKey        \ Store the player 1 key as the fallback key so we can
+                        \ use it if no player 2 buttons are being pressed
+
+ SED                    \ Set the D flag to enter decimal mode for rejoining the
+                        \ key-checking loop
+
+ JMP keys3              \ Rejoin the key-checking loop to keep checking for keys
+
+.keys6
+
+                        \ If we get here then we have detected a player 2 key
+
+ BIT player2Turn        \ If player 2 is taking precedence, jump to keys7 to
+ BMI keys7              \ keep this key and move on to checking the numeric
+                        \ keypad
+
+                        \ Player 1 is taking precedence but this is a player 2
+                        \ key
+
+ LDA P                  \ Set A to the key we just checked
+
+ STA fallbackKey        \ Store the player 2 key as the fallback key so we can
+                        \ use it if no player 1 buttons are being pressed
+
+ SED                    \ Set the D flag to enter decimal mode for rejoining the
+                        \ key-checking loop
+
+ JMP keys3              \ Rejoin the key-checking loop to keep checking for keys
+
+.keys7
 
  BIT MOS                \ If this is not a BBC Master, skip the numeric keypad
- BPL keys8              \ check
+ BPL keys12             \ check
+
+                        \ If we get here then we have either detected no key
+                        \ press, or player 2 is taking precedence and we have
+                        \ detected a player 2 key
+                        \
+                        \ In either case we want to allow the numeric keypad to
+                        \ take precedence, so we check those keys now
+                        \
+                        \ They will not have been included in the keyboard check
+                        \ above as the key numbers are outside the BCD range in
+                        \ the normal keyboard loop (see numpadKYTB for the
+                        \ keypad keys)
 
  LDY #8                 \ We now scan through the keys in the numpadKYTB table,
                         \ so set X as a loop counter
 
-.keys3
+.keys8
 
  LDA numpadKYTB,Y       \ Fetch the key number to check on the numeric keypad
 
@@ -7068,42 +7203,40 @@ ENDMACRO
 
  TAX                    \ Copy the key press result into X
 
- BMI keys5              \ If bit 7 is set, i.e. the key is being pressed, skip
-                        \ to keys5
-
-.keys4
+ BMI keys9              \ If bit 7 is set, i.e. the key is being pressed, skip
+                        \ to keys9
 
  DEY                    \ Decrement the counter to check the next key
 
- BPL keys3              \ Loop back to check the next key
+ BPL keys8              \ Loop back to check the next key
 
- BMI keys8              \ If we didn't detect any key presses on the numeric
-                        \ keypad, jump to keys8 to keep going (this BMI is
+ BMI keys12             \ If we didn't detect any key presses on the numeric
+                        \ keypad, jump to keys12 to keep going (this BMI is
                         \ effectively a JMP as we just passed through a BPL)
 
-.keys5
+.keys9
 
- CPY #6                 \ If this is not entry 6, jump to keys6
- BNE keys6
+ CPY #6                 \ If this is not entry 6, jump to keys10 (we skip entry
+ BNE keys10             \ 6 as it is unused)
 
  LDA KYTB2+8+1          \ This is the second option for the rear view, so fetch
                         \ the non-numeric keypad key number for the rear view
 
- BNE keys7              \ Jump to keys7 to store this key (this is effectively a
-                        \ JMP as A is never zero)
+ BNE keys11             \ Jump to keys11 to store this key (this is effectively
+                        \ a JMP as A is never zero)
 
-.keys6
+.keys10
 
  LDA KYTB2+8,Y          \ Fetch the non-numeric keypad key number that is the
                         \ equivalent to this numeric keypad key from the latter
                         \ half of the KYTB2 table
 
-.keys7
+.keys11
 
  LDY #2                 \ Store the "other key" result in byte #2 of the block
  STA (OSSC),Y           \ pointed to by OSSC
 
-.keys8
+.keys12
 
                         \ --- End of added code ------------------------------->
 
@@ -7202,12 +7335,9 @@ ENDMACRO
                         \ parasite, so let's flip between the two on each visit
                         \ to this bit of the code
 
- LDA delta14KeyToggle   \ Flip bit 7 of delta14KeyToggle so it changes each time
- EOR #%10000000         \ we have to make this decision
- STA delta14KeyToggle
-
- BMI joys5              \ If bit 7 is set, skip the following to keep the side
-                        \ stick key "pressed"
+ BIT player2Turn        \ If bit 7 of player2Turn is set then player 2's key
+ BMI joys5              \ takes precedence, so skip the following to keep the
+                        \ side stick key "pressed"
 
  LDA rearKeyPress       \ Bit 7 is now clear, so "press" the key for the rear
  STA (OSSC),Y           \ stick
