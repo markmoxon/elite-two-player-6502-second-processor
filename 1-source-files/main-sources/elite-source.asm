@@ -6274,8 +6274,6 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA K%+NI%*2+32        \ If player 2 is not an NPC, skip the following check
  BPL main6
 
@@ -6288,9 +6286,11 @@ ENDIF
 .main6
 
  LDA player2Exploding   \ If player2Exploding is non-zero then player 2's ship
- BNE MA3                \ is exploding at the end of the game, so we need to
-                        \ skip the laser checks as bit 6 of INWK+31 is now being
-                        \ used for tracking the explosion
+ BEQ P%+5               \ is exploding at the end of the game, so we need to
+ JMP MA3                \ skip the laser checks as bit 6 of INWK+31 is now being
+                        \ used for tracking the explosion, so jump to part 4
+
+{
 
  LDA K%+NI%*2+31        \ Clear bit 6 of player 2's INWK+31 byte so we switch
  AND #%10111111         \ the lasers off by default
@@ -63352,21 +63352,18 @@ ENDMACRO
  LDA #%01000000         \ Clear bit 7 and set bit 6 of player2Exploding to move
  STA player2Exploding   \ the explosion on to the second stage
 
- LDX player2ViewSlot    \ Fetch the ship's coordinates from slot #10 + ID (i.e.
- JSR GetShipDataToINWK  \ #12 for player 2's ship, or #13 or #14 for a missile)
-                        \ so that if the ship is already on the scanner, we can
-                        \ remove it (if the ship hasn't yet been processed in
-                        \ this new slot, nothing will happen in the following)
+ LDX #12                \ Fetch the ship's coordinates for player 2's ship from
+ JSR GetShipDataToINWK  \ slot #12 so that if the ship is already on the scanner
+                        \ we can remove it
 
- LDX player1X           \ Set the scanner visiblilty flag from player1INWK31
- LDA player1INWK31,X
+ LDA player1INWK31      \ Set the scanner visibility flag from player1INWK31
  STA INWK+31
 
  LDA #YELLOW2           \ Remove the ship from the scanner, if it's there
  JSR SCAN
 
  LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
- AND #%01001111         \ exploding
+ AND #%01001111         \ exploding or appearing on the scanner
  STA player1INWK31
 
  JMP dshp12             \ Jump to part 3 to skip all the other explosion checks
@@ -63377,7 +63374,7 @@ ENDMACRO
  BVC dshp3              \ not currently exploding, so jump to dshp5 to keep going
 
  LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
- AND #%01001111         \ exploding
+ AND #%01001111         \ exploding or appearing on the scanner
  STA player1INWK31
 
  JMP dshp12             \ Jump to part 3 to skip all the other explosion checks
