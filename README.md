@@ -185,20 +185,20 @@ Checksum   Size  Checksum   Size  Match  Filename
 -----------------------------------------------------------
 5aff2635    793  5aff2635    793   Yes   ELITE.bin
 75223ba8   5769  75223ba8   5769   Yes   ELITEa.bin
-8a2b44dd   2148  8a2b44dd   2148   Yes   ELTA.bin
-50115cf1   3203  50115cf1   3203   Yes   ELTB.bin
-e9bc6e0e   3006  e9bc6e0e   3006   Yes   ELTC.bin
-d48b43a7   3215  d48b43a7   3215   Yes   ELTD.bin
-c4fd5475   3194  c4fd5475   3194   Yes   ELTE.bin
-25357cd6   4489  25357cd6   4489   Yes   ELTF.bin
-30fd0902   3653  30fd0902   3653   Yes   ELTG.bin
-e95111b6   1799  e95111b6   1799   Yes   ELTH.bin
+9d59352c   2146  9d59352c   2146   Yes   ELTA.bin
+c5ad035b   3203  c5ad035b   3203   Yes   ELTB.bin
+674d035a   3011  674d035a   3011   Yes   ELTC.bin
+91baad1d   3215  91baad1d   3215   Yes   ELTD.bin
+7ec9aa69   3212  7ec9aa69   3212   Yes   ELTE.bin
+a01c7017   4645  a01c7017   4645   Yes   ELTF.bin
+9413eca2   3653  9413eca2   3653   Yes   ELTG.bin
+69956506   1799  69956506   1799   Yes   ELTH.bin
 a533fd08     39  a533fd08     39   Yes   ELTI.bin
-03d20e66   4115  03d20e66   4115   Yes   ELTJ.bin
-a244b56a   7077  a244b56a   7077   Yes   I.CODE.bin
-b02310ae  40137  b02310ae  40137   Yes   P.CODE.bin
-bccaa702  40137  bccaa702  40137   Yes   P.CODE.unprot.bin
-08d6c612  10083  08d6c612  10083   Yes   SHIPS.bin
+8e4d5cfb   4115  8e4d5cfb   4115   Yes   ELTJ.bin
+45f6b722   7103  45f6b722   7103   Yes   I.CODE.bin
+3ef01128  40314  3ef01128  40314   Yes   P.CODE.bin
+4725d0a6  40314  4725d0a6  40314   Yes   P.CODE.unprot.bin
+bb69022b  10171  bb69022b  10171   Yes   SHIPS.bin
 dc64f379   1024  dc64f379   1024   Yes   WORDS.bin
 ```
 
