@@ -63345,7 +63345,7 @@ ENDMACRO
  BNE dshp5              \ skip the explosion checks
 
  BIT player2Exploding   \ If bit 7 of player2Exploding is clear then player 2
- BPL dshp3              \ has not just exploded, so jump to dshp3 to check bit 6
+ BPL dshp2              \ has not just exploded, so jump to dshp2 to check bit 6
 
                         \ If we get here then player 2 has just exploded
 
