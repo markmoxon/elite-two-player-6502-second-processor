@@ -40507,11 +40507,31 @@ ENDIF
 
                         \ --- Mod: Code added for Delta 14B: ------------------>
 
+ BIT titleScreen        \ If this is not the title screen, jump to rdky1 to send
+ BPL rdky1              \ the joystick configuration to the I/O processor
+
+ STZ KTRAN              \ This is the title screen, so zero the two joystick
+ STZ KTRAN+1            \ configuration bytes that we send to the I/O processor
+                        \ so it ignores the joystick and Delta 14B, as otherwise
+                        \ buttons on the latter will change the configuration
+                        \ options, which might be confusing
+
+ BRA rdky2              \ Jump to rdky2 to read the keyboard
+
+.rdky1
+
+                        \ If we get here then this is not the title screen, so
+                        \ send the joystick configurations to the I/O processor
+                        \ so it reads the joystick and Delta 14B buttons when
+                        \ configured
+
  LDA JSTK               \ Send the configuration of player 1's controls to the
  STA KTRAN              \ I/O processor
 
  LDA player2JSTK        \ Send the configuration of player 2's controls to the
  STA KTRAN+1            \ I/O processor
+
+.rdky2
 
                         \ --- End of added code ------------------------------->
 
