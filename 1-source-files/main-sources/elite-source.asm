@@ -38611,7 +38611,7 @@ ENDIF
 
 .titl10
 
- CMP #&51               \ If "S" was pressed, jump to titl12 to shuffle the
+ CMP #&33               \ If "R" was pressed, jump to titl12 to randomise the
  BEQ titl12             \ loadout options
 
  LDA configHighlight    \ Redraw the highlight to remove it
@@ -38628,7 +38628,7 @@ ENDIF
 
 .titl12
 
-                        \ If we get here then "S" was pressed, so we now
+                        \ If we get here then "R" was pressed, so we now
                         \ randomise the loadout in options 0 to 9
 
  LDA RAND               \ Seed the random number generator by EOR'ing with the

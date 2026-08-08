@@ -12558,7 +12558,7 @@ Saving file '3-assembled-output/ELTE.bin'
      523D   8E 86 0E   STX &0E86
      5240   80 CA      BRA &520C
 .titl10
-     5242   C9 51      CMP #&51
+     5242   C9 33      CMP #&33
      5244   F0 12      BEQ &5258
      5246   AD 85 0E   LDA &0E85
      5249   20 36 78   JSR &7836
