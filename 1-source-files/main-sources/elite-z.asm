@@ -7344,6 +7344,10 @@ ENDMACRO
  
 .joys5
 
+ LDA JSTK               \ If neither player is configured to use the joystick or
+ ORA player2JSTK        \ Delta 14B, jump to DK2 to skip the following, as the
+ BEQ DK2                \ joystick values are not needed
+
                         \ --- End of added code ------------------------------->
 
                         \ We now check the joystick or Bitstik
