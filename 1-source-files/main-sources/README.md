@@ -1,6 +1,6 @@
-# Annotated source code for the 6502 Second Processor version of Elite
+# Annotated source code for two-player Elite
 
-This folder contains the annotated source code for the 6502 Second Processor version of Elite.
+This folder contains the annotated source code for two-player Elite.
 
 * Main source files:
 

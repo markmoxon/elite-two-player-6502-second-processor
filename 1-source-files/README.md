@@ -1,6 +1,6 @@
-# Source files for the 6502 Second Processor version of Elite
+# Source files for two-player Elite
 
-This folder contains the source files for the 6502 Second Processor version of Elite.
+This folder contains the source files for two-player Elite.
 
 * [fonts](fonts) contains the binaries for the game's text font
 
@@ -8,7 +8,7 @@ This folder contains the source files for the 6502 Second Processor version of E
 
 * [main-sources](main-sources) contains the annotated source code
 
-* [original-sources](original-sources) contains the original source code from Ian Bell's personal website
+* [original-sources](original-sources) contains the original source code for the 6502 Second Processor version of Elite from Ian Bell's personal website
 
 ---
 

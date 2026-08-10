@@ -1,6 +1,6 @@
-# Build files for the 6502 Second Processor version of Elite
+# Build files for two-player Elite
 
-This folder contains support scripts for building the 6502 Second Processor version of Elite.
+This folder contains support scripts for building two-player Elite.
 
 * [crc32.py](crc32.py) calculates checksums during the verify stage and compares the results with the relevant binaries in the [4-reference-binaries](../4-reference-binaries) folder
 
@@ -8,7 +8,7 @@ This folder contains support scripts for building the 6502 Second Processor vers
 
 * [elite-decrypt.py](elite-decrypt.py) decrypts an encrypted game binary by doing the opposite to the elite-checksum.py script (this is not used in the build process, but is useful when trying to decrypt any new releases that might be found)
 
-* [Deltest](Deltest) contains a program for testing Delta 14B button presses (needs the 14B/1 adaptor box)
+* [deltest](deltest) contains a program for testing Delta 14B button presses (needs the 14B/1 adaptor box)
 
 It also contains the `make.exe` executable for Windows, plus the required DLL files.
 

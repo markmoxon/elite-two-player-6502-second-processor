@@ -1,6 +1,6 @@
-# Boot files for the 6502 Second Processor version of Elite
+# Boot files for two-player Elite
 
-This folder contains the boot file from the original sources for the 6502 Second Processor version of Elite on Ian Bell's personal website.
+This folder contains the boot files for two-player Elite.
 
 * [$.!BOOT.bin]($.!BOOT.bin) is the original boot file from the game disc
 
