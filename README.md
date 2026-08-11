@@ -22,7 +22,7 @@ See [my profile](https://github.com/markmoxon) for more repositories to explore.
 
 This repository contains source code for two-player Elite on the BBC Micro with 6502 Second Processor or BBC Master Turbo.
 
-Two-player Elite adds a split screen to the original BBC Micro version of Elite, so that two players can dogfight in deep space. Keyboard, joysticks and Delta 14B are supported, and one player can be configured as an AI Pilot, so you don't need two humans to play it. For more information, see the [elite.bbcelite.com website](https://elite.bbcelite.com/hacks/two-player_elite.html).
+Two-player Elite adds a split screen to the original BBC Micro version of Elite, so that two players can dogfight in deep space. Keyboard, joysticks and Delta 14B are supported, and one player can be configured as an AI Pilot, so you don't need two humans to play it. For more information, see the [elite.bbcelite.com website](https://elite.bbcelite.com/hacks/two-player_elite/).
 
 This repository contains the full source code for two-player Elite, which you can build yourself on a modern computer. See below for more details on [browsing the source code](#browsing-the-source-in-an-ide) and [building two-player Elite from the source](#building-two-player-elite-from-the-source).
 
@@ -88,7 +88,7 @@ If you want to browse the source in an IDE, you might find the following useful.
 
 * The annotated source files contain both the original Acornsoft code and all of the modifications made to convert the original into two-player Elite, so you can look through the source to see exactly what's changed in order to convert it for two players. Any code that I've removed from the original version is commented out in the source files, so when they are assembled they produce the two-player Elite binaries, while still containing details of all the modifications. You can find all the diffs by searching the sources for `Mod:`.
 
-* Two-player Elite incorporates the flicker-free algorithm from BBC Master Elite, which reduces the amount of flicker in the ship-drawing routines, and it also includes flicker-free planet-drawing routines. For more information on flicker-free Elite, see the [hacks section of the accompanying website](https://elite.bbcelite.com/hacks/flicker-free_elite.html).
+* Two-player Elite incorporates the flicker-free algorithm from BBC Master Elite, which reduces the amount of flicker in the ship-drawing routines, and it also includes flicker-free planet-drawing routines. For more information on flicker-free Elite, see the [hacks section of the accompanying website](https://elite.bbcelite.com/hacks/flicker-free_elite/).
 
 * There are loads of routines and variables in Elite - literally hundreds. You can find them in the source files by searching for the following: `Type: Subroutine`, `Type: Variable`, `Type: Workspace` and `Type: Macro`.
 
