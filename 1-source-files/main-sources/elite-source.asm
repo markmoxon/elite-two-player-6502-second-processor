@@ -15738,7 +15738,7 @@ ENDIF
 
                         \ --- End of removed code ----------------------------->
  
- .TA14
+.TA14
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
@@ -41511,6 +41511,17 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+                        \ If we get here then player 1 is configured for the
+                        \ joystick (as we only call DKJ1 when JSTK is non-zero)
+
+ LDA player2JSTK        \ If player2JSTK is zero, then player 2 is the AI Pilot,
+ BEQ dokj1              \ so jump to doke1 to skip reading joystick 2
+
+                        \ If we get here then player 1 is configured for the
+                        \ joystick and player 2 is configured for the joystick,
+                        \ so we now read the joystick 2 position into player 2's
+                        \ KY22 (fire), player2JSTX and player2JSTY variables
+
  LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
                         \ button from the key logger buffer, which contains
                         \ the value of the 6522 System VIA input register IRB
@@ -41538,6 +41549,8 @@ ENDIF
  STA player2JSTY        \ reverse the joystick Y channel, so this EOR does
                         \ exactly that, and then we store the result in
                         \ player2JSTY
+
+.dokj1
 
                         \ --- End of added code ------------------------------->
 
@@ -41664,6 +41677,17 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
+                        \ If we get here then player 1 is configured for the
+                        \ keyboard
+
+ LDA player2JSTK        \ If player2JSTK is zero, then player 2 is the AI Pilot,
+ BEQ doke1              \ so jump to doke1 to skip reading joystick 1
+
+                        \ If we get here then player 1 is configured for the
+                        \ keyboard and player 2 is configured for the joystick,
+                        \ so we now read the joystick 1 position into player 2's
+                        \ KY22 (fire), player2JSTX and player2JSTY variables
+
  LDA KTRAN+12           \ Fetch the key press state for the joystick 1 fire
                         \ button from the key logger buffer, which contains
                         \ the value of the 6522 System VIA input register IRB
@@ -41691,6 +41715,8 @@ ENDIF
  STA player2JSTY        \ reverse the joystick Y channel, so this EOR does
                         \ exactly that, and then we store the result in
                         \ player2JSTY
+
+.doke1
 
                         \ --- End of added code ------------------------------->
 
@@ -63391,7 +63417,8 @@ ENDMACRO
 .dshp2
 
  BIT player2Exploding   \ If bit 6 of player2Exploding is clear then player 1 is
- BVC dshp3              \ not currently exploding, so jump to dshp5 to keep going
+ BVC dshp3              \ not currently exploding, so jump to dshp5 to keep
+                        \ going
 
  LDA player1INWK31      \ Prevent player 1's ship in player 2's view from
  AND #%01001111         \ exploding or appearing on the scanner
@@ -63414,7 +63441,8 @@ ENDMACRO
 .dshp4
 
  BIT player1Exploding   \ If bit 6 of player1Exploding is clear then player 1 is
- BVC dshp5              \ not currently exploding, so jump to dshp5 to keep going
+ BVC dshp5              \ not currently exploding, so jump to dshp5 to keep
+                        \ going
 
                         \ If we get here then player 1 is currently exploding
  
