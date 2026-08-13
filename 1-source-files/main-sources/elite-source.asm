@@ -26255,7 +26255,7 @@ ENDIF
                         \
                         \ This means that any missiles launched by player 2
                         \ inherit this value and will therefore attack player 1,
-                        \ and if player 2 is set to an AI pilot then they will
+                        \ and if player 2 is set to the AI Pilot then they will
                         \ be hostile
 
  LDA player2ShipType    \ Spawn a ship for player 2 in slot 2
@@ -58682,7 +58682,7 @@ ENDIF
                         \ We set bit 0 when spawning the ship if E.C.M. has been
                         \ configured
 
- STZ player2LASER+1     \ Remove rear lasers for AI pilot
+ STZ player2LASER+1     \ Remove rear lasers for the AI Pilot
 
  RTS                    \ Return from the subroutine
 
