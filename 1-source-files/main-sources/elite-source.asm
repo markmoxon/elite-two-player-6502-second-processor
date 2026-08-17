@@ -58986,7 +58986,7 @@ MACRO ROTATE_VECTORS_16 c, v1, v2, v3, w1, w2, w3
  LDA XX12+2
  STA XX15+3
 
- JSR Add32              \ Calculate:
+ JSR Add24              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
                         \            = (nosev_z * sidev_z) + (nosev_x * sidev_x)
@@ -59005,7 +59005,7 @@ MACRO ROTATE_VECTORS_16 c, v1, v2, v3, w1, w2, w3
  LDA P+2
  STA K+3
 
- JSR Add32              \ Calculate:
+ JSR Add24              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
                         \            = (nosev_z * sidev_z) + (nosev_x * sidev_x)
@@ -63273,7 +63273,7 @@ MACRO ROTATE_COORDINATE_24 c, v1, v2, v3, c1, c2, c3
  LDA XX12+2
  STA XX15+3
 
- JSR Add32              \ Calculate:
+ JSR Add24              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
                         \            = (nosev_z * z) + (nosev_x * x)
@@ -63292,7 +63292,7 @@ MACRO ROTATE_COORDINATE_24 c, v1, v2, v3, c1, c2, c3
  LDA P+2
  STA K+3
 
- JSR Add32              \ Calculate:
+ JSR Add24              \ Calculate:
                         \
                         \   P(2 1 0) = K(3 2 1) + XX15(3 2 1)
                         \            = (nosev_z * z) + (nosev_x * x)
@@ -64507,7 +64507,7 @@ ENDMACRO
 
 \ ******************************************************************************
 \
-\       Name: Add32
+\       Name: Add24
 \       Type: Subroutine
 \   Category: Two-player Elite
 \    Summary: Calculate P(2 1 0) = K(3 2 1) + XX15(3 2 1)
@@ -64516,7 +64516,7 @@ ENDMACRO
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-.Add32
+.Add24
 
                         \ Calculate result:
                         \

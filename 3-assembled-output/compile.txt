@@ -35067,7 +35067,7 @@ End macro ROTATE_COORDINATE_24
      F55A   05 42      ORA &42
      F55C   85 42      STA &42
      F55E   60         RTS
-.Add32
+.Add24
      F55F   A5 36      LDA &36
      F561   45 42      EOR &42
      F563   30 30      BMI &F595
