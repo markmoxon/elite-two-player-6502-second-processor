@@ -524,7 +524,6 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
-
  LDA #16                \ Call OSBYTE with A = 16 and X = 4 to set the ADC to
  LDX #4                 \ sample 4 channels from the joysticks
  JSR OSBYTE

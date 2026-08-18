@@ -1336,7 +1336,6 @@ ENDMACRO
 
 .QQ18
 
-
                         \ --- Mod: Code removed for two-player Elite: --------->
 
 \RTOK 111               \ Token 0:      "FUEL SCOOPS ON {beep}"
@@ -2541,7 +2540,6 @@ ENDIF
  CHAR '.'
  EQUB 0
 
-
                         \ --- End of replacement ------------------------------>
 
  RTOK 102               \ Token 109:    "EXTRA PULSE LASERS"
@@ -2895,7 +2893,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- ORG &07C0
+ ORG &07C0              \ Set the assembly address back to the original address
+                        \ for SNE
 
                         \ --- End of added code ------------------------------->
 
@@ -4209,7 +4208,7 @@ ENDIF
 
 .player2VIEW
 
- SKIP 1                 \ Storage for player 2's VIEW setting
+ SKIP 1                 \ Player 2's VIEW setting
 
 .player2LASCT
 
@@ -4549,7 +4548,7 @@ ENDIF
 
 .newVectors
 
- SKIP 18                 \ The orientation vectors for a missile in player 2's
+ SKIP 18                \ The orientation vectors for a missile in player 2's
                         \ view during the transformation calculation
 .newCoords
 
@@ -6130,7 +6129,7 @@ ENDIF
  SEC                    \ Set A to use as an AI flag in SFS1 for a missile
  SBC #10                \ targeting the ship in slot player2MSTG - 10
  ASL A
- ORA #%10000000         
+ ORA #%10000000
 
  LDX #MSL               \ Set X to the ship type of a missile, and call SFS1
  JSR SFS1               \ to add a missile with the AI byte in A
@@ -14518,7 +14517,7 @@ ENDIF
  STA T
  LDA player2BETA
  AND #%01111111
- LSR A                  
+ LSR A
  LSR A
  ORA T
  JSR OSWRCH
@@ -15737,7 +15736,7 @@ ENDIF
 \RTS                    \ Return from the subroutine
 
                         \ --- End of removed code ----------------------------->
- 
+
 .TA14
 
                         \ --- Mod: Code added for two-player Elite: ----------->
@@ -16590,7 +16589,7 @@ ENDIF
 \
 \LDA K                  \ Fetch the distance to the station into A
 \
-\\BEQ PH10               \ This instruction is commented out in the original
+\\BEQ PH10              \ This instruction is commented out in the original
 \                       \ source
 \
 \CMP #157               \ If A < 157, jump to PH2 to turn away from the station,
@@ -24766,12 +24765,12 @@ ENDIF
 \LDA #189               \ Print recursive token 29 ("HYPERSPACE ")
 \JSR TT27
 \
-IF _EXECUTIVE
+\IF _EXECUTIVE
 \
 \BIT JUMP               \ If infinite jump range is configured, then jump down
 \BMI goTT147+3          \ to IJUMP so we do the jump whatever the distance
 \
-ENDIF
+\ENDIF
 \
 \LDA QQ8+1              \ If the high byte of the distance to the selected
 \BNE goTT147            \ system in QQ8 is > 0, then it is definitely too far to
@@ -24918,8 +24917,8 @@ ENDIF
 \INX                    \ We own a galactic hyperdrive, so X is &FF, so this
 \                       \ instruction sets X = 0
 \
-\\STX QQ8                \ These instructions are commented out in the original
-\\STX QQ8+1              \ source
+\\STX QQ8               \ These instructions are commented out in the original
+\\STX QQ8+1             \ source
 \
 \STX GHYP               \ The galactic hyperdrive is a one-use item, so set GHYP
 \                       \ to 0 so we no longer have one fitted
@@ -24953,7 +24952,7 @@ ENDIF
 \BPL G1                 \ Loop back for the next seed byte, until we have
 \                       \ rotated them all
 \
-\\JSR DORND              \ This instruction is commented out in the original
+\\JSR DORND             \ This instruction is commented out in the original
 \                       \ source, and would set A and X to random numbers, so
 \                       \ perhaps the original plan was to arrive in each new
 \                       \ galaxy in a random place?
@@ -25983,7 +25982,7 @@ ENDIF
 \
 \.MJP
 \
-\\JSR CATLOD             \ This instruction is commented out in the original
+\\JSR CATLOD            \ This instruction is commented out in the original
 \                       \ source
 \
 \LDA #3                 \ Clear the top part of the screen, draw a border box,
@@ -26116,7 +26115,7 @@ ENDIF
 \CMP #253               \ If A >= 253 (0.78% chance) then jump to MJP to trigger
 \BCS MJP                \ a mis-jump into witchspace
 \
-\\JSR TT111              \ This instruction is commented out in the original
+\\JSR TT111             \ This instruction is commented out in the original
 \                       \ source. It finds the closest system to coordinates
 \                       \ (QQ9, QQ10), but we don't need to do this as the
 \                       \ crosshairs will already be on a system by this point
@@ -26130,8 +26129,8 @@ ENDIF
 \                       \ and set up data blocks and slots for the planet and
 \                       \ sun
 \
-\\JSR CATLOD             \ These instructions are commented out in the original
-\\                       \ source
+\\JSR CATLOD            \ These instructions are commented out in the original
+\\                      \ source
 \\JSR LOMOD
 \
 \LDA QQ11               \ If the current view in QQ11 is not a space view (0) or
@@ -29100,7 +29099,7 @@ ENDIF
                         \ --- Mod: Code added for two-player Elite: ----------->
 
  LDY #33                \ Set P(1 0) to the address of the ship's line heap
- LDA (INF),Y            
+ LDA (INF),Y
  STA P
  INY
  LDA (INF),Y
@@ -29347,7 +29346,6 @@ ENDIF
                         \ the Z flag from the DEC instruction above
 
  RTS                    \ Return from the subroutine
-
 
 \ ******************************************************************************
 \
@@ -35193,7 +35191,6 @@ ENDIF
 
 \LDX #6                 \ Set up a counter for zeroing BETA through BETA+6
 
-
                         \ --- And replaced by: -------------------------------->
 
  LDX #4                 \ Set up a counter for zeroing BETA through BETA+4 (as
@@ -36502,7 +36499,6 @@ ENDIF
 }
 
                         \ --- End of added code ------------------------------->
-
 
  JSR DIALS              \ Call DIALS to update the dashboard
 
@@ -38151,7 +38147,7 @@ ENDIF
 \PLA                    \ Restore the recursive token number we stored on the
 \                       \ stack at the start of this subroutine
 \
-\\JSR ex                 \ This instruction is commented out in the original
+\\JSR ex                \ This instruction is commented out in the original
 \                       \ source (it would print the recursive token in A)
 \
 \JSR DETOK              \ Print the extended token in A
@@ -38360,7 +38356,6 @@ ENDIF
 \                       \ anywhere
 \
 \BEQ TL2                \ If the joystick fire button is pressed, jump to TL2
-
 
                         \ --- And replaced by: -------------------------------->
 
@@ -38817,7 +38812,7 @@ ENDIF
  EQUB 0
  EQUB 0
  EQUB 96                \ Moray
- EQUB 220                \ Thargoid
+ EQUB 220               \ Thargoid
 
                         \ --- End of added code ------------------------------->
 
@@ -41217,7 +41212,7 @@ ENDIF
 \EQUB &22               \ E         KYTB+13     E.C.M.
 \EQUB &45               \ J         KYTB+14     In-system jump
 \EQUB &52               \ C         KYTB+15     Docking computer
-
+\
 \EQUB &37               \ P         KYTB+16     Cancel docking computer
 
                         \ --- And replaced by: -------------------------------->
@@ -42539,7 +42534,6 @@ ENDIF
                         \ or "DOCKING COMPUTERS") as an in-flight message,
                         \ followed by " DESTROYED", and return from the
                         \ subroutine using a tail call
-
 
 \ ******************************************************************************
 \
@@ -50721,8 +50715,8 @@ ENDIF
  LDA #YELLOW            \ Send a #SETCOL YELLOW command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is yellow
 
- BIT drawPlayerView
- BMI clsc1
+ BIT drawPlayerView     \ If we are drawing player 2's view, jump to clsc1 to
+ BMI clsc1              \ set player 2's values
 
  STZ LAS2               \ Set LAS2 = 0 to stop any laser pulsing
 
@@ -51165,15 +51159,11 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
-
-                        \ --- End of replacement ------------------------------>
-
  LDA INWK+2             \ Set A = x_hi * 2
  ASL A
  LDA INWK+1
  ROL A
-
-                        \ --- End of added code ------------------------------->
+                        \ --- End of replacement ------------------------------>
 
  LDA INWK+1             \ Set A = x_hi
 
@@ -51684,7 +51674,7 @@ ENDIF
 \LDA #%10000000         \ Call TWIST2 with a negative A to pitch the logo by a
 \JSR TWIST2             \ small angle in a negative direction
 \
-\\DEC INWK+3             \ This instruction is commented out in the original
+\\DEC INWK+3            \ This instruction is commented out in the original
 \                       \ source, but it would decrement y_lo, moving the logo
 \                       \ down the screen
 \
@@ -57984,19 +57974,19 @@ ENDIF
 
  LDX #4                 \ Print the text for option #4 (player 1 energy)
 
- LDA ENGY
+ LDA ENGY               \ Print the energy type
  CLC
  ADC #48
- JMP PrintOption0To95   \ Print the energy type
+ JMP PrintOption0To95
 
 .PrintOption05
 
  LDX #5                 \ Print the text for option #5 (player 2 energy)
 
- LDA player2ENGY
+ LDA player2ENGY        \ Print the energy type
  CLC
  ADC #48
- JMP PrintOption0To95   \ Print the energy type
+ JMP PrintOption0To95
 
 .PrintOption06
 
@@ -58377,58 +58367,6 @@ ENDIF
  STX player1ShipType    \ Set the ship type for player 1 to the new value
 
  RTS                    \ Return from the subroutine
-
-.fixs1
-
- PHX
-
- LDA player1ShipType    \ Switch to player 1's ship
- STA TYPE
-
- ASL A                  \ Set Y = ship type * 2
- TAY
-
- LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
- STA XX0                \ table that points to the individual ship blueprints,
-                        \ so this fetches the low byte of this particular ship
-                        \ type's blueprint and stores it in XX0
-
- LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
- STA XX0+1              \ blueprint and store it in XX0+1
-
- LDX #0                 \ Fetch player 1's ship data from slot #0
- STX XSAV
- JSR GetShipDataToINWK
-
- LDA #%10000000         \ Set bit 7 of NEWB so that LL9 removes the ship from
- STA NEWB               \ the screen
- JSR LL9
-
- PLX
- STX TYPE
- STX player1ShipType    \ Set the ship type for player 1 to the new value
-
- LDA shipDistance,X     \ Set the correct distance for the new choice
- STA INWK+7
- STA K%+7
-
- STZ NEWB               \ Zero bit 7 so LL9 returns to normal
-
- TXA
- ASL A                  \ Set Y = ship type * 2
- TAY
-
- LDA XX21-2,Y           \ The ship blueprints at XX21 start with a lookup
- STA XX0                \ table that points to the individual ship blueprints,
-                        \ so this fetches the low byte of this particular ship
-                        \ type's blueprint and stores it in XX0
-
- LDA XX21-1,Y           \ Fetch the high byte of this particular ship type's
- STA XX0+1              \ blueprint and store it in XX0+1
-
- JSR LL9                \ Draw the new ship on-screen
-
- RTS
 
 .ToggleOption01
 
@@ -58842,7 +58780,6 @@ ENDIF
  JMP DOCOL              \ switch to red
 
                         \ --- End of added code ------------------------------->
-
 
 \ ******************************************************************************
 \
@@ -63445,7 +63382,7 @@ ENDMACRO
                         \ going
 
                         \ If we get here then player 1 is currently exploding
- 
+
  LDA player1INWK31      \ Set bits 5, 6 and 7 to indicate that the ship is
  ORA #%11100000         \ exploding and that the explosion is on-screen
  STA player1INWK31
@@ -64160,7 +64097,7 @@ ENDMACRO
  LSR A                  \
  STA Q                  \ We shift right to create a sign bit
 
- PHP                    \ Put the bit that we just shifted out of sidev_x_lo 
+ PHP                    \ Put the bit that we just shifted out of sidev_x_lo
                         \ onto the stack, so we can incorporate it into the
                         \ result below
 
@@ -64393,7 +64330,7 @@ ENDMACRO
  LSR A                  \
  STA Q                  \ We shift right to create a sign bit
 
- PHP                    \ Put the bit that we just shifted out of sidev_x_lo 
+ PHP                    \ Put the bit that we just shifted out of sidev_x_lo
                         \ onto the stack, so we can incorporate it into the
                         \ result below
 
@@ -64769,7 +64706,7 @@ ENDMACRO
  LDA XX0+1
  STA storeXX0+1
 
- LDA TYPE                \ Store TYPE
+ LDA TYPE               \ Store TYPE
  STA storeTYPE
 
  RTS                    \ Return from the subroutine

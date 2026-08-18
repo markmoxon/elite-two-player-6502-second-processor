@@ -951,7 +951,6 @@ ENDIF
 
                         \ --- End of removed code ----------------------------->
 
-
 .GNTMP
 
  SKIP 1                 \ Laser temperature (or "gun temperature")
@@ -7341,7 +7340,7 @@ ENDMACRO
 
  LDA rearKeyPress       \ Bit 7 is now clear, so "press" the key for the rear
  STA (OSSC),Y           \ stick
- 
+
 .joys5
 
  LDA JSTK               \ If neither player is configured to use the joystick or
@@ -7384,7 +7383,7 @@ ENDMACRO
 \
 \LDY #12                \ Store the high byte of the Bitstik rotation value in
 \STA (OSSC),Y           \ byte #12 of the block pointed to by OSSC
-
+\
 \LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
 \LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
 \STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
