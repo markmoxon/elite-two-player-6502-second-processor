@@ -7383,11 +7383,6 @@ ENDMACRO
 \
 \LDY #12                \ Store the high byte of the Bitstik rotation value in
 \STA (OSSC),Y           \ byte #12 of the block pointed to by OSSC
-\
-\LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
-\LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
-\STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
-\                       \ byte #14 of the block pointed to by OSSC
 
                         \ --- And replaced by: -------------------------------->
 
@@ -7418,12 +7413,12 @@ ENDMACRO
 
                         \ --- End of added code ------------------------------->
 
+                        \ --- End of replacement ------------------------------>
+
  LDY #14                \ Read 6522 System VIA input register IRB (SHEILA &40),
  LDA &FE40              \ which has bit 4 clear if joystick 1's fire button is
  STA (OSSC),Y           \ pressed (otherwise it's set), and store the value in
                         \ byte #14 of the block pointed to by OSSC
-
-                        \ --- End of replacement ------------------------------>
 
 .DK2
 
