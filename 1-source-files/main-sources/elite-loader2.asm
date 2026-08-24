@@ -193,8 +193,17 @@ ENDMACRO
 
 .MESS2
 
- EQUS "R.I.CODE"        \ This is short for "*RUN I.CODE"
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUS "R.I.CODE"        \ This is short for "*RUN I.CODE"
+\EQUB 13
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUS "R.I.CODE2P"      \ This is short for "*RUN I.CODE2P"
  EQUB 13
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -208,8 +217,17 @@ ENDMACRO
 
 .MESS3
 
- EQUS "R.P.CODE"        \ This is short for "*RUN P.CODE"
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUS "R.P.CODE"        \ This is short for "*RUN P.CODE"
+\EQUB 13
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUS "R.P.CODE2P"      \ This is short for "*RUN P.CODE2P"
  EQUB 13
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \

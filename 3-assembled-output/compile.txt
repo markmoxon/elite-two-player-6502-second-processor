@@ -40483,7 +40483,7 @@ Saving file '3-assembled-output/ELITE.bin'
      0092
 .ENTRY
 Macro MVE:
-     2000   A9 89      LDA #&89
+     2000   A9 8D      LDA #&8D
      2002   85 90      STA &90
      2004   A9 20      LDA #&20
      2006   85 91      STA &91
@@ -40492,10 +40492,10 @@ Macro MVE:
      200C   A9 70      LDA #&70
      200E   85 93      STA &93
      2010   A2 0E      LDX #&0E
-     2012   20 7E 20   JSR &207E
+     2012   20 82 20   JSR &2082
 End macro MVE
 Macro MVE:
-     2015   A9 89      LDA #&89
+     2015   A9 8D      LDA #&8D
      2017   85 90      STA &90
      2019   A9 30      LDA #&30
      201B   85 91      STA &91
@@ -40504,10 +40504,10 @@ Macro MVE:
      2021   A9 42      LDA #&42
      2023   85 93      STA &93
      2025   A2 01      LDX #&01
-     2027   20 7E 20   JSR &207E
+     2027   20 82 20   JSR &2082
 End macro MVE
 Macro MVE:
-     202A   A9 89      LDA #&89
+     202A   A9 8D      LDA #&8D
      202C   85 90      STA &90
      202E   A9 32      LDA #&32
      2030   85 91      STA &91
@@ -40516,10 +40516,10 @@ Macro MVE:
      2036   A9 46      LDA #&46
      2038   85 93      STA &93
      203A   A2 01      LDX #&01
-     203C   20 7E 20   JSR &207E
+     203C   20 82 20   JSR &2082
 End macro MVE
 Macro MVE:
-     203F   A9 89      LDA #&89
+     203F   A9 8D      LDA #&8D
      2041   85 90      STA &90
      2043   A9 34      LDA #&34
      2045   85 91      STA &91
@@ -40528,47 +40528,97 @@ Macro MVE:
      204B   A9 6C      LDA #&6C
      204D   85 93      STA &93
      204F   A2 01      LDX #&01
-     2051   20 7E 20   JSR &207E
+     2051   20 82 20   JSR &2082
 End macro MVE
      2054   A2 62      LDX #&62
      2056   A0 20      LDY #&20
      2058   20 F7 FF   JSR &FFF7
-     205B   A2 6B      LDX #&6B
+     205B   A2 6D      LDX #&6D
      205D   A0 20      LDY #&20
      205F   4C F7 FF   JMP &FFF7
 .MESS2
      2062   52 2E 49 ...
-     206A   0D
+     206C   0D
 .MESS3
-     206B   52 2E 50 ...
-     2073   0D
+     206D   52 2E 50 ...
+     2077   0D
 .MVPG
-     2074   A0 00      LDY #&00
+     2078   A0 00      LDY #&00
 .MPL
-     2076   B1 90      LDA (&90),Y
-     2078   91 92      STA (&92),Y
-     207A   88         DEY
-     207B   D0 F9      BNE &2076
-     207D   60         RTS
+     207A   B1 90      LDA (&90),Y
+     207C   91 92      STA (&92),Y
+     207E   88         DEY
+     207F   D0 F9      BNE &207A
+     2081   60         RTS
 .MVBL
-     207E   20 74 20   JSR &2074
-     2081   E6 91      INC &91
-     2083   E6 93      INC &93
-     2085   CA         DEX
-     2086   10 F6      BPL &207E
-     2088   60         RTS
+     2082   20 78 20   JSR &2078
+     2085   E6 91      INC &91
+     2087   E6 93      INC &93
+     2089   CA         DEX
+     208A   10 F6      BPL &2082
+     208C   60         RTS
 .DIALS
-     2089   0F 0A 1E ... INCBIN "1-source-files/images/P.DIALS2P.bin"
+     208D   0F 0A 1E ... INCBIN "1-source-files/images/P.DIALS2P.bin"
 .DATE
-     2E89   33 66 00 ... INCBIN "1-source-files/images/P.DATE2P.bin"
+     2E8D   33 66 00 ... INCBIN "1-source-files/images/P.DATE2P.bin"
 .ASOFT
-     3089   00 00 00 ... INCBIN "1-source-files/images/Z.ACSOFT.bin"
+     308D   00 00 00 ... INCBIN "1-source-files/images/Z.ACSOFT.bin"
 .ELITE
-     3289   00 00 00 ... INCBIN "1-source-files/images/Z.ELITE.bin"
+     328D   00 00 00 ... INCBIN "1-source-files/images/Z.ELITE.bin"
 .CpASOFT
-     3489   00 00 00 ... INCBIN "1-source-files/images/Z.(C)ASFT.bin"
-S.ELITEa &2000  &3689  &2000  &2000 
+     348D   00 00 00 ... INCBIN "1-source-files/images/Z.(C)ASFT.bin"
+S.ELITEa &2000  &368D  &2000  &2000 
 Saving file '3-assembled-output/ELITEa.bin'
+.MESS2
+     2000   4C 4F 41 ...
+     200B   0D
+.B%
+     200C   16
+     200D   07
+     200E   17
+     200F   01
+     2010   00
+     2011   00
+     2012   00
+     2013   00
+     2014   00
+     2015   00
+     2016   00
+     2017   00
+     2018   00
+     2019   0D
+.MESS3
+     201A   52 55 4E ...
+     2025   0D
+.MESS1
+     2026   4F 50 54 ...
+     202C   0D
+.ENTRY
+     202D   A2 26      LDX #&26
+     202F   A0 20      LDY #&20
+     2031   20 F7 FF   JSR &FFF7
+     2034   A9 72      LDA #&72
+     2036   A2 01      LDX #&01
+     2038   20 F4 FF   JSR &FFF4
+     203B   A2 FF      LDX #&FF
+.entr1
+     203D   E8         INX
+     203E   BD 0C 20   LDA &200C,X
+     2041   20 EE FF   JSR &FFEE
+     2044   C9 0D      CMP #&0D
+     2046   D0 F5      BNE &203D
+     2048   A2 00      LDX #&00
+     204A   A0 20      LDY #&20
+     204C   20 F7 FF   JSR &FFF7
+     204F   A2 90      LDX #&90
+     2051   A0 01      LDY #&01
+     2053   A9 81      LDA #&81
+     2055   20 F4 FF   JSR &FFF4
+     2058   A2 1A      LDX #&1A
+     205A   A0 20      LDY #&20
+     205C   4C F7 FF   JMP &FFF7
+S.BOOT &2000  &205F  &2000  &2000 
+Saving file '3-assembled-output/BOOT.bin'
 .readme
      0000   0A
      0001   0D

@@ -183,22 +183,23 @@ Results for variant: sng45
 [--originals--]  [---output----]
 Checksum   Size  Checksum   Size  Match  Filename
 -----------------------------------------------------------
-5aff2635    793  5aff2635    793   Yes   ELITE.bin
-75223ba8   5769  75223ba8   5769   Yes   ELITEa.bin
-9d59352c   2146  9d59352c   2146   Yes   ELTA.bin
-c5ad035b   3203  c5ad035b   3203   Yes   ELTB.bin
-674d035a   3011  674d035a   3011   Yes   ELTC.bin
-91baad1d   3215  91baad1d   3215   Yes   ELTD.bin
-7ec9aa69   3212  7ec9aa69   3212   Yes   ELTE.bin
-a01c7017   4645  a01c7017   4645   Yes   ELTF.bin
-9413eca2   3653  9413eca2   3653   Yes   ELTG.bin
-69956506   1799  69956506   1799   Yes   ELTH.bin
+138f7177     95  138f7177     95   Yes   BOOT.bin
+c62fbc42    793  c62fbc42    793   Yes   ELITE.bin
+fc3a5b04   5773  fc3a5b04   5773   Yes   ELITEa.bin
+87338f54   2149  87338f54   2149   Yes   ELTA.bin
+1272b10c   3203  1272b10c   3203   Yes   ELTB.bin
+790b1d23   3011  790b1d23   3011   Yes   ELTC.bin
+a1ef4d85   3215  a1ef4d85   3215   Yes   ELTD.bin
+addb886d   3212  addb886d   3212   Yes   ELTE.bin
+2dd35288   4668  2dd35288   4668   Yes   ELTF.bin
+5e1cc1d9   3653  5e1cc1d9   3653   Yes   ELTG.bin
+f90d17ff   1799  f90d17ff   1799   Yes   ELTH.bin
 a533fd08     39  a533fd08     39   Yes   ELTI.bin
-8e4d5cfb   4115  8e4d5cfb   4115   Yes   ELTJ.bin
-45f6b722   7103  45f6b722   7103   Yes   I.CODE.bin
-3ef01128  40314  3ef01128  40314   Yes   P.CODE.bin
-4725d0a6  40314  4725d0a6  40314   Yes   P.CODE.unprot.bin
-bb69022b  10171  bb69022b  10171   Yes   SHIPS.bin
+be9402b3   4050  be9402b3   4050   Yes   ELTJ.bin
+0fe480fd   7111  0fe480fd   7111   Yes   I.CODE.bin
+b3c514b5  40275  b3c514b5  40275   Yes   P.CODE.bin
+56a78cc1  40275  56a78cc1  40275   Yes   P.CODE.unprot.bin
+962d7aa6  10167  962d7aa6  10167   Yes   SHIPS.bin
 dc64f379   1024  dc64f379   1024   Yes   WORDS.bin
 ```
 

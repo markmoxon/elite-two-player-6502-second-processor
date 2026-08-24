@@ -41,37 +41,11 @@
  _SNG45                 = (_VARIANT = 2)
  _EXECUTIVE             = (_VARIANT = 3)
 
-IF _SNG45 OR _EXECUTIVE
- PUTFILE "3-assembled-output/ELITE.bin", "ELITE", &FF1FDC, &FF2085
-ELIF _SOURCE_DISC
- PUTFILE "3-assembled-output/ELITE.bin", "ELITE", &FF2000, &FF2085
-ENDIF
-
- PUTFILE "3-assembled-output/ELITEa.bin", "I.ELITEa", &FF2000, &FF2000
-
-IF _SNG45 OR _SOURCE_DISC
- PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE", &FF2400, &FF2C96
-ELIF _EXECUTIVE
- PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE", &032400, &032C89
-ENDIF
-
-IF _REMOVE_CHECKSUMS
- IF _SNG45 OR _SOURCE_DISC
-  PUTFILE "3-assembled-output/P.CODE.bin", "P.CODE", &001000, &0010D1
- ELIF _EXECUTIVE
-  PUTFILE "3-assembled-output/P.CODE.bin", "P.CODE", &001000, &0010D3
- ENDIF
-ELSE
- IF _SNG45 OR _SOURCE_DISC
-  PUTFILE "3-assembled-output/P.CODE.bin", "P.CODE", &001000, &00106A
- ELIF _EXECUTIVE
-  PUTFILE "3-assembled-output/P.CODE.bin", "P.CODE", &001000, &00106C
- ENDIF
-ENDIF
-
-IF _SNG45
- PUTFILE "1-source-files/boot-files/$.!BOOT.bin", "!BOOT", &002000, &00202B
- PUTFILE "1-source-files/boot-files/$.SCREEN.bin", "SCREEN", &FF7C00, &000000
-ENDIF
+ PUTFILE "3-assembled-output/ELITE.bin", "ELITE2P", &FF1FDC, &FF2085
+ PUTFILE "3-assembled-output/ELITEa.bin", "I.ELT2Pa", &FF2000, &FF2000
+ PUTFILE "3-assembled-output/I.CODE.bin", "I.CODE2P", &FF2400, &FF2C96
+ PUTFILE "3-assembled-output/P.CODE.bin", "P.CODE2P", &001000, &0010D1
+ PUTFILE "3-assembled-output/BOOT.bin", "!BOOT", &002000, &00202B
+ PUTFILE "1-source-files/images/$.SCREEN.bin", "SCREEN", &FF7C00, &000000
 
  PUTFILE "3-assembled-output/README.txt", "README", &FFFFFF, &FFFFFF

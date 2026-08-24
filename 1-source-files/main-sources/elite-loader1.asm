@@ -1356,8 +1356,18 @@ ENDIF
 
 .MESS2
 
- EQUS "R.I.ELITEa"      \ This is short for "*RUN I.ELITEa"
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\EQUS "R.I.ELITEa"      \ This is short for "*RUN I.ELITEa"
+\EQUB 13
+
+                        \ --- And replaced by: -------------------------------->
+
+ EQUS "R.I.ELT2Pa"      \ This is short for "*RUN I.ELT2Pa"
  EQUB 13
+
+                        \ --- End of replacement ------------------------------>
+
 
 \ ******************************************************************************
 \
