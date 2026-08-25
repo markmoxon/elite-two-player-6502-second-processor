@@ -15451,9 +15451,18 @@ ENDIF
 
 .TA87
 
- JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
-                        \ missile (so increase the kill tally, make an explosion
-                        \ sound and so on)
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\JSR EXNO2              \ Call EXNO2 to process the fact that we have killed a
+\                       \ missile (so increase the kill tally, make an explosion
+\                       \ sound and so on)
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDX #7                 \ Call EXNO to make the sound of us blowing up a missile
+ JSR EXNO
+
+                        \ --- End of replacement ------------------------------>
 
  ASL INWK+31            \ Set bit 7 of the missile's byte #31 flag to mark it as
  SEC                    \ having been killed, so it explodes
@@ -40921,21 +40930,25 @@ ENDIF
 \
 \ ******************************************************************************
 
-.EXNO2
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- INC TALLY              \ Increment the low byte of the kill count in TALLY
+\.EXNO2
+\
+\INC TALLY              \ Increment the low byte of the kill count in TALLY
+\
+\BNE EXNO-2             \ If there is no carry, jump to the LDX #7 below (at
+\                       \ EXNO-2)
+\
+\INC TALLY+1            \ Increment the high byte of the kill count in TALLY
+\
+\LDA #101               \ The kill total is a multiple of 256, so it's time
+\JSR MESS               \ for a pat on the back, so print recursive token 101
+\                       \ ("RIGHT ON COMMANDER!") as an in-flight message
+\
+\LDX #7                 \ Set X = 7 and fall through into EXNO to make the
+\                       \ sound of a ship exploding
 
- BNE EXNO-2             \ If there is no carry, jump to the LDX #7 below (at
-                        \ EXNO-2)
-
- INC TALLY+1            \ Increment the high byte of the kill count in TALLY
-
- LDA #101               \ The kill total is a multiple of 256, so it's time
- JSR MESS               \ for a pat on the back, so print recursive token 101
-                        \ ("RIGHT ON COMMANDER!") as an in-flight message
-
- LDX #7                 \ Set X = 7 and fall through into EXNO to make the
-                        \ sound of a ship exploding
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -42383,15 +42396,23 @@ ENDIF
  LDA #%11000000         \ Set the DTW4 flag to %11000000 (justify text, buffer
  STA DTW4               \ entire token including carriage returns)
 
- LDA de                 \ Set the C flag to bit 1 of the destruction flag in de
- LSR A
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA de                 \ Set the C flag to bit 1 of the destruction flag in de
+\LSR A
+
+                        \ --- End of removed code ----------------------------->
 
  LDA #0                 \ Set A = 0
 
- BCC P%+4               \ If the destruction flag in de is not set, skip the
-                        \ following instruction
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #10                \ Set A = 10
+\BCC P%+4               \ If the destruction flag in de is not set, skip the
+\                       \ following instruction
+\
+\LDA #10                \ Set A = 10
+
+                        \ --- End of removed code ----------------------------->
 
  STA DTW5               \ Store A in DTW5, so DTW5 (which holds the size of the
                         \ justified text buffer at BUF) is set to 0 if the
@@ -42453,13 +42474,22 @@ ENDIF
 
 .mes9
 
- JSR TT27               \ Call TT27 to print the text token in A
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LSR de                 \ If bit 0 of variable de is clear, return from the
- BCC out                \ subroutine (as out contains an RTS)
+\JSR TT27               \ Call TT27 to print the text token in A
+\
+\LSR de                 \ If bit 0 of variable de is clear, return from the
+\BCC out                \ subroutine (as out contains an RTS)
+\
+\LDA #253               \ Print recursive token 93 (" DESTROYED") and return
+\JMP TT27               \ from the subroutine using a tail call
 
- LDA #253               \ Print recursive token 93 (" DESTROYED") and return
- JMP TT27               \ from the subroutine using a tail call
+                        \ --- And replaced by: -------------------------------->
+
+ JMP TT27               \ Call TT27 to print the text token in A and return from
+                        \ the subroutine using a tail call
+
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
@@ -42475,65 +42505,69 @@ ENDIF
 \
 \ ******************************************************************************
 
-.OUCH
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- JSR DORND              \ Set A and X to random numbers
+\.OUCH
+\
+\JSR DORND              \ Set A and X to random numbers
+\
+\BMI out                \ If A < 0 (50% chance), return from the subroutine
+\                       \ (as out contains an RTS)
+\
+\CPX #22                \ If X >= 22 (91% chance), return from the subroutine
+\BCS out                \ (as out contains an RTS)
+\
+\LDA QQ20,X             \ If we do not have any of item QQ20+X, return from the
+\BEQ out                \ subroutine (as out contains an RTS). X is in the range
+\                       \ 0-21, so this not only checks for cargo, but also for
+\                       \ E.C.M., fuel scoops, energy bomb, energy unit and
+\                       \ docking computer, all of which can be destroyed
+\
+\LDA DLY                \ If there is already an in-flight message on-screen,
+\BNE out                \ return from the subroutine (as out contains an RTS)
+\
+\LDY #3                 \ Set bit 1 of de, the equipment destruction flag, so
+\STY de                 \ that when we call MESS below, " DESTROYED" is appended
+\                       \ to the in-flight message
+\
+\STA QQ20,X             \ A is 0 (as we didn't branch with the BNE above), so
+\                       \ this sets QQ20+X to 0, which destroys any cargo or
+\                       \ equipment we have of that type
+\
+\CPX #17                \ If X >= 17 then we just lost a piece of equipment, so
+\BCS ou1                \ jump to ou1 to print the relevant message
+\
+\TXA                    \ Print recursive token 48 + A as an in-flight token,
+\ADC #208               \ which will be in the range 48 ("FOOD") to 64 ("ALIEN
+\BNE MESS               \ ITEMS") as the C flag is clear, so this prints the
+\                       \ destroyed item's name, followed by " DESTROYED" (as we
+\                       \ set bit 1 of the de flag above), and returns from the
+\                       \ subroutine using a tail call
+\
+\.ou1
+\
+\BEQ ou2                \ If X = 17, jump to ou2 to print "E.C.M.SYSTEM
+\                       \ DESTROYED" and return from the subroutine using a tail
+\                       \ call
+\
+\CPX #18                \ If X = 18, jump to ou3 to print "FUEL SCOOPS
+\BEQ ou3                \ DESTROYED" and return from the subroutine using a tail
+\                       \ call
+\
+\TXA                    \ Otherwise X is in the range 19 to 21 and the C flag is
+\ADC #113-20            \ set (as we got here via a BCS to ou1), so we set A as
+\                       \ follows:
+\                       \
+\                       \   A = 113 - 20 + X + C
+\                       \     = 113 - 19 + X
+\                       \     = 113 to 115
+\
+\JMP MESS               \ Print recursive token A ("ENERGY BOMB", "ENERGY UNIT"
+\                       \ or "DOCKING COMPUTERS") as an in-flight message,
+\                       \ followed by " DESTROYED", and return from the
+\                       \ subroutine using a tail call
 
- BMI out                \ If A < 0 (50% chance), return from the subroutine
-                        \ (as out contains an RTS)
-
- CPX #22                \ If X >= 22 (91% chance), return from the subroutine
- BCS out                \ (as out contains an RTS)
-
- LDA QQ20,X             \ If we do not have any of item QQ20+X, return from the
- BEQ out                \ subroutine (as out contains an RTS). X is in the range
-                        \ 0-21, so this not only checks for cargo, but also for
-                        \ E.C.M., fuel scoops, energy bomb, energy unit and
-                        \ docking computer, all of which can be destroyed
-
- LDA DLY                \ If there is already an in-flight message on-screen,
- BNE out                \ return from the subroutine (as out contains an RTS)
-
- LDY #3                 \ Set bit 1 of de, the equipment destruction flag, so
- STY de                 \ that when we call MESS below, " DESTROYED" is appended
-                        \ to the in-flight message
-
- STA QQ20,X             \ A is 0 (as we didn't branch with the BNE above), so
-                        \ this sets QQ20+X to 0, which destroys any cargo or
-                        \ equipment we have of that type
-
- CPX #17                \ If X >= 17 then we just lost a piece of equipment, so
- BCS ou1                \ jump to ou1 to print the relevant message
-
- TXA                    \ Print recursive token 48 + A as an in-flight token,
- ADC #208               \ which will be in the range 48 ("FOOD") to 64 ("ALIEN
- BNE MESS               \ ITEMS") as the C flag is clear, so this prints the
-                        \ destroyed item's name, followed by " DESTROYED" (as we
-                        \ set bit 1 of the de flag above), and returns from the
-                        \ subroutine using a tail call
-
-.ou1
-
- BEQ ou2                \ If X = 17, jump to ou2 to print "E.C.M.SYSTEM
-                        \ DESTROYED" and return from the subroutine using a tail
-                        \ call
-
- CPX #18                \ If X = 18, jump to ou3 to print "FUEL SCOOPS
- BEQ ou3                \ DESTROYED" and return from the subroutine using a tail
-                        \ call
-
- TXA                    \ Otherwise X is in the range 19 to 21 and the C flag is
- ADC #113-20            \ set (as we got here via a BCS to ou1), so we set A as
-                        \ follows:
-                        \
-                        \   A = 113 - 20 + X + C
-                        \     = 113 - 19 + X
-                        \     = 113 to 115
-
- JMP MESS               \ Print recursive token A ("ENERGY BOMB", "ENERGY UNIT"
-                        \ or "DOCKING COMPUTERS") as an in-flight message,
-                        \ followed by " DESTROYED", and return from the
-                        \ subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -42637,15 +42671,7 @@ ENDIF
  LDA #%11000000         \ Set the DTW4 flag to %11000000 (justify text, buffer
  STA DTW4               \ entire token including carriage returns)
 
- LDA de                 \ Set the C flag to bit 1 of the destruction flag in de
- LSR A
-
  LDA #0                 \ Set A = 0
-
- BCC P%+4               \ If the destruction flag in de is not set, skip the
-                        \ following instruction
-
- LDA #10                \ Set A = 10
 
  STA DTW5               \ Store A in DTW5, so DTW5 (which holds the size of the
                         \ justified text buffer at BUF) is set to 0 if the
@@ -42702,13 +42728,17 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ou2
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #108               \ Set A to recursive token 108 ("E.C.M.SYSTEM")
+\.ou2
+\
+\LDA #108               \ Set A to recursive token 108 ("E.C.M.SYSTEM")
+\
+\JMP MESS               \ Print recursive token A as an in-flight message,
+\                       \ followed by " DESTROYED", and return from the
+\                       \ subroutine using a tail call
 
- JMP MESS               \ Print recursive token A as an in-flight message,
-                        \ followed by " DESTROYED", and return from the
-                        \ subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
@@ -42719,13 +42749,17 @@ ENDIF
 \
 \ ******************************************************************************
 
-.ou3
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
- LDA #111               \ Set A to recursive token 111 ("FUEL SCOOPS")
+\.ou3
+\
+\LDA #111               \ Set A to recursive token 111 ("FUEL SCOOPS")
+\
+\JMP MESS               \ Print recursive token A as an in-flight message,
+\                       \ followed by " DESTROYED", and return from the
+\                       \ subroutine using a tail call
 
- JMP MESS               \ Print recursive token A as an in-flight message,
-                        \ followed by " DESTROYED", and return from the
-                        \ subroutine using a tail call
+                        \ --- End of removed code ----------------------------->
 
 \ ******************************************************************************
 \
