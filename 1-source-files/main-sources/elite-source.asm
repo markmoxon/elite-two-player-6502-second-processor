@@ -37431,9 +37431,6 @@ ENDIF
  LDA #64                \ Set gameOverCounter to set the length of the game over
  STA gameOverCounter    \ sequence
 
- LDA #7                 \ Set MCNT = 7 so tactics will be applied to slot #7,
- STA MCNT               \ which we know is unused (so this disables tactics)
-
 .deaf7
 
                         \ We now continue to run the game for a short period,
@@ -48811,6 +48808,13 @@ ENDIF
  BPL MV30               \ If bit 7 of the AI flag is clear, then skip the
                         \ following as AI is disabled and the ship has no
                         \ tactics
+
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT collisionCounter   \ Skip tactics if this is the game over screen
+ BMI MV30
+
+                        \ --- End of added code ------------------------------->
 
  CPX #MSL               \ If the ship is a missile, skip straight to MV26 to
  BEQ MV26               \ call the TACTICS routine, as we do this every
