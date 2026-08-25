@@ -1789,15 +1789,32 @@ ENDIF
  CONT 1                 \ Encoded as:   "[122][1]{1}"
  EQUB 0
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\CHAR 'T'               \ Token 40:     "TARGET LOST"
+\TWOK 'A', 'R'          \
+\TWOK 'G', 'E'          \ Encoded as:   "T<138><131>T LO[43]"
+\CHAR 'T'
+\CHAR ' '
+\CHAR 'L'
+\CHAR 'O'
+\RTOK 43
+\EQUB 0
+
+                        \ --- And replaced by: -------------------------------->
+
  CHAR 'T'               \ Token 40:     "TARGET LOST"
  TWOK 'A', 'R'          \
- TWOK 'G', 'E'          \ Encoded as:   "T<138><131>T LO[43]"
+ TWOK 'G', 'E'          \ Encoded as:   "T<138><131>T LOST"
  CHAR 'T'
  CHAR ' '
  CHAR 'L'
  CHAR 'O'
- RTOK 43
+ CHAR 'S'
+ CHAR 'T'
  EQUB 0
+
+                        \ --- End of replacement ------------------------------>
 
  RTOK 106               \ Token 41:     "MISSILE JAMMED"
  CHAR ' '               \
