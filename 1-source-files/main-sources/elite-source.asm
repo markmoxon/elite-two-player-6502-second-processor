@@ -34790,6 +34790,16 @@ ENDIF
 
 .kshp3
 
+ CPY #2                 \ If we are not removing player 2's ship in slot #2,
+ BNE kshp4              \ jump to kshp4 to skip the following
+
+ JMP MAC1               \ We must be in the game over screen by this point, so
+                        \ don't remove player 2's ship or it will mess up the
+                        \ missile slots, so just jump back to the main loop
+                        \ without emptying slot #2
+
+.kshp4
+
                         \ --- End of added code ------------------------------->
 
                         \ --- Mod: Code removed for two-player Elite: --------->
