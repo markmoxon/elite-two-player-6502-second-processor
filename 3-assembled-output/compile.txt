@@ -10395,7 +10395,7 @@ Saving file '3-assembled-output/ELTD.bin'
      4218   A0 08      LDY #&08
      421A   B1 1F      LDA (&1F),Y
      421C   30 11      BMI &422F
-     421E   AD 6A 0E   LDA &0E6A
+     421E   AD E9 08   LDA &08E9
      4221   ED D3 0E   SBC &0ED3
      4224   90 04      BCC &422A
      4226   8D E9 08   STA &08E9
@@ -10404,7 +10404,7 @@ Saving file '3-assembled-output/ELTD.bin'
      422A   9C E9 08   STZ &08E9
      422D   90 0F      BCC &423E
 .OO1
-     422F   AD 6B 0E   LDA &0E6B
+     422F   AD EA 08   LDA &08EA
      4232   ED D3 0E   SBC &0ED3
      4235   90 04      BCC &423B
      4237   8D EA 08   STA &08EA

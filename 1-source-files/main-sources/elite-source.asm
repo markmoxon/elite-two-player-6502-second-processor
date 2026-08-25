@@ -29916,7 +29916,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDA player2FSH         \ Otherwise the forward shield was damaged, so fetch the
+ LDA FSH                \ Otherwise the forward shield was damaged, so fetch the
  SBC damageToApply      \ shield strength from FSH and subtract the damage to
                         \ apply
 
@@ -29948,7 +29948,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- LDA player2ASH         \ The aft shield was damaged, so fetch the shield
+ LDA ASH                \ The aft shield was damaged, so fetch the shield
  SBC damageToApply      \ strength from ASH and subtract the damage to apply
 
                         \ --- End of replacement ------------------------------>
