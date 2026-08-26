@@ -6778,11 +6778,11 @@ ENDIF
                         \ the same speed
 
  LDA #80                \ Call oops1 to damage player 1 by 80 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR oops1
 
  LDA #80                \ Call opps1 to damage player 2 by 80 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR opps1
 
  BRA main4              \ Jump to main4 to keep going
@@ -6792,11 +6792,11 @@ ENDIF
                         \ If we get here then player 1 is slower than player 2
 
  LDA #80                \ Call oops1 to damage player 1 by 80 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR oops1
 
  LDA #250               \ Call opps1 to damage player 2 by 250 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR opps1
 
  BRA main4              \ Jump to main4 to keep going
@@ -6806,11 +6806,11 @@ ENDIF
                         \ If we get here then player 1 is faster than player 2
 
  LDA #250               \ Call oops1 to damage player 1 by 250 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR oops1
 
  LDA #80                \ Call opps1 to damage player 2 by 80 and without
- STA T                  \ affecting the scoree
+ STA damageToApply      \ affecting the scoree
  JSR opps1
 
 .main4
