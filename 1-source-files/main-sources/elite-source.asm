@@ -37222,6 +37222,11 @@ ENDIF
 
  PHA                    \ Store the winning player number on the stack
 
+ JSR WipePlayer2Scanner \ Clear all player 2 (yellow) ships from the scanner, as
+                        \ we don't draw player 2's scanner ships once bit 7 of
+                        \ gameOver is set (as they tend to go a bit wrong on the
+                        \ game over screen)
+
  LDA #%10000000         \ Set bit 7 of gameOver to record that this is the game
  STA gameOver           \ over screen
 
@@ -37478,8 +37483,6 @@ ENDIF
 
  BNE deaf7              \ Loop back until gameOverCounter runs down, at which
                         \ point we stop looping and return to the main menu
-
- JSR WipePlayer2Scanner \ Clear all player 2 (yellow) ships from the scanner
 
                         \ --- End of replacement ------------------------------>
 
@@ -51185,6 +51188,19 @@ ENDIF
  BIT titleScreen        \ If bit 7 of titleScreen is set then the scanner is
  BMI SC5                \ disabled for the title screen, so return from the
                         \ subroutine
+
+ CMP #YELLOW2           \ If we are now drawing player 2's scanner in yellow
+ BNE scan1              \ then jump to scan1 to keep going
+
+                        \ If we get here then we are drawing player 2's scanner
+                        \ in yellow
+
+ BIT gameOver           \ If this is also the game over screen, then return from
+ BMI SC5                \ the subroutine without drawing anything as we have
+                        \ already cleared the scanner of yellow sticks and don't
+                        \ want to draw any more
+
+.scan1
 
  STA SCANcol            \ Store the scanner colour in SCANcol so it can be sent
                         \ to the I/O processor with the #onescan command
