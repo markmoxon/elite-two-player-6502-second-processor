@@ -4261,10 +4261,14 @@ ENDIF
 
  SKIP 1                 \ A counter for ensuring collisions are only detected
                         \ every few iterations around the main loop
+
+.gameOver
+
+ SKIP 1                 \ The state of the end of the game:
                         \
-                        \ If bit 7 is set then collisions are disabled for the
-                        \ game over screen (so we can also use this as a way of
-                        \ detecting whether the game over screen is active)
+                        \   * Bit 7 clear = we are not on the game over screen
+                        \
+                        \   * Bit 7 set = we are on the game over screen
 
 .player1Exploding
 
@@ -6721,9 +6725,11 @@ ENDIF
  CMP #2                 \ the collision checks, as we're only interested in
  BNE main4              \ collisions between the two players
 
- LDA collisionCounter   \ If bit 7 of collisionCounter is set then we are on the
- BMI main4              \ game over screen and collisions are disabled, so jump
-                        \ to main4 to skip all the collision code
+ BIT gameOver           \ If bit 7 of gameOver is set then we are on the game
+ BMI main4              \ over screen and collisions are disabled, so jump to
+                        \ main4 to skip all the collision code
+
+ LDA collisionCounter   \ Set A to the value of the collision counter
 
  BEQ main1              \ If collisionCounter is zero then it's been long enough
                         \ since the last collision, so jump to main1 to check
@@ -16176,7 +16182,7 @@ ENDIF
  CMP #2
  BNE tact4
 
- BIT collisionCounter   \ If this is the game over screen, jump to tact4 to skip
+ BIT gameOver           \ If this is the game over screen, jump to tact4 to skip
  BMI tact4              \ processing the scores
 
  JSR Player2ee3         \ Print player 2's score to remove it from the screen
@@ -29868,7 +29874,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- BIT collisionCounter   \ If this is the game over screen, return from the
+ BIT gameOver           \ If this is the game over screen, return from the
  BPL P%+3               \ subroutine without processing damage
  RTS
 
@@ -30058,7 +30064,7 @@ ENDIF
 
 .Player2OOPS
 
- BIT collisionCounter   \ If this is the game over screen, return from the
+ BIT gameOver           \ If this is the game over screen, return from the
  BPL P%+3               \ subroutine without processing damage
  RTS
 
@@ -34650,6 +34656,14 @@ ENDIF
 
 .KILLSHP
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
+ BIT gameOver           \ If this is the game over screen, jump to MAC1 to skip
+ BPL P%+5               \ the ship removal and rejoin the main loop
+ JMP MAC1
+
+                        \ --- End of added code ------------------------------->
+
  STX XX4                \ Store the slot number of the ship to remove in XX4
 
  LDA MSTG               \ Check whether this slot matches the slot number in
@@ -35402,6 +35416,10 @@ ENDIF
  STA player2ALPHA       \ Reset player 2's roll angle to 0
 
  STA player2ALP1        \ Reset player 2's roll angle magnitude to 0
+
+ STA drawPlayerView     \ Clear bit 7 of drawPlayerView to reset the view
+                        \ drawing flag to player 1's view, so the call to WPSHPS
+                        \ clears the ships from the scanner properly
 
                         \ --- End of added code ------------------------------->
 
@@ -37204,8 +37222,8 @@ ENDIF
 
  PHA                    \ Store the winning player number on the stack
 
- LDA #%10000000         \ Set bit 7 of collisionCounter to disable collisions
- STA collisionCounter   \ during the game over screen
+ LDA #%10000000         \ Set bit 7 of gameOver to record that this is the game
+ STA gameOver           \ over screen
 
                         \ --- End of added code ------------------------------->
 
@@ -48821,7 +48839,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- BIT collisionCounter   \ Skip tactics if this is the game over screen
+ BIT gameOver           \ Skip applying tactics if this is the game over screen
  BMI MV30
 
                         \ --- End of added code ------------------------------->
