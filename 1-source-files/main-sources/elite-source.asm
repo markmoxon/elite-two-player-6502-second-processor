@@ -38680,9 +38680,17 @@ ENDIF
                         \ If we get here then "R" was pressed, so we now
                         \ randomise the loadout in options 0 to 9
 
- LDA RAND               \ Seed the random number generator by EOR'ing with the
- EOR MCNT               \ current loop counter, to introduce a bit of entropy
- STA RAND
+ LDA #150               \ Read the 6522 System VIA T1C-L timer 1 low-order
+ LDX #&44               \ counter (SHEILA &44) and use it to seed the random
+ JSR OSBYTE             \ number generator, along with the current value of
+ TYA                    \ MCNT, to introduce some entropy into the DORND
+ EOR MCNT               \ routine
+ STY RAND+1
+
+ JSR DORND              \ Set A and X to random numbers four times, to push the
+ JSR DORND              \ timer setting into the random number pipeline
+ JSR DORND
+ JSR DORND
 
  LDA #0                 \ Set YSAV to 0 to use as a loop counter in the
  STA YSAV               \ following loop to work through all ten options
