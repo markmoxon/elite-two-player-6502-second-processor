@@ -37227,6 +37227,14 @@ ENDIF
 
  PHA                    \ Store the winning player number on the stack
 
+ LDA player2ShipType    \ Remove the red laser line from player 2's ship, if
+ LDX #2                 \ present
+ JSR RemoveLaserLineX
+
+ LDA player1ShipType    \ Remove the red laser line from player 1's ship, if
+ LDX #12                \ present
+ JSR RemoveLaserLineX
+
  JSR WipePlayer2Scanner \ Clear all player 2 (yellow) ships from the scanner, as
                         \ we don't draw player 2's scanner ships once bit 7 of
                         \ gameOver is set (as they tend to go a bit wrong on the
@@ -37416,14 +37424,6 @@ ENDIF
 
  STZ LAS2               \ Zero LAS2 for both players so the main laser lines
  STZ player2LAS2        \ don't get redrawn in the main loop
-
- LDA player2ShipType    \ Remove the red laser line from player 2's ship, if
- LDX #2                 \ present
- JSR RemoveLaserLineX
-
- LDA player1ShipType    \ Remove the red laser line from player 1's ship, if
- LDX #12                \ present
- JSR RemoveLaserLineX
 
  PLA                    \ Set A to the winning player
 
@@ -46798,6 +46798,9 @@ ENDIF
 \STY U                  \ Store the updated ship line heap pointer in U
 
                         \ --- And replaced by: -------------------------------->
+
+ BIT gameOver           \ If this is the game over screen, do not draw the laser
+ BMI LL170              \ line
 
                         \ If we get here then there is a laser line, so now we
                         \ store it and draw it
