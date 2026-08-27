@@ -37417,12 +37417,12 @@ ENDIF
  STZ LAS2               \ Zero LAS2 for both players so the main laser lines
  STZ player2LAS2        \ don't get redrawn in the main loop
 
- LDA player1ShipType    \ Remove the red laser line from player 1, if present
- LDX #2
+ LDA player2ShipType    \ Remove the red laser line from player 2's ship, if
+ LDX #2                 \ present
  JSR RemoveLaserLineX
 
- LDA player2ShipType    \ Remove the red laser line from player 2, if present
- LDX #12
+ LDA player1ShipType    \ Remove the red laser line from player 1's ship, if
+ LDX #12                \ present
  JSR RemoveLaserLineX
 
  PLA                    \ Set A to the winning player
