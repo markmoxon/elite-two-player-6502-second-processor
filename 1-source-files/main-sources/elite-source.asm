@@ -4600,6 +4600,10 @@ ENDIF
 
  SKIP 1                 \ The damage to apply to a player's ship
 
+.digitCount
+
+ SKIP 1                 \ The number of digits in the score being printed
+
 .endWP
 
  SKIP 0                 \ A marker for the end of the player workspace
@@ -25111,8 +25115,8 @@ ENDIF
 
 .qscr1
 
- STY P                  \ Set P to the number of digits in the target score (1
-                        \ to 3)
+ STY digitCount         \ Set digitCount to the number of digits in the target
+                        \ score (1 to 3)
 
  LDA #13                \ Move the text cursor to row 13, column 25
  JSR DOYC
@@ -25130,24 +25134,23 @@ ENDIF
  LDA #'0'               \ Print a trailing 0 for the target score
  JSR TT27
 
- LDA #29                \ Move the text cursor to column 29 - P
+ LDA #29                \ Move the text cursor to column 29 - digitCount
  SEC
- SBC P
+ SBC digitCount
  JSR DOXC
 
  LDA #'/'               \ Print a "/" between the two scores
  JSR TT27
 
- LDA #24                \ Move the text cursor to column 24 - P
+ LDA #24                \ Move the text cursor to column 24 - digitCount
  SEC
- SBC P
+ SBC digitCount
  JSR DOXC
 
  LDX player2Score       \ Set (Y X) to the score to print
  LDY player2Score+1
 
- BEQ pr6                \ Jump to pr6 to print X to 5 digits, as the high byte
-                        \ in Y is 0
+ BRA pr6                \ Jump to pr6 to print (Y X) to 5 digits
 
                         \ --- End of added code ------------------------------->
 
@@ -25192,6 +25195,9 @@ ENDIF
 \JSR DOYC
 \
 \LDY #0                 \ Set Y = 0 for the high byte in pr6
+\
+\                       \ Fall through into pr6 to print X to 5 digits, as the
+\                       \ high byte in Y is 0
 
                         \ --- And replaced by: -------------------------------->
 
@@ -25205,8 +25211,8 @@ ENDIF
 
 .pscr1
 
- STY P                  \ Set P to the number of digits in the target score (1
-                        \ to 3)
+ STY digitCount         \ Set digitCount to the number of digits in the target
+                        \ score (1 to 3)
 
  LDA #1                 \ Move the text cursor to row 1, column 25
  JSR DOYC
@@ -25224,26 +25230,25 @@ ENDIF
  LDA #'0'               \ Print a trailing 0 for the target score
  JSR TT27
 
- LDA #29                \ Move the text cursor to column 29 - P
+ LDA #29                \ Move the text cursor to column 29 - digitCount
  SEC
- SBC P
+ SBC digitCount
  JSR DOXC
 
  LDA #'/'               \ Print a "/" between the two scores
  JSR TT27
 
- LDA #24                \ Move the text cursor to column 24 - P
+ LDA #24                \ Move the text cursor to column 24 - digitCount
  SEC
- SBC P
+ SBC digitCount
  JSR DOXC
 
  LDX player1Score       \ Set (Y X) to the score to print
  LDY player1Score+1
 
-                        \ --- End of replacement ------------------------------>
+                        \ Fall through into pr6 to print (Y X) to 5 digits
 
-                        \ Fall through into pr6 to print X to 5 digits, as the
-                        \ high byte in Y is 0
+                        \ --- End of replacement ------------------------------>
 
 \ ******************************************************************************
 \
