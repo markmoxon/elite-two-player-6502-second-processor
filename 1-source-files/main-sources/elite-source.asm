@@ -11465,14 +11465,43 @@ ENDIF
 
  LDX SY,Y               \ Copy the Y-th particle's y-coordinate from SY+Y into X
 
- LDA SX,Y               \ Copy the Y-th particle's x-coordinate from SX+Y into
- STA Y1                 \ both Y1 and the particle's y-coordinate
- STA SY,Y
+                        \ --- Mod: Code removed for two-player Elite: --------->
 
+\LDA SX,Y               \ Copy the Y-th particle's x-coordinate from SX+Y into
+\STA Y1                 \ both Y1 and the particle's y-coordinate
+\STA SY,Y
+\
+\TXA                    \ Copy the Y-th particle's original y-coordinate into
+\STA X1                 \ both X1 and the particle's x-coordinate, so the x- and
+\STA SX,Y               \ y-coordinates are now swapped and (X1, Y1) contains
+\                       \ the particle's new coordinates
+
+                        \ --- And replaced by: -------------------------------->
+
+ LDA SX,Y               \ Set A to the Y-th particle's x-coordinate from SX+Y
+
+ PHA                    \ Set the C flag to bit 6 of the Y-th particle's
+ ASL A                  \ x-coordinate, so we can move it from the x-coordinate
+ ASL A                  \ into the y-coordinate
+ PLA
+
+ AND #%10111111         \ Halve the vertical range for stardust
+
+ STA Y1                 \ Copy the Y-th particle's x-coordinate from SX+Y into
+ STA SY,Y               \ both Y1 and the particle's y-coordinate
+ 
  TXA                    \ Copy the Y-th particle's original y-coordinate into
- STA X1                 \ both X1 and the particle's x-coordinate, so the x- and
- STA SX,Y               \ y-coordinates are now swapped and (X1, Y1) contains
+
+ BCC P%+4               \ Set bit 6 of the y-coordinate to the C flag, so we
+ ORA #%01000000         \ reuse bit 6 of the x-coordinate here to double the
+                        \ horizontal range of the particle
+
+ STA X1                 \ Copy the Y-th particle's original y-coordinate into
+ STA SX,Y               \ both X1 and the particle's x-coordinate, so the x- and
+                        \ y-coordinates are now swapped and (X1, Y1) contains
                         \ the particle's new coordinates
+
+                        \ --- End of replacement ------------------------------>
 
  LDA SZ,Y               \ Fetch the Y-th particle's distance from SZ+Y into ZZ
  STA ZZ
