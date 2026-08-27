@@ -10681,7 +10681,7 @@ ENDIF
 
                         \ --- And replaced by: -------------------------------->
 
- CMP #48                \ If |Y1| >= 48 then it's off the screen (as 96 is half
+ CMP #48                \ If |Y1| >= 48 then it's off the screen (as 48 is half
  BCS PX4                \ the screen height), so return from the subroutine (as
                         \ PX4 contains an RTS)
 
@@ -10693,8 +10693,10 @@ ENDIF
                         \ to skip the following negation
 
  EOR #%01111111         \ The y-coordinate offset is negative, so flip all the
- ADC #1                 \ bits apart from the sign bit and subtract 1, to negate
-                        \ it to a positive number, i.e. A is now |Y1|
+ ADC #1                 \ bits apart from the sign bit and subtract 1 to convert
+                        \ A from a sign-magnitude number into a traditional
+                        \ signed number, so A is now Y1 in a form that can be
+                        \ used with the SBC instruction
 
 .PX2
                         \ --- Mod: Code removed for two-player Elite: --------->
@@ -11944,9 +11946,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
@@ -12332,9 +12332,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
@@ -12358,9 +12356,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
@@ -18543,9 +18539,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
@@ -18573,9 +18567,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
@@ -28989,9 +28981,7 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
- LSR A                  \ Halve the vertical range for stardust, keeping the
- BCC P%+4               \ balance of negative vs positive
- ORA #%10000000
+ AND #%10111111         \ Halve the vertical range for stardust
 
                         \ --- End of added code ------------------------------->
 
