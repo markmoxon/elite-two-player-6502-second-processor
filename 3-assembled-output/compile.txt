@@ -3416,13 +3416,13 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      11D2   C9 25      CMP #&25
      11D4   B0 03      BCS &11D9
      11D6   EE 5B 0E   INC &0E5B
-.MA17
+.MA17a
      11D9   AD 52 08   LDA &0852
      11DC   F0 08      BEQ &11E6
      11DE   CE 5B 0E   DEC &0E5B
      11E1   D0 03      BNE &11E6
      11E3   EE 5B 0E   INC &0E5B
-.MA4
+.MA4a
      11E6   AD 4C 08   LDA &084C
      11E9   2D CF 08   AND &08CF
      11EC   F0 0F      BEQ &11FD
@@ -3447,7 +3447,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      1215   AD 4D 08   LDA &084D
      1218   F0 07      BEQ &1221
      121A   A5 44      LDA &44
-     121C   30 7A      BMI &1298
+     121C   30 03      BMI &1221
      121E   20 FE 28   JSR &28FE
 .MA24
      1221   AD 50 08   LDA &0850
@@ -3459,7 +3459,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      1230   20 10 57   JSR &5710
      1233   A9 00      LDA #&00
      1235   8D 3F 0E   STA &0E3F
-.MA20
+.MA20a
      1238   AD 68 0E   LDA &0E68
      123B   10 14      BPL &1251
      123D   AD 49 08   LDA &0849
@@ -3470,15 +3470,15 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      124A   A9 02      LDA #&02
      124C   A0 0F      LDY #&0F
      124E   20 5E 44   JSR &445E
-.MA25
+.MA25a
      1251   AD 4A 08   LDA &084A
      1254   F0 30      BEQ &1286
      1256   AD 68 0E   LDA &0E68
-     1259   30 3D      BMI &1298
+     1259   30 50      BMI &12AB
      125B   AD 46 0E   LDA &0E46
      125E   F0 06      BEQ &1266
      1260   20 27 29   JSR &2927
-     1263   4C 98 12   JMP &1298
+     1263   4C AB 12   JMP &12AB
 .miss1
      1266   A2 02      LDX #&02
      1268   20 59 F6   JSR &F659
@@ -3495,7 +3495,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      1280   4C 86 12   JMP &1286
 .miss2
      1283   20 CC 56   JSR &56CC
-.MA24
+.MA24a
      1286   AD 4E 08   LDA &084E
      1289   2D C4 08   AND &08C4
      128C   F0 0A      BEQ &1298
@@ -3511,7 +3511,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      12A3   D0 06      BNE &12AB
      12A5   CE 3D 0E   DEC &0E3D
      12A8   20 30 44   JSR &4430
-.MA64
+.MA64a
      12AB   A9 00      LDA #&00
      12AD   85 43      STA &43
      12AF   85 7D      STA &7D
@@ -3566,10 +3566,10 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      1322   68         PLA
      1323   10 02      BPL &1327
      1325   A9 00      LDA #&00
-.ma1
+.ma1a
      1327   29 FA      AND #&FA
      1329   8D 41 0E   STA &0E41
-.MA3
+.MA3a
      132C   AD 4F 0E   LDA &0E4F
      132F   29 BF      AND #&BF
      1331   8D 4F 0E   STA &0E4F
@@ -3767,7 +3767,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      14BC   AE 6B 0E   LDX &0E6B
      14BF   20 13 41   JSR &4113
      14C2   8E 6B 0E   STX &0E6B
-.b
+.ba
      14C5   38         SEC
      14C6   AD C7 08   LDA &08C7
      14C9   6D EB 08   ADC &08EB
@@ -3812,7 +3812,7 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      151B   20 4F 2F   JSR &2F4F
      151E   A9 00      LDA #&00
      1520   8D 3E 0E   STA &0E3E
-.MA16
+.MA16a
      1523   AD 84 08   LDA &0884
      1526   F0 05      BEQ &152D
      1528   20 1B 41   JSR &411B
@@ -3829,14 +3829,14 @@ Parasite variables workspace (6502sp parasite) from &1000 to &100B inclusive
      153B   F0 05      BEQ &1542
      153D   20 26 41   JSR &4126
      1540   F0 0A      BEQ &154C
-.MA69
+.MA69a
      1542   AD 3C 0E   LDA &0E3C
      1545   F0 08      BEQ &154F
      1547   CE 3C 0E   DEC &0E3C
      154A   D0 03      BNE &154F
-.MA70
+.MA70a
      154C   20 97 56   JSR &5697
-.MA66
+.MA66a
      154F   A5 86      LDA &86
      1551   D0 06      BNE &1559
      1553   20 40 1E   JSR &1E40
@@ -6643,13 +6643,13 @@ Saving file '3-assembled-output/ELTB.bin'
      2717   D0 2D      BNE &2746
      2719   2C 49 0E   BIT &0E49
      271C   30 28      BMI &2746
-     271E   20 5A 38   JSR &385A
-     2721   EE 74 0E   INC &0E74
-     2724   D0 03      BNE &2729
-     2726   EE 75 0E   INC &0E75
-     2729   20 5A 38   JSR &385A
-     272C   AD 84 0E   LDA &0E84
-     272F   F0 15      BEQ &2746
+     271E   AD 84 0E   LDA &0E84
+     2721   F0 23      BEQ &2746
+     2723   20 5A 38   JSR &385A
+     2726   EE 74 0E   INC &0E74
+     2729   D0 03      BNE &272E
+     272B   EE 75 0E   INC &0E75
+     272E   20 5A 38   JSR &385A
      2731   AD 75 0E   LDA &0E75
      2734   CD 79 0E   CMP &0E79
      2737   90 0D      BCC &2746
@@ -7851,7 +7851,7 @@ Saving file '3-assembled-output/ELTB.bin'
      2F62   EE 67 0E   INC &0E67
      2F65   A9 30      LDA #&30
      2F67   A0 D0      LDY #&D0
-.las
+.lasi1
      2F69   85 35      STA &35
      2F6B   AD 66 0E   LDA &0E66
      2F6E   85 33      STA &33
@@ -7868,7 +7868,7 @@ Saving file '3-assembled-output/ELTB.bin'
      2F88   A9 BF      LDA #&BF
      2F8A   85 36      STA &36
      2F8C   4C B9 18   JMP &18B9
-.lasi1
+.lasi2
      2F8F   60         RTS
 .PDESC
      2F90   AD 03 09   LDA &0903
@@ -10384,13 +10384,13 @@ Saving file '3-assembled-output/ELTD.bin'
      41FC   10 01      BPL &41FF
      41FE   60         RTS
      41FF   8D D4 0E   STA &0ED4
-     4202   20 5A 38   JSR &385A
-     4205   EE 74 0E   INC &0E74
-     4208   D0 03      BNE &420D
-     420A   EE 75 0E   INC &0E75
-     420D   20 5A 38   JSR &385A
-     4210   AD 84 0E   LDA &0E84
-     4213   F0 15      BEQ &422A
+     4202   AD 84 0E   LDA &0E84
+     4205   F0 23      BEQ &422A
+     4207   20 5A 38   JSR &385A
+     420A   EE 74 0E   INC &0E74
+     420D   D0 03      BNE &4212
+     420F   EE 75 0E   INC &0E75
+     4212   20 5A 38   JSR &385A
      4215   AD 75 0E   LDA &0E75
      4218   CD 79 0E   CMP &0E79
      421B   90 0D      BCC &422A
@@ -10437,13 +10437,13 @@ Saving file '3-assembled-output/ELTD.bin'
      426D   10 01      BPL &4270
      426F   60         RTS
      4270   8D D4 0E   STA &0ED4
-     4273   20 AF 38   JSR &38AF
-     4276   EE 72 0E   INC &0E72
-     4279   D0 03      BNE &427E
-     427B   EE 73 0E   INC &0E73
-     427E   20 AF 38   JSR &38AF
-     4281   AD 83 0E   LDA &0E83
-     4284   F0 15      BEQ &429B
+     4273   AD 83 0E   LDA &0E83
+     4276   F0 23      BEQ &429B
+     4278   20 AF 38   JSR &38AF
+     427B   EE 72 0E   INC &0E72
+     427E   D0 03      BNE &4283
+     4280   EE 73 0E   INC &0E73
+     4283   20 AF 38   JSR &38AF
      4286   AD 73 0E   LDA &0E73
      4289   CD 77 0E   CMP &0E77
      428C   90 0D      BCC &429B
@@ -10452,7 +10452,7 @@ Saving file '3-assembled-output/ELTD.bin'
      4294   90 05      BCC &429B
      4296   A9 01      LDA #&01
      4298   4C 0D 4E   JMP &4E0D
-.opps1
+.oopz1
      429B   AD C4 83   LDA &83C4
      429E   30 11      BMI &42B1
      42A0   AD 6B 0E   LDA &0E6B
@@ -10460,28 +10460,28 @@ Saving file '3-assembled-output/ELTD.bin'
      42A6   90 04      BCC &42AC
      42A8   8D 6B 0E   STA &0E6B
      42AB   60         RTS
-.OO2
+.oopz2
      42AC   9C 6B 0E   STZ &0E6B
      42AF   90 0F      BCC &42C0
-.OO1
+.oopz3
      42B1   AD 6C 0E   LDA &0E6C
      42B4   ED D4 0E   SBC &0ED4
      42B7   90 04      BCC &42BD
      42B9   8D 6C 0E   STA &0E6C
      42BC   60         RTS
-.OO5
+.oopz4
      42BD   9C 6C 0E   STZ &0E6C
-.OO3
+.oopz5
      42C0   6D 69 0E   ADC &0E69
      42C3   8D 69 0E   STA &0E69
      42C6   F0 02      BEQ &42CA
      42C8   B0 0B      BCS &42D5
-.oops2
+.oopz6
      42CA   9C 69 0E   STZ &0E69
      42CD   20 67 24   JSR &2467
      42D0   A9 01      LDA #&01
      42D2   4C 0D 4E   JMP &4E0D
-.oops3
+.oopz7
      42D5   4C BF 56   JMP &56BF
 .SPS3
      42D8   BD 01 82   LDA &8201,X
@@ -11873,7 +11873,7 @@ Saving file '3-assembled-output/ELTE.bin'
      4C9E   CA         DEX
      4C9F   D0 F6      BNE &4C97
      4CA1   A2 04      LDX #&04
-.ss
+.msbl1
      4CA3   EC 6E 0E   CPX &0E6E
      4CA6   F0 0B      BEQ &4CB3
      4CA8   A9 02      LDA #&02
@@ -11882,7 +11882,7 @@ Saving file '3-assembled-output/ELTE.bin'
      4CAF   CA         DEX
      4CB0   D0 F1      BNE &4CA3
      4CB2   60         RTS
-.SAL8
+.msbl2
      4CB3   A9 02      LDA #&02
      4CB5   A0 0C      LDY #&0C
      4CB7   20 5E 44   JSR &445E
@@ -11966,14 +11966,14 @@ Saving file '3-assembled-output/ELTE.bin'
      4D46   AE 42 0E   LDX &0E42
      4D49   F0 03      BEQ &4D4E
      4D4B   CE 42 0E   DEC &0E42
-.EE20
+.game1
      4D4E   AE 41 0E   LDX &0E41
      4D51   F0 07      BEQ &4D5A
      4D53   CA         DEX
      4D54   F0 01      BEQ &4D57
      4D56   CA         DEX
      4D57   8E 41 0E   STX &0E41
-.NOLASCT
+.game2
      4D5A   20 67 24   JSR &2467
      4D5D   2C 66 24   BIT &2466
      4D60   10 08      BPL &4D6A

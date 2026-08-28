@@ -5973,14 +5973,12 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA KY20               \ If RETURN is being pressed, keep going, otherwise jump
- BEQ MA17               \ down to MA17 to skip the following
+ BEQ MA17a              \ down to MA17 to skip the following
 
  LDA player2DELTA       \ The "go faster" key is being pressed, so first we
  CMP #37                \ fetch the current speed from DELTA into A, and if
- BCS MA17               \ A >= 37, we are already going at full pelt, so jump
+ BCS MA17a              \ A >= 37, we are already going at full pelt, so jump
                         \ down to MA17 to skip the following
                         \
                         \ This is a slightly lower maximum than player 1 as
@@ -5990,22 +5988,20 @@ ENDIF
  INC player2DELTA       \ We can go a bit faster, so increment the speed in
                         \ location DELTA
 
-.MA17
+.MA17a
 
  LDA KY21               \ If "]" is being pressed, keep going, otherwise jump
- BEQ MA4                \ down to MA4 to skip the following
+ BEQ MA4a               \ down to MA4 to skip the following
 
  DEC player2DELTA       \ The "slow down" key is being pressed, so we decrement
                         \ the current ship speed in DELTA
 
- BNE MA4                \ If the speed is still greater than zero, jump to MA4
+ BNE MA4a               \ If the speed is still greater than zero, jump to MA4
 
  INC player2DELTA       \ Otherwise we just braked a little too hard, so bump
                         \ the speed back up to the minimum value of 1
 
-.MA4
-
-}
+.MA4a
 
                         \ --- End of added code ------------------------------->
 
@@ -6062,9 +6058,18 @@ ENDIF
  LDA KY16               \ If "M" is being pressed, keep going, otherwise jump
  BEQ MA24               \ down to MA24 to skip the following
 
+                        \ --- Mod: Code removed for two-player Elite: --------->
+
+\LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
+\BMI MA64               \ MA64 to skip the following (also skipping the checks
+\                       \ for TAB, ESCAPE, "J" and "E")
+
+                        \ --- And replaced by: -------------------------------->
+
  LDA MSTG               \ If MSTG = &FF then there is no target lock, so jump to
- BMI MA64               \ MA64 to skip the following (also skipping the checks
-                        \ for TAB, ESCAPE, "J" and "E")
+ BMI MA24               \ MA24 to move onto player 2's checks
+
+                        \ --- End of replacement ------------------------------>
 
  JSR FRMIS              \ The "fire missile" key is being pressed and we have
                         \ a missile lock, so call the FRMIS routine to fire
@@ -6074,11 +6079,9 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA KY19               \ If "_" is being pressed and the number of missiles
  AND player2NOMSL       \ in NOMSL is non-zero, keep going, otherwise jump down
- BEQ MA20               \ to MA20 to skip the following
+ BEQ MA20a              \ to MA20 to skip the following
 
  LDY #GREEN2            \ The "disarm missiles" key is being pressed, so call
  JSR Player2ABORT       \ ABORT to disarm the missile and update the missile
@@ -6090,20 +6093,20 @@ ENDIF
  LDA #0                 \ Set MSAR to 0 to indicate that no missiles are
  STA player2MSAR        \ currently armed
 
-.MA20
+.MA20a
 
  LDA player2MSTG        \ If MSTG is positive (i.e. it does not have bit 7 set),
- BPL MA25               \ then it indicates we already have a missile locked on
+ BPL MA25a              \ then it indicates we already have a missile locked on
                         \ a target (in which case MSTG contains the ship number
                         \ of the target), so jump to MA25 to skip targeting. Or
                         \ to put it another way, if MSTG = &FF, which means
                         \ there is no current target lock, keep going
 
  LDA KY12               \ If "[" is being pressed, keep going, otherwise jump
- BEQ MA25               \ down to MA25 to skip the following
+ BEQ MA25a              \ down to MA25 to skip the following
 
  LDX player2NOMSL       \ If the number of missiles in NOMSL is zero, jump down
- BEQ MA25               \ to MA25 to skip the following
+ BEQ MA25a              \ to MA25 to skip the following
 
  STA player2MSAR        \ The "target missile" key is being pressed and we have
                         \ at least one missile, so set MSAR = &FF to denote that
@@ -6120,13 +6123,13 @@ ENDIF
                         \ right to left, so X is the number of the leftmost
                         \ indicator)
 
-.MA25
+.MA25a
 
  LDA KY13               \ If "@" is being pressed, keep going, otherwise jump
- BEQ MA24               \ down to MA24 to skip the following
+ BEQ MA24a              \ down to MA24 to skip the following
 
  LDA player2MSTG        \ If MSTG = &FF then there is no target lock, so jump to
- BMI MA64               \ MA64 to skip the following (also skipping the checks
+ BMI MA64a              \ MA64a to skip the following (also skipping the checks
                         \ for TAB, ESCAPE, "J" and "E")
 
  LDA player2Missile     \ If player 2 does not already have a missile in-flight,
@@ -6136,7 +6139,7 @@ ENDIF
  JSR Player2FR1         \ Otherwise call Player2FR1 to display "missile jammed"
                         \ as player 2 can't fire a second missile
 
- JMP MA64               \ Jump to MA64 to skip the following (also skipping the
+ JMP MA64a              \ Jump to MA64a to skip the following (also skipping the
                         \ checks for TAB, ESCAPE, "J" and "E")
 
 .miss1
@@ -6162,7 +6165,7 @@ ENDIF
  JSR frmi2              \ Spawn the missile by jumping into SFRMIS at frmi2 (to
                         \ allow us to spawn a missile with a custom AI flag)
 
- JMP MA24               \ Skip the following instruction
+ JMP MA24a              \ Skip the following instruction
 
 .miss2
 
@@ -6171,9 +6174,7 @@ ENDIF
                         \ missile as a child of player 2's ship, make a noise
                         \ and print a message warning of incoming missiles
 
-.MA24
-
-}
+.MA24a
 
                         \ --- End of added code ------------------------------->
 
@@ -6245,14 +6246,12 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA KY18               \ If "\" is being pressed and we have an E.C.M. fitted,
  AND player2ECM         \ keep going, otherwise jump down to MA64 to skip the
- BEQ MA64               \ following
+ BEQ MA64a              \ following
 
  LDA player2ECMA        \ If ECMA is non-zero, that means an E.C.M. is already
- BNE MA64               \ operating and is counting down (this can be either
+ BNE MA64a              \ operating and is counting down (this can be either
                         \ our E.C.M. or an opponent's), so jump down to MA64 to
                         \ skip the following (as we can't have two E.C.M.
                         \ systems operating at the same time)
@@ -6266,9 +6265,7 @@ ENDIF
                         \ the dashboard, set the E.C.M. countdown timer to 32,
                         \ and start making the E.C.M. sound
 
-.MA64
-
-}
+.MA64a
 
                         \ --- End of added code ------------------------------->
 
@@ -6314,8 +6311,6 @@ ENDIF
  JMP MA3                \ skip the laser checks as bit 6 of INWK+31 is now being
                         \ used for tracking the explosion, so jump to part 4
 
-{
-
  LDA K%+NI%*2+31        \ Clear bit 6 of player 2's INWK+31 byte so we switch
  AND #%10111111         \ the lasers off by default
  STA K%+NI%*2+31
@@ -6332,20 +6327,20 @@ ENDIF
  STA player2DELT4+1
 
  LDA player2LASCT       \ If LASCT is zero, keep going, otherwise the laser is
- BNE MA3                \ a pulse laser that is between pulses, so jump down to
+ BNE MA3a               \ a pulse laser that is between pulses, so jump down to
                         \ MA3 to skip the following
 
  LDA KY22               \ If the player 2 fire button is being pressed, keep
- BEQ MA3                \ going, otherwise jump down to MA3 to skip the
+ BEQ MA3a               \ going, otherwise jump down to MA3 to skip the
                         \ following
 
  LDA player2GNTMP       \ If the laser temperature >= 242 then the laser has
  CMP #242               \ overheated, so jump down to MA3 to skip the following
- BCS MA3
+ BCS MA3a
 
  LDX player2VIEW        \ If the current space view has a laser fitted (i.e. the
  LDA player2LASER,X     \ laser power for this view is greater than zero), then
- BEQ MA3                \ keep going, otherwise jump down to MA3 to skip the
+ BEQ MA3a               \ keep going, otherwise jump down to MA3 to skip the
                         \ following
 
                         \ If we get here, then the "fire" button is being
@@ -6371,7 +6366,7 @@ ENDIF
 
  PLA                    \ Restore the current view's laser power into A
 
- BPL ma1                \ If the laser power has bit 7 set, then it's an "always
+ BPL ma1a               \ If the laser power has bit 7 set, then it's an "always
                         \ on" laser rather than a pulsing laser, so keep going,
                         \ otherwise jump down to ma1 to skip the following
                         \ instruction
@@ -6380,7 +6375,7 @@ ENDIF
                         \ military laser), so set A = 0, which will be stored in
                         \ LASCT to denote that this is not a pulsing laser
 
-.ma1
+.ma1a
 
  AND #%11111010         \ LASCT will be set to 0 for beam lasers, and to the
  STA player2LASCT       \ laser power AND %11111010 for pulse lasers, which
@@ -6389,9 +6384,7 @@ ENDIF
                         \ lasers hava a power of 50). See MA23 in part 16 for
                         \ more on laser pulsing and LASCT
 
-.MA3
-
-}
+.MA3a
 
                         \ --- End of added code ------------------------------->
 
@@ -6785,9 +6778,9 @@ ENDIF
  STA damageToApply      \ affecting the scoree
  JSR oops1
 
- LDA #80                \ Call opps1 to damage player 2 by 80 and without
+ LDA #80                \ Call oopz1 to damage player 2 by 80 and without
  STA damageToApply      \ affecting the scoree
- JSR opps1
+ JSR oopz1
 
  BRA main4              \ Jump to main4 to keep going
 
@@ -6799,9 +6792,9 @@ ENDIF
  STA damageToApply      \ affecting the scoree
  JSR oops1
 
- LDA #250               \ Call opps1 to damage player 2 by 250 and without
+ LDA #250               \ Call oopz1 to damage player 2 by 250 and without
  STA damageToApply      \ affecting the scoree
- JSR opps1
+ JSR oopz1
 
  BRA main4              \ Jump to main4 to keep going
 
@@ -6813,9 +6806,9 @@ ENDIF
  STA damageToApply      \ affecting the scoree
  JSR oops1
 
- LDA #80                \ Call opps1 to damage player 2 by 80 and without
+ LDA #80                \ Call oopz1 to damage player 2 by 80 and without
  STA damageToApply      \ affecting the scoree
- JSR opps1
+ JSR oopz1
 
 .main4
 
@@ -7493,10 +7486,8 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
- LDX player2ENERGY      \ Fetch our ship's energy levels and skip to b if bit 7
- BPL b                  \ is not set, i.e. only charge the shields from the
+ LDX player2ENERGY      \ Fetch our ship's energy levels and skip to ba if bit 7
+ BPL ba                 \ is not set, i.e. only charge the shields from the
                         \ energy banks if they are at more than 50% charge
 
  LDX player2ASH         \ Call SHD to recharge our aft shield and update the
@@ -7507,9 +7498,7 @@ ENDIF
  JSR Player2SHD         \ the shield status in FSH
  STX player2FSH
 
-.b
-
-}
+.ba
 
                         \ --- End of added code ------------------------------->
 
@@ -8008,14 +7997,12 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA player2LAS2        \ If the current view has no laser, jump to MA16 to skip
- BEQ MA16               \ the following
+ BEQ MA16a              \ the following
 
  LDA player2LASCT       \ If LASCT >= 8, jump to MA16 to skip the following, so
  CMP #8                 \ for a pulse laser with a LASCT between 8 and 10, the
- BCS MA16               \ laser stays on, but for a LASCT of 7 or less it gets
+ BCS MA16a              \ laser stays on, but for a LASCT of 7 or less it gets
                         \ turned off and stays off until LASCT reaches zero and
                         \ the next pulse can start (if the fire button is still
                         \ being pressed)
@@ -8039,9 +8026,7 @@ ENDIF
  STA player2LAS2        \ skip over the above until the next pulse (this has no
                         \ effect if this is a beam laser)
 
-.MA16
-
-}
+.MA16a
 
                         \ --- End of added code ------------------------------->
 
@@ -8071,33 +8056,29 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDA player2ECMP        \ If our E.C.M is not on, skip to MA69, otherwise keep
- BEQ MA69               \ going to drain some energy
+ BEQ MA69a              \ going to drain some energy
 
  JSR Player2DENGY       \ Call DENGY to deplete our energy banks by 1
 
- BEQ MA70               \ If we have no energy left, jump to MA70 to turn our
+ BEQ MA70a              \ If we have no energy left, jump to MA70 to turn our
                         \ E.C.M. off
 
-.MA69
+.MA69a
 
  LDA player2ECMA        \ If an E.C.M is going off (ours or an opponent's) then
- BEQ MA66               \ keep going, otherwise skip to MA66
+ BEQ MA66a              \ keep going, otherwise skip to MA66
 
  DEC player2ECMA        \ Decrement the E.C.M. countdown timer, and if it has
- BNE MA66               \ reached zero, keep going, otherwise skip to MA66
+ BNE MA66a              \ reached zero, keep going, otherwise skip to MA66
 
-.MA70
+.MA70a
 
  JSR Player2ECMOF       \ If we get here then either we have either run out of
                         \ energy, or the E.C.M. timer has run down, so switch
                         \ off the E.C.M.
 
-.MA66
-
-}
+.MA66a
 
                         \ --- End of added code ------------------------------->
 
@@ -16240,6 +16221,9 @@ ENDIF
  BIT gameOver           \ If this is the game over screen, jump to tact4 to skip
  BMI tact4              \ processing the scores
 
+ LDA player2GameType    \ If player 2 is playing survival, they don't have a
+ BEQ tact4              \ score, so jump to tact4 to skip updating the score
+
  JSR Player2ee3         \ Print player 2's score to remove it from the screen
 
  INC player2Score       \ Increment player 2's score (as player 2 is the AI)
@@ -16247,9 +16231,6 @@ ENDIF
  INC player2Score+1
 
  JSR Player2ee3         \ Print player 2's score
-
- LDA player2GameType    \ If player 2 is playing survival, they don't have a
- BEQ tact4              \ score, so jump to tact4 to keep playing
 
  LDA player2Score+1     \ If the score is less than the target, jump to tact4 to
  CMP player2Target+1    \ keep playing
@@ -20954,11 +20935,9 @@ ENDIF
 
 .Player2LASLI2
 
-{
-
  LDA QQ11               \ If this is not a space view (i.e. QQ11 is non-zero)
- BNE lasi1              \ then jump to MA9 to return from the main flight loop
-                        \ (as lasi1 is an RTS)
+ BNE lasi2              \ then jump to MA9 to return from the main flight loop
+                        \ (as lasi2 is an RTS)
 
  LDA #RED               \ Send a #SETCOL RED command to the I/O processor to
  JSR DOCOL              \ switch to colour 2, which is red in the space view
@@ -20975,7 +20954,7 @@ IF _SNG45
 
 ENDIF
 
- JSR las                \ Call las below to draw the first set of laser lines
+ JSR lasi1              \ Call lasi1 below to draw the first set of laser lines
 
 IF _SNG45
 
@@ -20984,8 +20963,8 @@ IF _SNG45
 
 ENDIF
 
- LDA #48                \ Fall through into las with A = 48 and Y = 208 to draw
- LDY #208               \ a second set of lines (the narrower pair)
+ LDA #48                \ Fall through into lasi1 with A = 48 and Y = 208 to
+ LDY #208               \ draw a second set of lines (the narrower pair)
 
                         \ The following routine draws two laser lines, one from
                         \ the centre point down to point A on the bottom row,
@@ -20995,7 +20974,7 @@ ENDIF
                         \ bottom row, giving us the triangular laser effect
                         \ we're after
 
-.las
+.lasi1
 
  STA X2                 \ Set X2 = A
 
@@ -21026,10 +21005,9 @@ ENDIF
                         \ the centre point to (Y, 191), and return from
                         \ the subroutine using a tail call
 
-.lasi1
+.lasi2
 
  RTS                    \ Return from the subroutine
-}
 
                         \ --- End of added code ------------------------------->
 
@@ -29930,7 +29908,10 @@ ENDIF
 
  STA damageToApply      \ Store the amount of damage in damageToApply
 
-                        \ Player 2 has been hit, so increment player 1's score
+ LDA player2GameType    \ If player 2 is playing survival, they don't have a
+ BEQ oops1              \ score, so jump to oops1 to skip updating the score
+
+                        \ Player 1 has been hit, so increment player 2's score
 
  JSR Player2ee3         \ Print player 2's score to remove it from the screen
 
@@ -29939,9 +29920,6 @@ ENDIF
  INC player2Score+1
 
  JSR Player2ee3         \ Print player 2's score
-
- LDA player2GameType    \ If player 2 is playing survival, they don't have a
- BEQ oops1              \ score, so jump to oops1 to keep playing
 
  LDA player2Score+1     \ If the score is less than the target, jump to oops1 to
  CMP player2Target+1    \ keep playing
@@ -30120,6 +30098,9 @@ ENDIF
 
  STA damageToApply      \ Store the amount of damage in damageToApply
 
+ LDA player1GameType    \ If player 1 is playing survival, they don't have a
+ BEQ oopz1              \ score, so jump to oopz1 to skip updating the score
+
                         \ Player 2 has been hit, so increment player 1's score
 
  JSR ee3                \ Print player 1's score to remove it from the screen
@@ -30130,38 +30111,33 @@ ENDIF
 
  JSR ee3                \ Print player 1's score
 
- LDA player1GameType    \ If player 1 is playing survival, they don't have a
- BEQ opps1              \ score, so jump to opps1 to keep playing
-
- LDA player1Score+1     \ If the score is less than the target, jump to opps1 to
+ LDA player1Score+1     \ If the score is less than the target, jump to oopz1 to
  CMP player1Target+1    \ keep playing
- BCC opps1
+ BCC oopz1
  LDA player1Score
  CMP player1Target
- BCC opps1
+ BCC oopz1
 
  LDA #1                 \ If we get here then player 1 has reached their target,
  JMP DEATH              \ so set A to indicate that player 1 has won and jump to
                         \ DEATH to end the game
 
-.opps1
-
-{
+.oopz1
 
  LDA K%+NI%*12+8        \ Fetch byte #8 (z_sign) for player 1 in player 2's
                         \ frame of reference, so we can work out whether player
                         \ 1 is in front of or behind player 2 when it hits
                         \ player 2 with its lasers
 
- BMI OO1                \ If A is negative, then player 2 got hit in the rear,
-                        \ so jump to OO1 to process damage to the aft shield
+ BMI oopz3              \ If A is negative, then player 2 got hit in the rear,
+                        \ so jump to oopz3 to process damage to the aft shield
 
  LDA player2FSH         \ Otherwise the forward shield was damaged, so fetch the
  SBC damageToApply      \ shield strength from FSH and subtract the damage to
                         \ apply
 
- BCC OO2                \ If the C flag is clear then this amount of damage was
-                        \ too much for the shields, so jump to OO2 to set the
+ BCC oopz2              \ If the C flag is clear then this amount of damage was
+                        \ too much for the shields, so jump to oopz2 to set the
                         \ shield level to 0 and start taking damage directly
                         \ from the energy banks
 
@@ -30169,21 +30145,21 @@ ENDIF
 
  RTS                    \ Return from the subroutine
 
-.OO2
+.oopz2
 
  STZ player2FSH         \ Set the forward shield to 0
 
- BCC OO3                \ Jump to OO3 to start taking damage directly from the
+ BCC oopz5              \ Jump to oopz5 to start taking damage directly from the
                         \ energy banks (this BCC is effectively a JMP as the C
-                        \ flag is clear, as we jumped to OO2 with a BCC)
+                        \ flag is clear, as we jumped to oopz2 with a BCC)
 
-.OO1
+.oopz3
 
  LDA player2ASH         \ The aft shield was damaged, so fetch the shield
  SBC damageToApply      \ strength from ASH and subtract the damage to apply
 
- BCC OO5                \ If the C flag is clear then this amount of damage was
-                        \ too much for the shields, so jump to OO5 to set the
+ BCC oopz4              \ If the C flag is clear then this amount of damage was
+                        \ too much for the shields, so jump to oopz4 to set the
                         \ shield level to 0 and start taking damage directly
                         \ from the energy banks
 
@@ -30191,11 +30167,11 @@ ENDIF
 
  RTS                    \ Return from the subroutine
 
-.OO5
+.oopz4
 
  STZ player2ASH         \ Set the aft shield to 0
 
-.OO3
+.oopz5
 
  ADC player2ENERGY      \ A is negative and contains the amount by which the
  STA player2ENERGY      \ damage overwhelmed the shields, so this drains the
@@ -30205,15 +30181,15 @@ ENDIF
                         \ appear to drain away four times faster than the
                         \ shields did)
 
- BEQ oops2              \ If we have just run out of energy, skip the next
+ BEQ oopz6              \ If we have just run out of energy, skip the next
                         \ instruction to jump straight to our death
 
- BCS oops3              \ If the C flag is set, then subtracting the damage from
+ BCS oopz7              \ If the C flag is set, then subtracting the damage from
                         \ the energy banks didn't underflow, so we had enough
-                        \ energy to survive, and we can jump to oops3 to make a
+                        \ energy to survive, and we can jump to oopz7 to make a
                         \ damage sound
 
-.oops2
+.oopz6
 
  STZ player2ENERGY      \ Zero the energy levels
 
@@ -30226,13 +30202,11 @@ ENDIF
                         \ and in either case that means we jump to our DEATH,
                         \ returning from the subroutine using a tail call
 
-.oops3
+.oopz7
 
  JMP EXNO3              \ We didn't die, so call EXNO3 to make the sound of a
                         \ collision and return from the subroutine using a tail
                         \ call
-
-}
 
                         \ --- End of added code ------------------------------->
 
@@ -35630,15 +35604,15 @@ ENDIF
 
  BNE SAL8               \ Loop back to SAL8 if we still have missiles to draw
 
-{
+                        \ --- Mod: Code added for two-player Elite: ----------->
 
  LDX #4                 \ Set up a loop counter in X to count through all four
                         \ missile indicators
 
-.ss
+.msbl1
 
  CPX player2NOMSL       \ If the counter is equal to the number of missiles,
- BEQ SAL8               \ jump down to SAL8 to draw the remaining missiles, as
+ BEQ msbl2              \ jump down to msbl2 to draw the remaining missiles, as
                         \ the rest of them are present and should be drawn in
                         \ green
 
@@ -35649,11 +35623,11 @@ ENDIF
 
  DEX                    \ Decrement the counter to point to the next missile
 
- BNE ss                 \ Loop back to ss if we still have missiles to draw
+ BNE msbl1              \ Loop back to msbl1 if we still have missiles to draw
 
  RTS                    \ Return from the subroutine
 
-.SAL8
+.msbl2
 
  LDA #2                 \ Set A to draw player 2's indicators
 
@@ -35662,9 +35636,9 @@ ENDIF
 
  DEX                    \ Decrement the counter to point to the next missile
 
- BNE SAL8               \ Loop back to SAL8 if we still have missiles to draw
+ BNE msbl2              \ Loop back to msbl2 if we still have missiles to draw
 
-}
+                        \ --- End of added code ------------------------------->
 
  RTS                    \ Return from the subroutine
 
@@ -36576,17 +36550,15 @@ ENDIF
 
                         \ --- Mod: Code added for two-player Elite: ----------->
 
-{
-
  LDX player2GNTMP       \ If the laser temperature in GNTMP is non-zero,
- BEQ EE20               \ decrement it (i.e. cool it down a bit)
+ BEQ game1              \ decrement it (i.e. cool it down a bit)
  DEC player2GNTMP
 
-.EE20
+.game1
 
  LDX player2LASCT       \ Set X to the value of LASCT, the laser pulse count
 
- BEQ NOLASCT            \ If X = 0 then jump to NOLASCT to skip reducing LASCT,
+ BEQ game2              \ If X = 0 then jump to game2 to skip reducing LASCT,
                         \ as it can't be reduced any further
 
  DEX                    \ Decrement the value of LASCT in X
@@ -36598,9 +36570,7 @@ ENDIF
  STX player2LASCT       \ Store the decremented value of X in LASCT, so LASCT
                         \ gets reduced by 2, but not into negative territory
 
-.NOLASCT
-
-}
+.game2
 
                         \ --- End of added code ------------------------------->
 
