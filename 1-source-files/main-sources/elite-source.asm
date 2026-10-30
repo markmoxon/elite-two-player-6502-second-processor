@@ -35968,6 +35968,8 @@ ENDIF
 
 .me3
 
+                        \ --- Mod: Code added for two-player Elite: ----------->
+
  DEC player2DLY         \ Decrement the delay counter in DLY, so any in-flight
                         \ messages get removed once the counter reaches zero
 
@@ -35982,6 +35984,8 @@ ENDIF
                         \ and need to increment DLY back to 0
 
 .Player2me3
+
+                        \ --- End of added code ------------------------------->
 
  DEC MCNT               \ Decrement the main loop counter in MCNT
 
