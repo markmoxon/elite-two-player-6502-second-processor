@@ -35939,19 +35939,7 @@ ENDIF
 
 .TT100
 
-                        \ --- Mod: Code added for speed control: -------------->
-
- JSR RestartSync        \ Restart the sync counter
-
-                        \ --- End of added code ------------------------------->
-
  JSR M%                 \ Call M% to iterate through the main flight loop
-
-                        \ --- Mod: Code added for speed control: -------------->
-
- JSR WaitForSync        \ Wait for the sync counter to count down
-
-                        \ --- End of added code ------------------------------->
 
  DEC DLY                \ Decrement the delay counter in DLY, so any in-flight
                         \ messages get removed once the counter reaches zero
@@ -36529,6 +36517,12 @@ ENDIF
  LDX #&FF               \ Set the stack pointer to &01FF, which is the standard
  TXS                    \ location for the 6502 stack, so this instruction
                         \ effectively resets the stack
+
+                        \ --- Mod: Code added for speed control: -------------->
+
+ JSR WaitForSync        \ Wait until the sync counter reaches 0
+
+                        \ --- End of added code ------------------------------->
 
  LDX GNTMP              \ If the laser temperature in GNTMP is non-zero,
  BEQ EE20               \ decrement it (i.e. cool it down a bit)
@@ -37494,8 +37488,6 @@ ENDIF
                         \ but with controls disabled
 
  JSR U%                 \ Clear the key logger
-
- JSR RestartSync        \ Restart the sync counter
 
  JSR M%                 \ Call M% to iterate through the main flight loop
 
@@ -43664,32 +43656,6 @@ ENDMACRO
 
 \ ******************************************************************************
 \
-\       Name: RestartSync
-\       Type: Subroutine
-\   Category: Main loop
-\    Summary: Restart the sync counter
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for speed control: -------------->
-
-.RestartSync
-
- STZ musicBuff+2        \ Set the parameter to zero to restart the sync counter
-
- LDX #LO(musicBuff)     \ Set (Y X) to point to the musicBuff parameter
- LDY #HI(musicBuff)     \ block
-
- LDA #255               \ Set A = 255 for the SpeedControl OSWORD call
-
- JMP OSWORD             \ Send an OSWORD command to the I/O processor to reset
-                        \ the sync counter, returning from the subroutine
-                        \ using a tail call
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
 \       Name: WaitForSync
 \       Type: Subroutine
 \   Category: Main loop
@@ -43701,38 +43667,14 @@ ENDMACRO
 
 .WaitForSync
 
- LDA #1                 \ Set the parameter to 1 to wait for the sync counter to
- STA musicBuff+2        \ count down
-
- LDX #LO(musicBuff)     \ Set (Y X) to point to the musicBuff parameter
- LDY #HI(musicBuff)     \ block
-
  LDA #255               \ Set A = 255 for the SpeedControl OSWORD call
+
+ LDX #LO(WSCpars)       \ Set (Y X) to point to the WSCpars parameter block,
+ LDY #HI(WSCpars)       \ which doesn't transmit or receive any data
 
  JMP OSWORD             \ Send an OSWORD command to the I/O processor to reset
                         \ the sync counter, returning from the subroutine
                         \ using a tail call
-
-                        \ --- End of added code ------------------------------->
-
-\ ******************************************************************************
-\
-\       Name: musicBuff
-\       Type: Variable
-\   Category: Universe editor
-\    Summary: Buffer for music OSWORD calls
-\
-\ ******************************************************************************
-
-                        \ --- Mod: Code added for speed control: -------------->
-
-.musicBuff
-
- EQUB 3                 \ The number of bytes to transmit with this command
-
- EQUB 2                 \ The number of bytes to receive with this command
-
- EQUB 0                 \ The parameter to send
 
                         \ --- End of added code ------------------------------->
 
